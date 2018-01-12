@@ -22,7 +22,7 @@ first_time = 1
 while 1:
     try:
         devices = scanner.scan(0.35)
-        ##        print("Amount of Devices = "+str(len(devices)))
+        print("Amount of Devices = "+str(len(devices)))
         for ii in devices:
             print(ii.addr)
             if ii.addr == u'00:15:87:00:4e:d4' or ii.addr == u'00:15:83:10:d5:39' \
