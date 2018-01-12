@@ -34,7 +34,7 @@ class AnyDevice(gatt.Device):
                 print("[%s]    Characteristic [%s]" % (self.mac_address, characteristic.uuid))
 
 
-device = AnyDevice(mac_address='AA:BB:CC:DD:EE:FF', manager=manager)
+device = AnyDevice(mac_address='50:8C:B1:69:A2:F1', manager=manager)
 device.connect()
 
 manager.run()
