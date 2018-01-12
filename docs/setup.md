@@ -65,4 +65,14 @@ sudo apt-get install bluetooth libbluetooth-dev
 sudo pip install pybluez
 
 
+Actually done:
+sudo apt-get install bluetooth libbluetooth-dev
+sudo apt-get install libglib2.0-dev
+sudo pip3 install pybluez
+sudo pip3 install gatt
+sudo apt-get install python3-dbus
+sudo apt-get install libboost-thread-dev libboost-python-dev
+sudo pip3 install gattlib
+
+
 
