@@ -96,9 +96,9 @@ class Rpi_Gpio(object):
         """
         self.pig = pigpio.pi(pigpio_host, pigpio_port) if not _simulation else pigpio()
         self.proximity_pin = self.set_pin_as_input(17)  # PROXIMITY_PIN
-        self.green1 = Led(self, 18)                     # GREEN LED 1
-        self.green2 = Led(self, 19)                     # GREEN LED 2
-        self.red = Led(self, 20)                        # RED LED
+        self.green1 = Led(self, 20)                     # GREEN LED 1 on GPIO20
+        self.green2 = Led(self, 21)                     # GREEN LED 2 on GPIO21
+        self.red = Led(self, 16)                        # RED LED on GPIO16
 
 
     def check_proximity(self):
