@@ -14,6 +14,7 @@ __license__ = "MIT"
 from time import sleep
 from camera import Camera
 from rpi_gpio import Rpi_Gpio, _simulation as rpi_simulation
+from member_db import Member
 
 class Controller(object):
     def __init__(self):
@@ -25,7 +26,9 @@ class Controller(object):
         self.TASKS = {
             1: self.wait_for_proximity,
             2: self.capture_qrcode,
-            3: self.check_member
+            3: self.check_member,
+            4: self.open_the_door,
+            5: self.bad_member_status,
         }
 
     def run(self):
@@ -43,9 +46,11 @@ class Controller(object):
 
     def wait_for_proximity(self):
         """Use GPIO to wait for a person to present a mobile phone to the camera"""
+        points = 1
         while not self.gpio.check_proximity():
-            print("Waiting for proximity...\r", end="")
+            print("Waiting for proximity", '.' * points, "\r", end="")
             sleep(0.5)
+            points = 1 if points==10 else points+1
         return 2
 
     def capture_qrcode(self):
@@ -56,7 +61,34 @@ class Controller(object):
     def check_member(self):
         """a QR Code is found: check it against the member database"""
         print("Member with QR code:", self.camera.qr_codes)
-        return 0
+        # algo to split the member_if from the QR code
+        name, id = self.camera.qr_codes[0].split('#')
+        member = Member(id)
+        if member.id:
+            if member.status=="OK":
+                print("Welcome", member.name)
+                return 4
+            else:
+                print(member.name, "please fix your status:", member.status)
+                return 5
+        else:
+            print("Sorry, I do not know you", name)
+        return 1
+
+    def open_the_door(self):
+        """Proceed to open the door"""
+        self.gpio.green2.ON()
+        sleep(3)
+        self.gpio.green2.OFF()
+        return 1
+
+    def bad_member_status(self):
+        """Red LED and email the member to warn about the status"""
+        self.gpio.red.ON()
+        sleep(3)
+        self.gpio.red.OFF()
+        return 1
+
 
     # def get_ids(self):
     #     """
