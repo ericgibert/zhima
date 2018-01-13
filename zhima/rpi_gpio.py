@@ -43,8 +43,8 @@ class Led(object):
     def __init__(self, pig, pin):
         self.pig, self.pin = pig, pin
         self.pig.set_pin_as_output(pin)
-        self.state = self.OFF()
         self._timer = None
+        self.state = self.OFF()
 
     def set(self, value):
         if self._timer: self.cancel_timer()
