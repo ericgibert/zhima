@@ -21,10 +21,11 @@ class Camera():
     """take a photo and keep it in memory for processing"""
     def __init__(self):
         """open the camera hardware"""
-        self.camera = cv2.VideoCapture(0)
+        # self.camera = cv2.VideoCapture(0)
         # self.camera.set(3, 640*2)
         # self.camera.set(4, 480 * 2)
         # # self.camera.resolution = (640*2, 480*2)
+        self.qr_codes = []
 
     def close(self):
         """release the hardware"""
@@ -41,14 +42,13 @@ class Camera():
         self.qr_codes = []  # reset any previous QR code found
         self.image = None
         print("\n")
+        self.camera = cv2.VideoCapture(0)
         for i in range(max_photos):
             print("\rTaking photo", i, end="")
             try:
                 cv2_return_code, cv2_im = self.camera.read()
             except cv2.error as cv2_err:
                 print("Error with the camera:", cv2_err)
-                self.close()
-                self.camera = cv2.VideoCapture(0)
             else:
                 # # img = cv2.cvtColor(cv2_im, cv2.COLOR_BGR2GRAY);
                 # # img = cv2.equalizeHist(cv2_im)  #cv2.cvtColor(cv2_im, cv2.COLOR_BGR2RGB)
@@ -62,12 +62,14 @@ class Camera():
                 if self.qr_codes:
                     # self.image.show()
                     print("\n")
+                    self.camera.close()
                     return self.qr_codes
                 # else:
                     sleep(0.4)
         else:
             # self.image.show()
             print("\n")
+            self.camera.close()
             return []
 
 
