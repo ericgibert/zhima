@@ -46,27 +46,37 @@ class Controller(object):
 
     def wait_for_proximity(self):
         """Use GPIO to wait for a person to present a mobile phone to the camera"""
-        points = 1
+        self.gpio.green1.flash("SET", on_duration=0.25, off_duration=1)
+        self.gpio.green2.OFF()
+        self.gpio.red.OFF()
+        points, max_pts = 1, 10
+        self.camera.qr_codes = []  # reset any previous QR code found
         while not self.gpio.check_proximity():
-            print("Waiting for proximity", '.' * points, "\r", end="")
+            print("Waiting for proximity", '.' * points, " " * max_pts, "\r", end="")
             sleep(0.5)
-            points = 1 if points==10 else points+1
+            points = 1 if points==max_pts else points+1
         return 2
 
     def capture_qrcode(self):
         """take photos until a qr code is detected"""
+        self.gpio.green1.ON()
+        self.gpio.green2.flash("SET", on_duration=0.5, off_duration=0.5)
+        self.gpio.red.OFF()
         next_state = 3 if self.camera.get_QRcode() else 1
         return next_state
 
     def check_member(self):
         """a QR Code is found: check it against the member database"""
-        print("Member with QR code:", self.camera.qr_codes)
+        self.gpio.green1.ON()
+        self.gpio.green2.ON()
+        self.gpio.red.OFF()
+        print("QR code:", self.camera.qr_codes)
         # algo to split the member_if from the QR code
         name, id = self.camera.qr_codes[0].decode("utf-8").split('#')
         member = Member(id)
         if member.id:
-            if member.status=="OK":
-                print("Welcome", member.name)
+            if member.status.upper()=="OK":
+                print("Welcome", member.name, "!")
                 return 4
             else:
                 print(member.name, "please fix your status:", member.status)
@@ -77,9 +87,10 @@ class Controller(object):
 
     def open_the_door(self):
         """Proceed to open the door"""
-        self.gpio.green2.ON()
-        sleep(3)
         self.gpio.green2.OFF()
+        self.gpio.green1.flash("SET", on_duration=0.3, off_duration=0.3)
+        sleep(0.3)
+        self.gpio.green2.flash("SET", on_duration=0.3, off_duration=0.3)
         return 1
 
     def bad_member_status(self):
