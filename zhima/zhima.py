@@ -44,6 +44,7 @@ class Controller(object):
     def wait_for_proximity(self):
         """Use GPIO to wait for a person to present a mobile phone to the camera"""
         while not self.gpio.check_proximity():
+            print("Waiting for proximity...\r", end="")
             sleep(0.5)
         return 2
 
