@@ -1,85 +1,78 @@
-# Take a photo with the attached camera on the Raspi
+#!/usr/bin/env python3
+""" Take a photo with the attached camera on the Raspi
 # or emulate the raspi library with OpenCV and the webcam
 #
 # http://picamera.readthedocs.io/en/release-1.13/recipes1.html
 #
 # Author: Eric Gibert, QR codes: [b'https://u.wechat.com/IMuRawb-1GPWRTXrg_EVEuc']
-import json
-import requests
+"""
+__author__ = "Eric Gibert"
+__version__ = "1.20170113"
+__email__ =  "ericgibert@yahoo.fr"
+__license__ = "MIT"
+
+from time import sleep
 from tempfile import mkstemp
 from PIL import Image
 import zbarlight
-try:
-    import picamera     # only on the Raspi
-    has_picam = True
-except ImportError:
-    import cv2
-    has_picam = False
-
-who_is_who = {
-    "https://u.wechat.com/MELUOLu3h0BAxtYZavZp_i4": "Remy Gibert",
-    "https://u.wechat.com/IMuRawb-1GPWRTXrg_EVEuc": "Eric Gibert"
-    # QR codes: [b'https://u.wechat.com/IK24sHIRPvy7ujeXYFKKCRs']
-}
-
+import cv2
 
 class Camera():
     """take a photo and keep it in memory for processing"""
     def __init__(self):
         """open the camera hardware"""
-        self.camera = picamera.PiCamera() if has_picam else cv2.VideoCapture(0)
-        # camera.resolution = (1024, 768)  to try later...
+        self.camera = cv2.VideoCapture(0)
+        # self.camera.set(3, 640*2)
+        # self.camera.set(4, 480 * 2)
+        # # self.camera.resolution = (640*2, 480*2)
 
     def close(self):
         """release the hardware"""
+        self.camera.release()
         del(self.camera)
 
-    def take_photo(self, file_path=None):
-        """take a photo"""
+    def save_photo(self, file_path=None):
+        """save the current image"""
         _, self.file_path = mkstemp(prefix="QR-",suffix=".png", text=False) if file_path is None else (None, file_path) #open(file_path, mode="wb"))
-        if has_picam:
-            self.camera.capture(self.file_path, 'png')
+        cv2.imwrite(self.file_path, self.image)
+
+    def get_QRcode(self, max_photos=20):
+        """take max_photos until a QR code is found else returns []"""
+        for i in range(max_photos):
+            print("Taking photo", i)
+            try:
+                cv2_return_code, cv2_im = self.camera.read()
+            except cv2.error as cv2_err:
+                print("Error with the camera:", cv2_err)
+                self.close()
+                self.camera = cv2.VideoCapture(0)
+            else:
+                # # img = cv2.cvtColor(cv2_im, cv2.COLOR_BGR2GRAY);
+                # # img = cv2.equalizeHist(cv2_im)  #cv2.cvtColor(cv2_im, cv2.COLOR_BGR2RGB)
+                # img_yuv = cv2.cvtColor(cv2_im, cv2.COLOR_BGR2YUV)
+                # # equalize the histogram of the Y channel
+                # img_yuv[:, :, 0] = cv2.equalizeHist(img_yuv[:, :, 0])
+                # # convert the YUV image back to RGB format
+                # img = cv2.cvtColor(img_yuv, cv2.COLOR_YUV2BGR)
+                self.image = Image.fromarray(cv2_im)
+                self.qr_codes = zbarlight.scan_codes('qrcode', self.image)
+                if self.qr_codes:
+                    # self.image.show()
+                    return self.qr_codes
+                # else:
+                    sleep(0.4)
         else:
-            return_value, img = self.camera.read()
-            cv2.imwrite(self.file_path, img)
+            # self.image.show()
+            return []
 
-    def get_QRcode(self):
-        """Get the QR code from the photo taken"""
-        with open(self.file_path, 'rb') as image_file:
-            image = Image.open(image_file)
-            image.load()
-        self.qr_codes = zbarlight.scan_codes('qrcode', image)
-        return self.qr_codes
-
-    def get_ids(self):
-        """
-        Rules to extract a unique ID from the QR code
-        wechat: b"https://u.wechat.com/IMuRawb-1GPWRTXrg_EVEuc" --> "IMuRawb-1GPWRTXrg_EVEuc"
-
-        """
-        self.ids = []
-        for qrc in self.qr_codes:
-            parts = qrc.decode().split('/')
-            self.ids.append(parts[-1])
-
-    def wechat_id(self):
-        api_token = 'IK24sHIRPvy7ujeXYFKKCRs'
-        api_url_base = 'https://u.wechat.com/'
-        headers = {'Content-Type': 'application/json'}
-                   # 'Authorization': 'Bearer {0}'.format(api_token)}
-        response = requests.get(api_url_base+api_token, headers=headers)
-        if response.status_code == 200:
-            print("response", response)
-            return json.loads(response.content.decode('utf-8'))
-        else:
-            return None
 
 if __name__ == "__main__":
     my_camera = Camera()
-    my_camera.take_photo()
-    print("Photo taken:", my_camera.file_path)
-    my_camera.close()
+    # my_camera.take_photo()
+    # print("Photo taken:", my_camera.file_path)
+    # my_camera.close()
     qr_codes = my_camera.get_QRcode()
     print("QR codes:", qr_codes)
-    ids = my_camera.get_ids()
-    print("Hello", who_is_who[ids[0]])
+    # ids = my_camera.get_ids()
+    # print("Hello", who_is_who[ids[0]])
+    my_camera.close()

@@ -75,4 +75,11 @@ sudo apt-get install libboost-thread-dev libboost-python-dev
 sudo pip3 install gattlib
 
 
+hciconfig
+If bluetooth device is DOWN:
+sudo rfkill unblock bluetooth
+sudo hciconfig  hci0 up
+
+sudo hcitool -i hci0 lescan
+
 

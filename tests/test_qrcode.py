@@ -2,8 +2,7 @@ import qrcode
 from PIL import Image
 from tests.test_zbarlight import find_qrcode
 
-
-def make_qrcode(text, error_correct = qrcode.constants.ERROR_CORRECT_Q, logo="/tmp/XCJ.png"):
+def make_qrcode(text, error_correct = qrcode.constants.ERROR_CORRECT_Q, logo="../Private/XCJ.png"):
     qr = qrcode.QRCode(
         version=3,
         error_correction=error_correct,  #  qrcode.constants.ERROR_CORRECT_Q,  #  or _H
@@ -27,4 +26,4 @@ if __name__ == "__main__":
         img.save(qr_file)
         qrc = find_qrcode(qr_file)
         print(err, qrc)
-        if qrc: break
+        # if qrc: break
