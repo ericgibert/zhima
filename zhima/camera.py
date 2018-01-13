@@ -62,14 +62,14 @@ class Camera():
                 if self.qr_codes:
                     # self.image.show()
                     print("\n")
-                    self.camera.close()
+                    self.close()
                     return self.qr_codes
                 # else:
                     sleep(0.4)
         else:
             # self.image.show()
             print("\n")
-            self.camera.close()
+            self.close()
             return []
 
 
