@@ -11,13 +11,16 @@ __author__ = "Eric Gibert"
 __version__ = "1.20170113"
 __email__ =  "ericgibert@yahoo.fr"
 __license__ = "MIT"
-
+from time import sleep
 from camera import Camera
-
+from rpi_gpio import Rpi_Gpio, _simulation as rpi_simulation
 
 class Controller(object):
     def __init__(self):
         self.camera = Camera()
+        self.gpio = Rpi_Gpio()
+        if rpi_simulation:
+            print("PGIO simulation active")
         self.member = None
         self.TASKS = {
             1: self.wait_for_proximity,
@@ -40,6 +43,8 @@ class Controller(object):
 
     def wait_for_proximity(self):
         """Use GPIO to wait for a person to present a mobile phone to the camera"""
+        while not self.gpio.check_proximity():
+            sleep(0.5)
         return 2
 
     def capture_qrcode(self):
