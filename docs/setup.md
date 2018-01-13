@@ -82,4 +82,7 @@ sudo hciconfig  hci0 up
 
 sudo hcitool -i hci0 lescan
 
+OpenCV
+======
+https://www.pyimagesearch.com/2017/09/04/raspbian-stretch-install-opencv-3-python-on-your-raspberry-pi/
 
