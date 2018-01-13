@@ -79,10 +79,8 @@ class Led(object):
             if self._timer: self.cancel_timer()
             return self.state
         elif action=="ON":
-            if self._timer: self.cancel_timer()
             return self.ON()
         elif action=="OFF":
-            if self._timer: self.cancel_timer()
             return self.OFF()
         else:
             print("Unknown action:", action)
@@ -97,8 +95,9 @@ class Led(object):
         self._timer.start()
 
     def cancel_timer(self):
-        self._timer.cancel()
-        self._timer = None
+        if self._timer:
+            self._timer.cancel()
+            self._timer = None
 
 
 class Rpi_Gpio(object):
