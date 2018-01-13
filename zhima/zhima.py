@@ -18,7 +18,7 @@ from member_db import Member
 
 class Controller(object):
     def __init__(self):
-        self.camera = Camera()
+        self.camera = None
         self.gpio = Rpi_Gpio()
         if rpi_simulation:
             print("PGIO simulation active")
@@ -42,7 +42,8 @@ class Controller(object):
                 task = self.TASKS[current_state]
                 current_state = task()
         finally:
-            self.camera.close()
+            if self.camera:
+                self.camera.close()
 
     def wait_for_proximity(self):
         """Use GPIO to wait for a person to present a mobile phone to the camera"""
@@ -61,7 +62,9 @@ class Controller(object):
         self.gpio.green1.ON()
         self.gpio.green2.flash("SET", on_duration=0.5, off_duration=0.5)
         self.gpio.red.OFF()
+        self.camera = Camera()
         next_state = 3 if self.camera.get_QRcode() else 1
+        self.camera.close()
         return next_state
 
     def check_member(self):
