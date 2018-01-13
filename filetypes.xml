@@ -5,6 +5,7 @@
       <mapping ext="tpl" type="HTML" />
       <mapping pattern=".bashrc" type="PLAIN_TEXT" />
       <mapping ext="mo" type="PLAIN_TEXT" />
+      <mapping ext="data" type="PLAIN_TEXT" />
     </extensionMap>
   </component>
 </application>
