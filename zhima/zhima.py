@@ -111,6 +111,7 @@ class Controller(object):
 
     def unknown_qr_code(self):
         """A QR code was read but does not match our known pattern"""
+        self.gpio.green2.flash("SET", on_duration=0.5, off_duration=0.5)
         print("Unknown QR Code:", self.camera.qr_codes[0].decode("utf-8"))
         self.gpio.red.ON()
         sleep(3)
