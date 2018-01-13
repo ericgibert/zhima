@@ -134,6 +134,11 @@ if __name__ == "__main__":
         print(my_pig.pig.buffer)
 
     # flash testing
+    from time import sleep
     my_pig.green2.flash("SET", on_duration=0.2, off_duration=1)
-    input()
-    my_pig.green2.flash("STOP")
+    try:
+        while True:
+            print("Proximity:", my_pig.check_proximity())
+            sleep(1)
+    finally:
+        my_pig.green2.flash("STOP")
