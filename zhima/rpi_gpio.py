@@ -143,3 +143,4 @@ if __name__ == "__main__":
             sleep(1)
     finally:
         my_pig.green2.flash("STOP")
+        my_pig.red.OFF()
