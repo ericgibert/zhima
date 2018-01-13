@@ -38,6 +38,8 @@ class Camera():
 
     def get_QRcode(self, max_photos=20):
         """take max_photos until a QR code is found else returns []"""
+        self.qr_codes = []  # reset any previous QR code found
+        self.image = None
         print("\n")
         for i in range(max_photos):
             print("\rTaking photo", i, end="")
