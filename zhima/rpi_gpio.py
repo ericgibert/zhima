@@ -129,7 +129,8 @@ class Rpi_Gpio(object):
 if __name__ == "__main__":
     my_pig = Rpi_Gpio()
     my_pig.green1.ON()
-    print(my_pig.pig.buffer)
+    if _simulation:
+        print(my_pig.pig.buffer)
 
     # flash testing
     my_pig.green2.flash("SET", off_duration=1)
