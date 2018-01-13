@@ -87,10 +87,12 @@ class Controller(object):
 
     def open_the_door(self):
         """Proceed to open the door"""
-        self.gpio.green2.OFF()
-        self.gpio.green1.flash("SET", on_duration=0.3, off_duration=0.3)
-        sleep(0.3)
-        self.gpio.green2.flash("SET", on_duration=0.3, off_duration=0.3)
+        val = 0
+        for i in range(10):
+            self.gpio.green1.set(val)
+            val = int(not val)
+            self.gpio.green2.set(val)
+            sleep(0.3)
         return 1
 
     def bad_member_status(self):

@@ -45,6 +45,10 @@ class Led(object):
         self.pig.set_pin_as_output(pin)
         self.state = self.OFF()
 
+    def set(self, value):
+        self.state = self.pig.write(self.pin, value)
+        return self.state
+
     def ON(self):
         self.state = self.pig.write(self.pin, 1)
         return self.state
