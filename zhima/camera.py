@@ -7,7 +7,7 @@
 # Author: Eric Gibert, QR codes: [b'https://u.wechat.com/IMuRawb-1GPWRTXrg_EVEuc']
 """
 __author__ = "Eric Gibert"
-__version__ = "1.20170113"
+__version__ = "1.0.20170113"
 __email__ =  "ericgibert@yahoo.fr"
 __license__ = "MIT"
 

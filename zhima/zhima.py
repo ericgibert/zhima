@@ -8,7 +8,7 @@
 
 """
 __author__ = "Eric Gibert"
-__version__ = "1.20170113"
+__version__ = "1.0.20170113"
 __email__ =  "ericgibert@yahoo.fr"
 __license__ = "MIT"
 from time import sleep

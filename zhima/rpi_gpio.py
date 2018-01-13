@@ -2,7 +2,7 @@
 """ Manage the I/O on the Raspi GPIO or simulate them
 """
 __author__ = "Eric Gibert"
-__version__ = "1.20170113"
+__version__ = "1.0.20170113"
 __email__ =  "ericgibert@yahoo.fr"
 __license__ = "MIT"
 import threading
@@ -62,9 +62,11 @@ class Led(object):
         :return: current state
         """
         if action=="SET":
-            self._timer = threading.Timer(off_duration, self._ontimer)
             self.on_duration, self.off_duration = on_duration, off_duration
-            return self.ON()
+            state = self.ON()
+            self._timer = threading.Timer(off_duration, self._ontimer)
+            self._timer.start()
+            return state
         elif action=="STOP":
             self._timer.cancel()
             return self.state
@@ -84,8 +86,7 @@ class Led(object):
         else:
             self.ON()
             self._timer = threading.Timer(self.on_duration, self._ontimer)
-
-
+        self._timer.start()
 
 
 class Rpi_Gpio(object):
@@ -135,3 +136,4 @@ if __name__ == "__main__":
     # flash testing
     my_pig.green2.flash("SET", off_duration=1)
     input()
+    my_pig.green2.flash("STOP")
