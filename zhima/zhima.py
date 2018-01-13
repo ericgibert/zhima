@@ -29,6 +29,7 @@ class Controller(object):
             3: self.check_member,
             4: self.open_the_door,
             5: self.bad_member_status,
+            6: self.unknown_qr_code,
         }
 
     def run(self):
@@ -74,7 +75,11 @@ class Controller(object):
         self.gpio.red.OFF()
         print("QR code:", self.camera.qr_codes)
         # algo to split the member_if from the QR code
-        name, id = self.camera.qr_codes[0].decode("utf-8").split('#')
+        qr_code = self.camera.qr_codes[0].decode("utf-8")
+        try:
+            name, id = qr_code.split('#')
+        except ValueError:
+            return 6
         member = Member(id)
         if member.id:
             if member.status.upper()=="OK":
@@ -104,6 +109,13 @@ class Controller(object):
         self.gpio.red.OFF()
         return 1
 
+    def unknown_qr_code(self):
+        """A QR code was read but does not match our known pattern"""
+        print("Unknown QR Code:", self.camera.qr_codes[0].decode("utf-8"))
+        self.gpio.red.ON()
+        sleep(3)
+        self.gpio.red.OFF()
+        return 1
 
     # def get_ids(self):
     #     """
