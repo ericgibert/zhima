@@ -5,6 +5,7 @@ __author__ = "Eric Gibert"
 __version__ = "1.20170113"
 __email__ =  "ericgibert@yahoo.fr"
 __license__ = "MIT"
+import threading
 try:
     import pigpio
     _simulation = False
@@ -42,12 +43,49 @@ class Led(object):
     def __init__(self, pig, pin):
         self.pig, self.pin = pig, pin
         self.pig.set_pin_as_output(pin)
+        self.state = self.OFF()
 
     def ON(self):
-        self.pig.write(self.pin, 1)
+        self.state = self.pig.write(self.pin, 1)
+        return self.state
 
     def OFF(self):
-        self.pig.write(self.pin, 0)
+        self.state = self.pig.write(self.pin, 0)
+        return self.state
+
+    def flash(self, action, on_duration=0.5, off_duration=0.5):
+        """
+        Set/Stop the flashing effect of a LED
+        :param action: SET/STOP
+        :param on_duration: float for sleep
+        :param off_duration: float for sleep
+        :return: current state
+        """
+        if action=="SET":
+            self._timer = threading.Timer(off_duration, self._ontimer)
+            self.on_duration, self.off_duration = on_duration, off_duration
+            return self.ON()
+        elif action=="STOP":
+            self._timer.cancel()
+            return self.state
+        elif action=="ON":
+            self._timer.cancel()
+            return self.ON()
+        elif action=="OFF":
+            self._timer.cancel()
+            return self.OFF()
+        else:
+            print("Unknown action:", action)
+
+    def _ontimer(self):
+        if self.state==1: # ON
+            self.OFF()
+            self._timer = threading.Timer(self.off_duration, self._ontimer)
+        else:
+            self.ON()
+            self._timer = threading.Timer(self.on_duration, self._ontimer)
+
+
 
 
 class Rpi_Gpio(object):
@@ -57,22 +95,26 @@ class Rpi_Gpio(object):
         Need to execute 'sudo pigpiod' to get that daemon running if it is not automatically started at boot time
         """
         self.pig = pigpio.pi(pigpio_host, pigpio_port) if not _simulation else pigpio()
-        self.proximity_pin = self.set_pin_as_input(17)   #  PROXIMITY_PIN
-        self.green1 = Led(self, 18)   #  GREEN LED 1
-        self.green2 = Led(self, 19)  # GREEN LED 2
-        self.red = Led(self, 20)  # RED LED
+        self.proximity_pin = self.set_pin_as_input(17)  # PROXIMITY_PIN
+        self.green1 = Led(self, 18)                     # GREEN LED 1
+        self.green2 = Led(self, 19)                     # GREEN LED 2
+        self.red = Led(self, 20)                        # RED LED
 
 
-    def detect_proximity(self):
+    def check_proximity(self):
         if _simulation:
             self.write(self.proximity_pin, 1)
         return self.read(self.proximity_pin)
 
     def read(self, pin):
+        if _simulation:
+            print(self.pig.buffer)
         return self.pig.read(pin)
 
     def write(self, pin, value):
         self.pig.write(pin, value)
+        if _simulation:
+            print(self.pig.buffer)
         return self.pig.read(pin)
 
     def set_pin_as_input(self, pin):
@@ -88,3 +130,7 @@ if __name__ == "__main__":
     my_pig = Rpi_Gpio()
     my_pig.green1.ON()
     print(my_pig.pig.buffer)
+
+    # flash testing
+    my_pig.green2.flash("SET", off_duration=1)
+    input()
