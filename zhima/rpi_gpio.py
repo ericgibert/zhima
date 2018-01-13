@@ -44,16 +44,20 @@ class Led(object):
         self.pig, self.pin = pig, pin
         self.pig.set_pin_as_output(pin)
         self.state = self.OFF()
+        self._timer = None
 
     def set(self, value):
+        if self._timer: self.cancel_timer()
         self.state = self.pig.write(self.pin, value)
         return self.state
 
     def ON(self):
+        if self._timer: self.cancel_timer()
         self.state = self.pig.write(self.pin, 1)
         return self.state
 
     def OFF(self):
+        if self._timer: self.cancel_timer()
         self.state = self.pig.write(self.pin, 0)
         return self.state
 
@@ -72,13 +76,13 @@ class Led(object):
             self._timer.start()
             return state
         elif action=="STOP":
-            self._timer.cancel()
+            if self._timer: self.cancel_timer()
             return self.state
         elif action=="ON":
-            self._timer.cancel()
+            if self._timer: self.cancel_timer()
             return self.ON()
         elif action=="OFF":
-            self._timer.cancel()
+            if self._timer: self.cancel_timer()
             return self.OFF()
         else:
             print("Unknown action:", action)
@@ -91,6 +95,10 @@ class Led(object):
             self.ON()
             self._timer = threading.Timer(self.on_duration, self._ontimer)
         self._timer.start()
+
+    def cancel_timer(self):
+        self._timer.cancel()
+        self._timer = None
 
 
 class Rpi_Gpio(object):
