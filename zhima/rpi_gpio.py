@@ -134,6 +134,6 @@ if __name__ == "__main__":
         print(my_pig.pig.buffer)
 
     # flash testing
-    my_pig.green2.flash("SET", off_duration=1)
+    my_pig.green2.flash("SET", on_duration=0.2, off_duration=1)
     input()
     my_pig.green2.flash("STOP")
