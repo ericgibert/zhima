@@ -130,6 +130,7 @@ class Rpi_Gpio(object):
 if __name__ == "__main__":
     my_pig = Rpi_Gpio()
     my_pig.green1.ON()
+    my_pig.red.ON()
     if _simulation:
         print(my_pig.pig.buffer)
 
