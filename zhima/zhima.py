@@ -62,7 +62,7 @@ class Controller(object):
         """a QR Code is found: check it against the member database"""
         print("Member with QR code:", self.camera.qr_codes)
         # algo to split the member_if from the QR code
-        name, id = self.camera.qr_codes[0].split('#')
+        name, id = self.camera.qr_codes[0].decode("utf-8").split('#')
         member = Member(id)
         if member.id:
             if member.status=="OK":

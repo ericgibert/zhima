@@ -38,8 +38,9 @@ class Camera():
 
     def get_QRcode(self, max_photos=20):
         """take max_photos until a QR code is found else returns []"""
+        print("\n")
         for i in range(max_photos):
-            print("Taking photo", i)
+            print("\rTaking photo", i, end="")
             try:
                 cv2_return_code, cv2_im = self.camera.read()
             except cv2.error as cv2_err:
@@ -58,11 +59,13 @@ class Camera():
                 self.qr_codes = zbarlight.scan_codes('qrcode', self.image)
                 if self.qr_codes:
                     # self.image.show()
+                    print("\n")
                     return self.qr_codes
                 # else:
                     sleep(0.4)
         else:
             # self.image.show()
+            print("\n")
             return []
 
 

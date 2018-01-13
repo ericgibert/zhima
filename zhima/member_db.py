@@ -11,7 +11,7 @@ __email__ =  "ericgibert@yahoo.fr"
 __license__ = "MIT"
 
 try:
-    import pigpio
+    import fake_module
     _simulation = False
 except ImportError:
     _simulation = True
