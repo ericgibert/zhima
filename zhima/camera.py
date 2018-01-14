@@ -27,6 +27,12 @@ class Camera():
         # # self.camera.resolution = (640*2, 480*2)
         self.qr_codes = []
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
+
     def close(self):
         """release the hardware"""
         self.camera.release()

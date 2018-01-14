@@ -18,7 +18,6 @@ from member_db import Member
 
 class Controller(object):
     def __init__(self):
-        self.camera = None
         self.gpio = Rpi_Gpio()
         if rpi_simulation:
             print("PGIO simulation active")
@@ -43,8 +42,8 @@ class Controller(object):
                 task = self.TASKS[current_state]
                 current_state = task()
         finally:
-            if self.camera:
-                self.camera.close()
+            # clean up before stop
+            pass
 
     def wait_for_proximity(self):
         """Use GPIO to wait for a person to present a mobile phone to the camera"""
@@ -63,9 +62,9 @@ class Controller(object):
         self.gpio.green1.ON()
         self.gpio.green2.flash("SET", on_duration=0.5, off_duration=0.5)
         self.gpio.red.OFF()
-        self.camera = Camera()
-        next_state = 3 if self.camera.get_QRcode() else 1
-        self.camera.close()
+        with Camera() as cam:
+            self.qr_codes = cam.get_QRcode()
+        next_state = 3 if self.qr_codes else 1
         return next_state
 
     def check_member(self):
@@ -73,9 +72,9 @@ class Controller(object):
         self.gpio.green1.ON()
         self.gpio.green2.ON()
         self.gpio.red.OFF()
-        print("QR code:", self.camera.qr_codes)
+        print("QR code:", self.qr_codes)
         # algo to split the member_if from the QR code
-        qr_code = self.camera.qr_codes[0].decode("utf-8")
+        qr_code = self.qr_codes[0].decode("utf-8")
         try:
             name, id = qr_code.split('#')
         except ValueError:
@@ -112,34 +111,11 @@ class Controller(object):
     def unknown_qr_code(self):
         """A QR code was read but does not match our known pattern"""
         self.gpio.green2.flash("SET", on_duration=0.5, off_duration=0.5)
-        print("Unknown QR Code:", self.camera.qr_codes[0].decode("utf-8"))
+        print("Unknown QR Code:", self.qr_codes[0].decode("utf-8"))
         self.gpio.red.ON()
         sleep(3)
         self.gpio.red.OFF()
         return 1
-
-    # def get_ids(self):
-    #     """
-    #     Rules to extract a unique ID from the QR code
-    #     wechat: b"https://u.wechat.com/IMuRawb-1GPWRTXrg_EVEuc" --> "IMuRawb-1GPWRTXrg_EVEuc"
-    #
-    #     """
-    #     self.ids = []
-    #     for qrc in self.qr_codes:
-    #         parts = qrc.decode().split('/')
-    #         self.ids.append(parts[-1])
-    #
-    # def wechat_id(self):
-    #     api_token = 'IK24sHIRPvy7ujeXYFKKCRs'
-    #     api_url_base = 'https://u.wechat.com/'
-    #     headers = {'Content-Type': 'application/json'}
-    #     # 'Authorization': 'Bearer {0}'.format(api_token)}
-    #     response = requests.get(api_url_base + api_token, headers=headers)
-    #     if response.status_code == 200:
-    #         print("response", response)
-    #         return json.loads(response.content.decode('utf-8'))
-    #     else:
-    #         return None
 
 if __name__ == "__main__":
     ctrl = Controller()
