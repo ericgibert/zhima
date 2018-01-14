@@ -44,13 +44,19 @@ def make_qrcode(text, error_correct = qrcode.constants.ERROR_CORRECT_H, logo=XCJ
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Utility to generate the XCJ Member QR Code with logo included')
-    arg_id = parser.add_argument("-m", "--member_id", dest="member_id", help="Member ID in the database", default=None, required=True)
+    arg_id = parser.add_argument("-m", "--member_id", dest="member_id", help="Member ID in the database", default=None)
     arg_name = parser.add_argument("-n", "--member_name", dest="member_name", help="Member name", default=None)
     parser.add_argument("-o", "--output", dest="output", help="Output file (.png)", default="")
     parser.add_argument("-d", "--directory", dest="directory", help="Output directory", default="/tmp")
     parser.add_argument("-l", "--logo", dest="logo", help="XCJ logo file (.png)", default=XCJ_LOGO)
     parser.add_argument("-q", "--quality", dest="quality", help="QR Code quality [M,Q,H]", default='H')
     args, unk = parser.parse_known_args()
+
+    if args.member_id is None:
+        if unk:
+            args.member_id = unk[0]
+        else:
+            raise argparse.ArgumentError(arg_id, message="Missing Member ID")
 
     if args.member_name is None:  # if only the member ID is given then fetch in the database
         current_member = Member(args.member_id)
