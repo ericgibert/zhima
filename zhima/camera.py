@@ -43,13 +43,12 @@ class Camera():
         _, self.file_path = mkstemp(prefix="QR-",suffix=".png", text=False) if file_path is None else (None, file_path) #open(file_path, mode="wb"))
         cv2.imwrite(self.file_path, self.image)
 
-    def get_QRcode(self, max_photos=20):
+    def get_QRcode(self, max_photos=20, debug=False):
         """take max_photos until a QR code is found else returns []"""
         self.qr_codes = []  # reset any previous QR code found
         self.image = None
-        print("\n")
         for i in range(max_photos):
-            print("\rTaking photo", i, end="")
+            print("Taking photo", i, end="\r")
             try:
                 cv2_return_code, cv2_im = self.camera.read()
             except cv2.error as cv2_err:
@@ -65,24 +64,18 @@ class Camera():
                 self.image = Image.fromarray(cv2_im)
                 self.qr_codes = zbarlight.scan_codes('qrcode', self.image)
                 if self.qr_codes:
-                    # self.image.show()
+                    if debug: self.image.show()
                     print("\n")
                     return self.qr_codes
-                # else:
+                else:
                     sleep(0.4)
         else:
-            # self.image.show()
+            if debug:self.image.show()
             print("\n")
             return []
 
 
 if __name__ == "__main__":
-    my_camera = Camera()
-    # my_camera.take_photo()
-    # print("Photo taken:", my_camera.file_path)
-    # my_camera.close()
-    qr_codes = my_camera.get_QRcode()
+    with Camera() as my_camera:
+        qr_codes = my_camera.get_QRcode(debug=True)
     print("QR codes:", qr_codes)
-    # ids = my_camera.get_ids()
-    # print("Hello", who_is_who[ids[0]])
-    my_camera.close()
