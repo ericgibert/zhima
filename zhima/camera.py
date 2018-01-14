@@ -49,7 +49,7 @@ class Camera():
         self.image = None
         for i in range(max_photos):
             print("Taking photo", i, end="\r")
-            sleep(0.3)
+            sleep(0.1)
             try:
                 cv2_return_code, cv2_im = self.camera.read()
             except cv2.error as cv2_err:
