@@ -49,6 +49,7 @@ class Camera():
         self.image = None
         for i in range(max_photos):
             print("Taking photo", i, end="\r")
+            sleep(0.3)
             try:
                 cv2_return_code, cv2_im = self.camera.read()
             except cv2.error as cv2_err:
@@ -61,14 +62,16 @@ class Camera():
                 # img_yuv[:, :, 0] = cv2.equalizeHist(img_yuv[:, :, 0])
                 # # convert the YUV image back to RGB format
                 # img = cv2.cvtColor(img_yuv, cv2.COLOR_YUV2BGR)
-                self.image = Image.fromarray(cv2_im)
-                self.qr_codes = zbarlight.scan_codes('qrcode', self.image)
+                try:
+                    self.image = Image.fromarray(cv2_im)
+                    self.qr_codes = zbarlight.scan_codes('qrcode', self.image)
+                except AttributeError as err:
+                    print("Warning: photo not taken properly")
                 if self.qr_codes:
                     if debug: self.image.show()
                     print("\n")
                     return self.qr_codes
-                else:
-                    sleep(0.4)
+
         else:
             if debug:self.image.show()
             print("\n")
