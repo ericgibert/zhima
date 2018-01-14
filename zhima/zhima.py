@@ -72,14 +72,9 @@ class Controller(object):
         self.gpio.green1.ON()
         self.gpio.green2.ON()
         self.gpio.red.OFF()
-        print("QR code:", self.qr_codes)
+        print("QR code:", self.qr_codes, type(self.qr_codes[0]))
         # algo to split the member_if from the QR code
-        qr_code = self.qr_codes[0].decode("utf-8")
-        try:
-            name, id = qr_code.split('#')
-        except ValueError:
-            return 6
-        member = Member(id)
+        member = Member(qrcode=self.qr_codes[0])   #  #qr_code = self.qr_codes[0].decode("utf-8")
         if member.id:
             if member.status.upper()=="OK":
                 print("Welcome", member.name, "!")
@@ -88,7 +83,7 @@ class Controller(object):
                 print(member.name, "please fix your status:", member.status)
                 return 5
         else:
-            print("Sorry, I do not know you", name)
+            print("Sorry, I do not know you", member.name)
         return 1
 
     def open_the_door(self):
