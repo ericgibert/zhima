@@ -36,8 +36,10 @@ def make_qrcode(text, error_correct = qrcode.constants.ERROR_CORRECT_H, logo=XCJ
     qr.add_data(text)
     qr.make(fit=True)
     img = qr.make_image()
+    img_size = img.pixel_size // 2  # 410x410px for H quality
+    LOGO_SIZE = 100 // 2            # logo on 100x100px
+    box =  (img_size - LOGO_SIZE, img_size - LOGO_SIZE, img_size + LOGO_SIZE, img_size + LOGO_SIZE) #(135, 135, 235, 235)
     xcj = Image.open(logo)
-    box = (135,135,235,235)
     region = xcj.resize((box[2] - box[0], box[3] - box[1]))
     img.paste(region, box)
     return img
