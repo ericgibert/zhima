@@ -106,7 +106,8 @@ class E18_D80nk(object):
     """
     def __init__(self, pig, pin):
         self.pig, self.pin = pig, pin
-        self.pig.set_mode(pin, pigpio.INPUT, pigpio.PUD_UP)
+        pig.pig.set_mode(pin, pigpio.INPUT)
+        pig.pig.set_pull_up_down(pin, pigpio.PUD_UP)
 
     @property
     def state(self):
