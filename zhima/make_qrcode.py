@@ -47,6 +47,7 @@ if __name__ == "__main__":
     arg_id = parser.add_argument("-m", "--member_id", dest="member_id", help="Member ID in the database", default=None, required=True)
     arg_name = parser.add_argument("-n", "--member_name", dest="member_name", help="Member name", default=None)
     parser.add_argument("-o", "--output", dest="output", help="Output file (.png)", default="")
+    parser.add_argument("-d", "--directory", dest="directory", help="Output directory", default="/tmp")
     parser.add_argument("-l", "--logo", dest="logo", help="XCJ logo file (.png)", default=XCJ_LOGO)
     parser.add_argument("-q", "--quality", dest="quality", help="QR Code quality [M,Q,H]", default='H')
     args, unk = parser.parse_known_args()
@@ -58,7 +59,9 @@ if __name__ == "__main__":
         qrcode_text = "{} @ XCJ #{}".format(current_member.name, current_member.id)
     else: # both given: make it directly
         qrcode_text = "{} @ XCJ #{}".format(args.member_name, args.member_id)
-    qr_file = args.output or "/tmp/{}_xcj.png".format(args.member_name or current_member.name)
+
+    qr_file = args.output or "{}/{}_xcj.png".format(args.directory,
+                                                    (args.member_name or current_member.name).replace(' ', '_'))
 
     img = make_qrcode(qrcode_text, QR_CODE_QUALITY[args.quality], logo=args.logo)
     img.save(qr_file)
