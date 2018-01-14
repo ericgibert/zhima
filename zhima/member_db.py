@@ -18,7 +18,8 @@ except ImportError:
     _simulation = True
 
 SIMULATION = {
-    123456: { "name": "Eric Gibert", "status": "ok"},
+    123456: { "name": "Eric Gibert", "status": "OK", "date_birth": "1967-12-01"},
+    55555: { "name": "Not OK", "status": "NOT OK", "date_birth": "1967-12-01"},
 }
 
 DB_LOGIN="xcj_root"
