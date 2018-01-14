@@ -99,6 +99,20 @@ class Led(object):
             self._timer.cancel()
             self._timer = None
 
+class E18_D80nk(object):
+    """
+    Class to manage an IR distance switch e18-d80nk
+    https://www.14core.com/wiring-the-e18-d80nk-infrared-distance-ranging-sensor/
+    """
+    def __init__(self, pig, pin):
+        self.pig, self.pin = pig, pin
+        self.pig.set_mode(pin, pigpio.INPUT, pigpio.PUD_UP)
+
+    @property
+    def state(self):
+        return int(not self.pig.read(self.pin))
+
+
 
 class Rpi_Gpio(object):
     def __init__(self, pigpio_host="", pigpio_port=8888):
@@ -139,14 +153,21 @@ class Rpi_Gpio(object):
 
 
 if __name__ == "__main__":
+    from time import sleep
     my_pig = Rpi_Gpio()
     my_pig.green1.ON()
     my_pig.red.ON()
     if _simulation:
         print(my_pig.pig.buffer)
 
+
+    ed = E18_D80nk(my_pig, 17)
+    while True:
+        print(ed.state)
+        sleep(0.3)
+
+
     # flash testing
-    from time import sleep
     my_pig.green2.flash("SET", on_duration=0.2, off_duration=1)
     try:
         while True:
