@@ -58,7 +58,7 @@ class Controller(object):
         return 2
 
     def capture_qrcode(self):
-        """take photos until a qr code is detected"""
+        """take photos until a QR code is detected"""
         self.gpio.green1.ON()
         self.gpio.green2.flash("SET", on_duration=0.5, off_duration=0.5)
         self.gpio.red.OFF()
