@@ -15,6 +15,7 @@ except ImportError:
         INPUT=1
         OUTPUT=0
         PUD_DOWN=0
+        PUD_UP=1
         RISING_EDGE=1
         def __init__(self):
             """create a representation in memory of the buffers"""
@@ -36,29 +37,32 @@ except ImportError:
             self.buffer[pin][1] = value
             return value
 
+        def set_pull_up_down(self, pin, up_or_down):
+            pass
+
 class Led(object):
     """
     Manage a LED for flashing
     """
-    def __init__(self, pig, pin):
-        self.pig, self.pin = pig, pin
-        self.pig.set_pin_as_output(pin)
+    def __init__(self, rpi, pin):
+        self.rpi, self.pin = rpi, pin
+        self.rpi.set_pin_as_output(pin)
         self._timer = None
         self.state = self.OFF()
 
     def set(self, value):
         if self._timer: self.cancel_timer()
-        self.state = self.pig.write(self.pin, value)
+        self.state = self.rpi.write(self.pin, value)
         return self.state
 
     def ON(self):
         if self._timer: self.cancel_timer()
-        self.state = self.pig.write(self.pin, 1)
+        self.state = self.rpi.write(self.pin, 1)
         return self.state
 
     def OFF(self):
         if self._timer: self.cancel_timer()
-        self.state = self.pig.write(self.pin, 0)
+        self.state = self.rpi.write(self.pin, 0)
         return self.state
 
     def flash(self, action, on_duration=0.5, off_duration=0.5):
@@ -104,14 +108,14 @@ class E18_D80nk(object):
     Class to manage an IR distance switch e18-d80nk
     https://www.14core.com/wiring-the-e18-d80nk-infrared-distance-ranging-sensor/
     """
-    def __init__(self, pig, pin):
-        self.pig, self.pin = pig, pin
-        pig.pig.set_mode(pin, pigpio.INPUT)
-        pig.pig.set_pull_up_down(pin, pigpio.PUD_UP)
+    def __init__(self, rpi, pin):
+        self.rpi, self.pin = rpi, pin
+        rpi.pig.set_mode(pin, pigpio.INPUT)
+        rpi.pig.set_pull_up_down(pin, pigpio.PUD_UP)
 
     @property
     def state(self):
-        return int(not self.pig.read(self.pin))
+        return int(not self.rpi.read(self.pin))
 
 
 
@@ -122,16 +126,15 @@ class Rpi_Gpio(object):
         Need to execute 'sudo pigpiod' to get that daemon running if it is not automatically started at boot time
         """
         self.pig = pigpio.pi(pigpio_host, pigpio_port) if not _simulation else pigpio()
-        self.proximity_pin = self.set_pin_as_input(17)  # PROXIMITY_PIN
+        # self.proximity_pin = self.set_pin_as_input(17)
+        self.proximity = E18_D80nk(my_pig, 17)          # PROXIMITY PIN
         self.green1 = Led(self, 20)                     # GREEN LED 1 on GPIO20
         self.green2 = Led(self, 21)                     # GREEN LED 2 on GPIO21
         self.red = Led(self, 16)                        # RED LED on GPIO16
 
 
     def check_proximity(self):
-        if _simulation:
-            self.write(self.proximity_pin, 1)
-        return self.read(self.proximity_pin)
+        return 1 if _simulation else self.proximity.state
 
     def read(self, pin):
         if _simulation:
@@ -161,12 +164,10 @@ if __name__ == "__main__":
     if _simulation:
         print(my_pig.pig.buffer)
 
-
-    ed = E18_D80nk(my_pig, 17)
-    while True:
-        print(ed.state)
-        sleep(0.3)
-
+    # ed = E18_D80nk(my_pig, 17)
+    # while True:
+    #     print(ed.state)
+    #     sleep(0.3)
 
     # flash testing
     my_pig.green2.flash("SET", on_duration=0.2, off_duration=1)
