@@ -36,7 +36,7 @@ class Camera():
     def close(self):
         """release the hardware"""
         self.camera.release()
-        del(self.camera)
+        # del(self.camera)
 
     def save_photo(self, file_path=None):
         """save the current image"""
