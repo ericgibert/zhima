@@ -46,7 +46,7 @@ class Controller(object):
             pass
 
     def wait_for_proximity(self):
-        """Use GPIO to wait for a person to present a mobile phone to the camera"""
+        """State 1: Use GPIO to wait for a person to present a mobile phone to the camera"""
         self.gpio.green1.flash("SET", on_duration=0.25, off_duration=1)
         self.gpio.green2.OFF()
         self.gpio.red.OFF()
@@ -58,7 +58,7 @@ class Controller(object):
         return 2
 
     def capture_qrcode(self):
-        """take photos until a QR code is detected"""
+        """State 2: take photos until a QR code is detected"""
         self.gpio.green1.ON()
         self.gpio.green2.flash("SET", on_duration=0.5, off_duration=0.5)
         self.gpio.red.OFF()
@@ -68,7 +68,7 @@ class Controller(object):
         return next_state
 
     def check_member(self):
-        """a QR Code is found: check it against the member database"""
+        """State 3: a QR Code is found: check it against the member database"""
         self.gpio.green1.ON()
         self.gpio.green2.ON()
         self.gpio.red.OFF()
@@ -83,11 +83,10 @@ class Controller(object):
                 print(member.name, "please fix your status:", member.status)
                 return 5
         else:
-            print("Sorry, I do not know you", member.name)
-        return 1
+            return 6
 
     def open_the_door(self):
-        """Proceed to open the door"""
+        """State 4: Proceed to open the door"""
         val = 0
         for i in range(10):
             self.gpio.green1.set(val)
@@ -97,14 +96,14 @@ class Controller(object):
         return 1
 
     def bad_member_status(self):
-        """Red LED and email the member to warn about the status"""
+        """State 5: Red LED and email the member to warn about the status"""
         self.gpio.red.ON()
         sleep(3)
         self.gpio.red.OFF()
         return 1
 
     def unknown_qr_code(self):
-        """A QR code was read but does not match our known pattern"""
+        """State 6: A QR code was read but does not match our known pattern"""
         self.gpio.green2.flash("SET", on_duration=0.5, off_duration=0.5)
         print("Unknown QR Code:", self.qr_codes[0].decode("utf-8"))
         self.gpio.red.ON()
