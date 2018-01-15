@@ -69,8 +69,9 @@ class Camera():
                     self.qr_codes = zbarlight.scan_codes('qrcode', self.image)
                 except AttributeError as err:
                     print("Warning: photo not taken properly")
-                    self.close()
-                    self.camera = cv2.VideoCapture(0)
+                    # self.close()
+                    # self.camera = cv2.VideoCapture(0)
+                    return None
                 if self.qr_codes:
                     if debug: self.image.show()
                     print("\n")
