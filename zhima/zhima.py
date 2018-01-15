@@ -64,6 +64,8 @@ class Controller(object):
         self.gpio.red.OFF()
         with Camera() as cam:
             self.qr_codes = cam.get_QRcode()
+        if self.qr_codes is None:
+            return 5
         next_state = 3 if self.qr_codes else 1
         return next_state
 
@@ -81,6 +83,8 @@ class Controller(object):
                 return 4
             else:
                 print(member.name, "please fix your status:", member.status)
+                self.gpio.green1.flash("SET", on_duration=0.5, off_duration=0.5)
+                self.gpio.green2.flash("SET", on_duration=0.5, off_duration=0.5)
                 return 5
         else:
             return 6

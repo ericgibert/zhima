@@ -55,6 +55,7 @@ class Camera():
                 cv2_return_code, cv2_im = self.camera.read()
             except cv2.error as cv2_err:
                 print("Error with the camera:", cv2_err)
+                return None
             else:
                 # # img = cv2.cvtColor(cv2_im, cv2.COLOR_BGR2GRAY);
                 # # img = cv2.equalizeHist(cv2_im)  #cv2.cvtColor(cv2_im, cv2.COLOR_BGR2RGB)
