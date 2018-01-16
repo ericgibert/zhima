@@ -5,6 +5,7 @@ __author__ = "Eric Gibert"
 __version__ = "1.0.20170113"
 __email__ =  "ericgibert@yahoo.fr"
 __license__ = "MIT"
+import os
 import argparse
 import qrcode
 from PIL import Image
@@ -70,9 +71,7 @@ if __name__ == "__main__":
         current_member.id, current_member.name = args.member_id, args.member_name
 
     qrcode_text = current_member.encode_qrcode()
-    qr_file = args.output or "{}/{}_xcj.png".format(args.directory,
-                                                    (args.member_name or current_member.name).replace(' ', '_'))
-
+    qr_file = args.output or os.path.join(args.directory, "XCJ_{}.png".format(current_member.id))
     img = make_qrcode(qrcode_text, QR_CODE_QUALITY[args.quality], logo=args.logo)
     img.save(qr_file)
     # test that the QR Code is valid
