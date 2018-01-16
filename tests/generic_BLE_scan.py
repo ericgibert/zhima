@@ -55,7 +55,11 @@ if err < 0:
         os.strerror(errnum)
     ))
 
+ble_devices = set()
 while True:
     data = sock.recv(1024)
     # print bluetooth address from LE Advert. packet
-    print(':'.join("{0:02x}".format(x) for x in data[12:6:-1]))
+    new_ble = ':'.join("{0:02x}".format(x) for x in data[12:6:-1])
+    if new_ble not in ble_devices:
+        print(new_ble, "TOKYDOOR" if new_ble=="50:8c:b1:69:a2:f1" else "")
+        ble_devices.add(new_ble)

@@ -15,7 +15,7 @@ __author__ = "Eric Gibert"
 __version__ = "1.0.20170113"
 __email__ =  "ericgibert@yahoo.fr"
 __license__ = "MIT"
-import socket
+from subprocess import check_output
 import json
 from datetime import datetime, timedelta, date
 from binascii import hexlify, unhexlify
@@ -45,7 +45,8 @@ class Member(object):
         self.id, self.name, self.date_of_birth, self.status = None, None, None, None
         # MySQL database parameters
         db_access = json.load(open("../Private/db_access.data"))
-        my_IP = socket.gethostbyname(socket.gethostname())
+        my_IP = check_output(['hostname', '-I']).decode("utf-8").strip()
+        print("My IP:", my_IP)
         ip_3 = '.'.join(my_IP.split('.')[:3])
         try:
             self.dbname = db_access[ip_3]["dbname"]
@@ -79,11 +80,11 @@ class Member(object):
                 self.date_of_birth = m["date_of_birth"]
         else:
             with pymysql.connect(self.server_ip, self.login, self.passwd, self.dbname) as cursor:
-                cursor.execute("SELECT * from tb_users where id=%s", (member_id,))
+                cursor.execute("SELECT id, username, birthdate, status from users where id=%s", (member_id,))
                 data = cursor.fetchone()
             self.id, self.name, self.date_of_birth, self.status = data or (None, None, None, None)
             print(self.date_of_birth, type(self.date_of_birth))
-            if not isinstance(self.date_of_birth, (datetime, date)):
+            if self.date_of_birth and not isinstance(self.date_of_birth, (datetime, date)):
                 self.date_of_birth = datetime.strptime(self.date_of_birth, "%Y-%m-%d")
             print(self.date_of_birth, type(self.date_of_birth))
 
@@ -94,7 +95,7 @@ class Member(object):
         # QR Code Version 1
         if qrcode.startswith("XCJ1"):
             try:
-                fields = qrcode.split('#')  #       XCJ1#123456#My Name
+                fields = qrcode.split('#')  #     10  XCJ1#123456#My Name
             except ValueError:
                 return
             self.get_from_db(fields[1])
