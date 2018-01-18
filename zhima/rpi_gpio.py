@@ -138,13 +138,15 @@ class Rpi_Gpio(object):
 
     def read(self, pin):
         if _simulation:
-            print(self.pig.buffer)
+            # print(self.pig.buffer)
+            pass
         return self.pig.read(pin)
 
     def write(self, pin, value):
         self.pig.write(pin, value)
         if _simulation:
-            print(self.pig.buffer)
+            # print(self.pig.buffer)
+            pass
         return self.pig.read(pin)
 
     def set_pin_as_input(self, pin):

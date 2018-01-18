@@ -18,7 +18,7 @@ __license__ = "MIT"
 from subprocess import check_output
 import json
 from datetime import datetime, timedelta, date
-from binascii import hexlify, unhexlify
+from binascii import hexlify, unhexlify, Error as binascii_error
 from Crypto.Cipher import DES
 try:
     import pymysql
@@ -27,8 +27,8 @@ except ImportError:
     _simulation = True
 
 SIMULATION = {
-    123456: { "name": "Eric Gibert", "status": "OK", "date_of_birth": "1967-12-01"},
-    55555: { "name": "Not OK", "status": "NOT OK", "date_of_birth": "1967-12-01"},
+    123456: { "name": "Eric Gibert", "status": "OK", "birthdate": "1967-12-01"},
+    55555: { "name": "Not OK", "status": "NOT OK", "birthdate": "1967-12-01"},
 }
 
 
@@ -42,11 +42,11 @@ class Member(object):
         :param member_id: int for member tbale key
         :param qrcode: string read in a qrcode
         """
-        self.id, self.name, self.date_of_birth, self.status = None, None, None, None
+        self.id, self.name, self.birthdate, self.status = None, None, None, None
         # MySQL database parameters
         db_access = json.load(open("../Private/db_access.data"))
         my_IP = check_output(['hostname', '-I']).decode("utf-8").strip()
-        print("My IP:", my_IP)
+        # print("My IP:", my_IP)
         ip_3 = '.'.join(my_IP.split('.')[:3])
         try:
             self.dbname = db_access[ip_3]["dbname"]
@@ -77,33 +77,38 @@ class Member(object):
                 self.id = member_id
                 self.name = m["name"]
                 self.status = m["status"]
-                self.date_of_birth = m["date_of_birth"]
+                self.birthdate = m["birthdate"]
         else:
             with pymysql.connect(self.server_ip, self.login, self.passwd, self.dbname) as cursor:
                 cursor.execute("SELECT id, username, birthdate, status from users where id=%s", (member_id,))
                 data = cursor.fetchone()
-            self.id, self.name, self.date_of_birth, self.status = data or (None, None, None, None)
-            print(self.date_of_birth, type(self.date_of_birth))
-            if self.date_of_birth and not isinstance(self.date_of_birth, (datetime, date)):
-                self.date_of_birth = datetime.strptime(self.date_of_birth, "%Y-%m-%d")
-            print(self.date_of_birth, type(self.date_of_birth))
+            self.id, self.name, self.birthdate, self.status = data or (None, None, None, None)
+            if self.birthdate and not isinstance(self.birthdate, (datetime, date)):
+                self.birthdate = datetime.strptime(self.birthdate, "%Y-%m-%d")
+
 
     def decode_qrcode(self, qrcode):
         """Decode/explode a QR code in its component based on its version number"""
+        clear_qrcode, member_id = None, None
         if isinstance(qrcode, bytes) or isinstance(qrcode, bytearray):
             qrcode = qrcode.decode("utf-8")
+        print("Read QR code:", qrcode)
         # QR Code Version 1
         if qrcode.startswith("XCJ1"):
             try:
-                fields = qrcode.split('#')  #     10  XCJ1#123456#My Name
+                clear_qrcode = qrcode.split('#')  #     10  XCJ1#123456#My Name
+                member_id = clear_qrcode[1]
             except ValueError:
                 return
-            self.get_from_db(fields[1])
         else:
             des = DES.new(self.key, DES.MODE_ECB)
-            print(qrcode)
-            clear_qrcode = des.decrypt(unhexlify(qrcode)).decode("utf-8").strip()
-            print(clear_qrcode)
+            try:
+                clear_qrcode = des.decrypt(unhexlify(qrcode)).decode("utf-8").strip().split('#') # XCJ2#123456#2015#2018-07-17
+            except (binascii_error, UnicodeDecodeError):
+                return
+            member_id = clear_qrcode[1]
+        self.get_from_db(member_id)
+        print("Decoded QR Code:", clear_qrcode)
 
 
     def encode_qrcode(self, version=1):
@@ -111,17 +116,16 @@ class Member(object):
         if version==1:
             return "XCJ{}#{}#{}".format(version, self.id, self.name)
         elif version==2:
-            dob = self.date_of_birth
+            dob = self.birthdate
             crc = dob.year ^ (dob.day*100 + dob.month)
-            validity = '{0:%Y-%m-%d}'.format(datetime.today() + timedelta(days=180)) # 6 months validity
-            qrcode = "XCJ{}#{}#{}#{}".format(version, self.id, crc, validity)
+            validity = '{0:%Y-%m-%d}'.format(datetime.today() + timedelta(days=180))    # 6 months validity
+            qrcode = "XCJ{}#{}#{}#{}".format(version, self.id, crc, validity)           # XCJ2#123456#2015#2018-07-17
             des = DES.new(self.key, DES.MODE_ECB)
-            # pad qrcode to multiple of 8 characters and turn into bytes
+            # turn qrcode into bytes and pad to multiple of 8 bytes
             qrcode = qrcode.encode("utf-8")
-            # print(qrcode, len(qrcode), (((len(qrcode)+7) // 8) * 8) - len(qrcode))
             qrcode += ((((len(qrcode)+7) // 8) * 8) - len(qrcode)) * b' '
             encrypted_qrcode = hexlify(des.encrypt(qrcode))
-            print(qrcode, encrypted_qrcode)
+            # print(qrcode, encrypted_qrcode)
             return encrypted_qrcode
         else:
             return "Unknown Encoding Version{}".format(version)
@@ -132,17 +136,27 @@ class Member(object):
 
 if __name__ == "__main__":
     m = Member(123456)
-    print("Found in db:", m.name, m.date_of_birth, m.status)
+    print("Found in db:", m.name, m.birthdate, m.status)
     print("Make QR Code:", m.encode_qrcode())
     n = Member(qrcode=m.encode_qrcode())
-    print("__str__:", n)
-    #
-    qr = m.encode_qrcode(version=2)
-    m.decode_qrcode(qr)
+    assert(str(m) == str(n))
+    print("m==n:", str(m) == str(n))
+
+    print('-' * 20)
+    qr_v2 = m.encode_qrcode(version=2)
+    o = Member(qrcode=qr_v2)
+    assert(str(m) == str(o))
+    print("m==o:", str(m) == str(o))
+
     # failure expected --> None (None)
-    # not_good=Member(qrcode="ahahah")
-    # print(not_good)
-    # not_good=Member(member_id=-1)
-    # print(not_good)
-    # not_good = Member(qrcode="XCJ1#-1#ahahah")
-    # print(not_good)
+    print('-' * 20)
+    not_good=Member(qrcode="ahahah")
+    print("Fail 1", not_good)
+    not_good=Member(member_id=-1)
+    print("Fail 2", not_good)
+    not_good = Member(qrcode="XCJ1#-1#ahahah")
+    print("Fail 3", not_good)
+    # alter a byte in the read code....
+    qr_v2=qr_v2[:6] + b'e' + qr_v2[7:]
+    not_good=Member(qrcode=qr_v2)
+    print("Fail 4", not_good)

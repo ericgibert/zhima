@@ -6,6 +6,16 @@
 - QR code is match against a database of members
 - if the member is OK then the door open else an email is triggered
 
+Error Code for the LED:
+Green1: proximity
+Green 2: camera/photo taking & processing
+Red: Error
+Gr1 Gr2 Red
+ -   -   O  Barcode not recognized (3 seconds)
+ O   -   O  State 6:  XCJ Barcode for an unknown member (fails to decode the barcode to atch a db record)
+ -   O   O  State 5:  XCJ Barcode for a "bad status" member (finds a db record but the member is not OK)
+ O   O   O  State 99: Panic Mode: camera is malfunctioning, ...
+
 """
 __author__ = "Eric Gibert"
 __version__ = "1.0.20170113"
@@ -29,6 +39,7 @@ class Controller(object):
             4: self.open_the_door,
             5: self.bad_member_status,
             6: self.unknown_qr_code,
+           99: self.panic_mode,
         }
 
     def run(self):
@@ -52,8 +63,8 @@ class Controller(object):
         self.gpio.red.OFF()
         points, max_pts = 1, 10
         while not self.gpio.check_proximity():
-            print("Waiting for proximity", '.' * points, " " * max_pts, "\r", end="")
-            sleep(0.5)
+            print("Waiting for proximity", '.' * points, " " * max_pts, end="\r")
+            sleep(1)
             points = 1 if points==max_pts else points+1
         return 2
 
@@ -65,10 +76,8 @@ class Controller(object):
         with Camera() as cam:
             self.qr_codes = cam.get_QRcode()
         if self.qr_codes is None:  # webcam is not working: panic mode: all LED flashing!
-            self.gpio.green1.flash("SET", on_duration=0.5, off_duration=0.5)
-            self.gpio.green2.flash("SET", on_duration=0.5, off_duration=0.5)
-            return 5
-        next_state = 3 if self.qr_codes else 1
+            return 99
+        next_state = 3 if self.qr_codes else 1  # qr_codes is a list, might be an empty one...
         return next_state
 
     def check_member(self):
@@ -76,21 +85,25 @@ class Controller(object):
         self.gpio.green1.ON()
         self.gpio.green2.ON()
         self.gpio.red.OFF()
-        print("QR code:", self.qr_codes, type(self.qr_codes[0]))
-        # algo to split the member_if from the QR code
-        member = Member(qrcode=self.qr_codes[0])   #  #qr_code = self.qr_codes[0].decode("utf-8")
-        if member.id:
-            if member.status.upper()=="OK":
-                print("Welcome", member.name, "!")
+        # print("QR code:", self.qr_codes, type(self.qr_codes[0]))
+        # try finding a member from the database based on the first QR code found on the image
+        self.member = Member(qrcode=self.qr_codes[0])
+        if self.member.id:
+            if self.member.status.upper() in ("OK", "ACTIVE"):
+                print("Welcome", self.member.name, "!")
                 return 4
             else:
-                print(member.name, "please fix your status:", member.status)
+                print(self.member.name, "please fix your status:", self.member.status)
                 return 5
         else:
+            print("No member found for QR Code:", self.qr_codes[0].decode("utf-8"))
             return 6
 
     def open_the_door(self):
         """State 4: Proceed to open the door"""
+        # Open the door using Bluetooth
+
+        # Happy flashing
         val = 0
         for i in range(10):
             self.gpio.green1.set(val)
@@ -100,19 +113,31 @@ class Controller(object):
         return 1
 
     def bad_member_status(self):
-        """State 5: Red LED and email the member to warn about the status"""
+        """State 5: Member "bad status", email the member to warn about the status"""
+        self.gpio.green1.OFF()
+        self.gpio.green2.ON()
         self.gpio.red.ON()
+        print("Email to", self.member.name)
         sleep(3)
-        self.gpio.red.OFF()
         return 1
 
     def unknown_qr_code(self):
-        """State 6: A QR code was read but does not match our known pattern"""
-        self.gpio.green2.flash("SET", on_duration=0.5, off_duration=0.5)
-        print("Unknown QR Code:", self.qr_codes[0].decode("utf-8"))
+        """State 6: A QR code was read but does not match our known pattern OR no member found"""
+        self.gpio.green1.ON()
+        self.gpio.green2.OFF()
         self.gpio.red.ON()
         sleep(3)
-        self.gpio.red.OFF()
+        return 1
+
+    def panic_mode(self):
+        """State 99: major erro, flash the lights for 3 seconds"""
+        self.gpio.green1.flash("SET", on_duration=0.3, off_duration=0.3)
+        self.gpio.green2.flash("SET", on_duration=0.3, off_duration=0.3)
+        self.gpio.green3.flash("SET", on_duration=0.3, off_duration=0.3)
+        sleep(3)
+        self.gpio.green1.OFF()
+        self.gpio.green1.OFF()
+        self.gpio.green1.OFF()
         return 1
 
 if __name__ == "__main__":

@@ -20,26 +20,27 @@ QR_CODE_QUALITY = {
 }
 
 def find_qrcode(file_path):
+    """list the qr codes find in an image
+    Used below in __main__ to validate the generated QR Code"""
     with open(file_path, 'rb') as image_file:
         image = Image.open(image_file)
         image.load()
     codes = zbarlight.scan_codes('qrcode', image)
-    # print('QR codes in {}: {}'.format(file_path, codes))
     return codes
 
 def make_qrcode(text, error_correct = qrcode.constants.ERROR_CORRECT_H, logo=XCJ_LOGO):
     qr = qrcode.QRCode(
         version=3,
-        error_correction=error_correct,  #  qrcode.constants.ERROR_CORRECT_Q,  #  or _H
+        error_correction=error_correct,  #  refer to QR_CODE_QUALITY dictionary
         box_size=10,
         border=4,
     )
     qr.add_data(text)
     qr.make(fit=True)
     img = qr.make_image()
-    img_size = img.pixel_size // 2  # 410x410px for H quality
-    LOGO_SIZE = 100 // 2            # logo on 100x100px
-    box =  (img_size - LOGO_SIZE, img_size - LOGO_SIZE, img_size + LOGO_SIZE, img_size + LOGO_SIZE) #(135, 135, 235, 235)
+    img_size = img.pixel_size // 2  # example: 410x410px for H quality
+    HALF_LOGO_SIZE = 100 // 2       # example: target logo in 100x100px centered box
+    box =  (img_size - HALF_LOGO_SIZE, img_size - HALF_LOGO_SIZE, img_size + HALF_LOGO_SIZE, img_size + HALF_LOGO_SIZE) #(135, 135, 235, 235)
     xcj = Image.open(logo)
     region = xcj.resize((box[2] - box[0], box[3] - box[1]))
     img.paste(region, box)
