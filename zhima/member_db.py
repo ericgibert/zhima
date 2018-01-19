@@ -80,12 +80,21 @@ class Member(object):
                 self.status = m["status"]
                 self.birthdate = m["birthdate"]
         else:
-            with pymysql.connect(self.server_ip, self.login, self.passwd, self.dbname) as cursor:
-                cursor.execute("SELECT id, username, birthdate, status from users where id=%s", (member_id,))
-                data = cursor.fetchone()
-            self.id, self.name, self.birthdate, self.status = data or (None, None, None, None)
-            if self.birthdate and not isinstance(self.birthdate, (datetime, date)):
-                self.birthdate = datetime.strptime(self.birthdate, "%Y-%m-%d")
+            try:
+                with pymysql.connect(self.server_ip, self.login, self.passwd, self.dbname) as cursor:
+                    cursor.execute("SELECT id, username, birthdate, status from users where id=%s", (member_id,))
+                    data = cursor.fetchone()
+            except pymysql.err.OperationalError as err:
+##                Read QR code: bba88563348ba152c325c9b89901e10d46e92bd9216bf6e64511a115e56fb597
+##                (2003, "Can't connect to MySQL server on '10.0.10.146' ([Errno 111] Connection refused)")
+##                Decoded QR Code: ['XCJ2', '55555', '2015', '2018-07-17']
+##                ERROR : Non XCJ QR Code or No member found for: bba88563348ba152c325c9b89901e10d46e92bd9216bf6e64511a115e56fb597
+                print(err)
+                ###  check alternative: maybe sqlite3 database for last entry?
+            else:
+                self.id, self.name, self.birthdate, self.status = data or (None, None, None, None)
+                if self.birthdate and not isinstance(self.birthdate, (datetime, date)):
+                    self.birthdate = datetime.strptime(self.birthdate, "%Y-%m-%d")
 
 
     def decode_qrcode(self, qrcode):
