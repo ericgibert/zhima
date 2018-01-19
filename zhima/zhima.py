@@ -18,13 +18,15 @@ Gr1 Gr2 Red
 
 """
 __author__ = "Eric Gibert"
-__version__ = "1.0.20170113"
+__version__ = "1.0.20170119"
 __email__ =  "ericgibert@yahoo.fr"
 __license__ = "MIT"
 from time import sleep
 from camera import Camera
 from rpi_gpio import Rpi_Gpio, _simulation as rpi_simulation
 from member_db import Member
+from tokydoor import TokyDoor
+
 
 class Controller(object):
     def __init__(self):
@@ -41,6 +43,16 @@ class Controller(object):
             6: self.unknown_qr_code,
            99: self.panic_mode,
         }
+
+    def insert_log(self, log_type, msg, member_id=-1, qrcode_version='?'):
+        """
+        Insert a log record in the database for tracking and print a message on terminal
+        :param log_type: OPEN / ERROR / NOT_OK
+        :param msg: a free message
+        :param qrcode_version: if QR Code is found then record its version (tracking old QR Codes)
+        :param member_id: if the QR Code matches a Member Id
+        """
+        print(log_type, ":", msg)
 
     def run(self):
         """
@@ -90,26 +102,34 @@ class Controller(object):
         self.member = Member(qrcode=self.qr_codes[0])
         if self.member.id:
             if self.member.status.upper() in ("OK", "ACTIVE"):
-                print("Welcome", self.member.name, "!")
+                self.insert_log("OPEN", "Welcome {}".format(self.member.name),
+                                member_id=self.member.id, qrcode_version=self.member.qrcode_version)
+                print()
                 return 4
             else:
-                print(self.member.name, "please fix your status:", self.member.status)
+                self.insert_log("NOT_OK", "{}, please fix your status: {}".format(self.member.name, self.member.status),
+                                member_id=self.member.id, qrcode_version=self.member.qrcode_version)
                 return 5
         else:
-            print("No member found for QR Code:", self.qr_codes[0].decode("utf-8"))
+            self.insert_log("ERROR", "Non XCJ QR Code or No member found for: {}".format(self.qr_codes[0].decode("utf-8")))
             return 6
 
     def open_the_door(self):
         """State 4: Proceed to open the door"""
-        # Open the door using Bluetooth
-
+        # Open the door using Bluetooth - all BLE parameters are defaulted for the TOKYDOOR BLE @ XCJ
+        tokydoor = TokyDoor()
+        try:
+            tokydoor.open()
+        except ValueError as err:
+            self.insert_log("ERROR", "Cannot connect to TOKYDOOR: {}".format(err))
+            return 99 # cannot reach the BLE!!! Panic Mode!!
         # Happy flashing
         val = 0
         for i in range(10):
             self.gpio.green1.set(val)
             val = int(not val)
             self.gpio.green2.set(val)
-            sleep(0.3)
+            sleep(0.3)  # 0.3 x 10 = 3 seconds == ONCE BLE command duration
         return 1
 
     def bad_member_status(self):
@@ -133,7 +153,7 @@ class Controller(object):
         """State 99: major erro, flash the lights for 3 seconds"""
         self.gpio.green1.flash("SET", on_duration=0.3, off_duration=0.3)
         self.gpio.green2.flash("SET", on_duration=0.3, off_duration=0.3)
-        self.gpio.green3.flash("SET", on_duration=0.3, off_duration=0.3)
+        self.gpio.red.flash("SET", on_duration=0.3, off_duration=0.3)
         sleep(3)
         self.gpio.green1.OFF()
         self.gpio.green1.OFF()

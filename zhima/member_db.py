@@ -58,6 +58,7 @@ class Member(object):
             print("Cannot find entry {} in db_access.data".format(ip_3))
             exit(1)
         # create a member based on an ID or QR Code
+        self.qrcode_version = '?'
         if member_id:
             self.get_from_db(member_id)
         elif qrcode:
@@ -98,12 +99,14 @@ class Member(object):
             try:
                 clear_qrcode = qrcode.split('#')  #     10  XCJ1#123456#My Name
                 member_id = clear_qrcode[1]
+                self.qrcode_version = '1'
             except ValueError:
                 return
         else:
             des = DES.new(self.key, DES.MODE_ECB)
             try:
                 clear_qrcode = des.decrypt(unhexlify(qrcode)).decode("utf-8").strip().split('#') # XCJ2#123456#2015#2018-07-17
+                self.qrcode_version = '2'
             except (binascii_error, UnicodeDecodeError):
                 return
             member_id = clear_qrcode[1]
