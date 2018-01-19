@@ -86,7 +86,7 @@ class TokyDoor():
                 raise ValueError("Connection to {} failed. Try using 'hciconfig' and 'hcitool'".format(self.mac_address))
         except DBusException:
             raise ValueError("Connection to {} by '{}' failed. Check using 'hciconfig' and 'hcitool'.".format(self.mac_address, self.adapter_name))
-        #device.services_resolved()
+        device.services_resolved()
         device.write_characteristic(self.door_characteristic, self.command)
         try:
             self.manager.run()
