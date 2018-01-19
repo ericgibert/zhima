@@ -101,7 +101,7 @@ class Controller(object):
         # try finding a member from the database based on the first QR code found on the image
         self.member = Member(qrcode=self.qr_codes[0])
         if self.member.id:
-            if self.member.status.upper() in ("OK", "ACTIVE"):
+            if self.member.status.upper() in ("OK", "ACTIVE", "ENROLLED"):
                 self.insert_log("OPEN", "Welcome {}".format(self.member.name),
                                 member_id=self.member.id, qrcode_version=self.member.qrcode_version)
                 print()

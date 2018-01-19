@@ -53,8 +53,10 @@ device.connect()
 device.services_resolved()
 door_characteristic="0000ffe1-0000-1000-8000-00805f9b34fb"
 device.write_characteristic(door_characteristic, "ONCE")
-manager.run()
-
+try:
+    manager.run()
+finally:
+    device.disconnect()
 
 
 
