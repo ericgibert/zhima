@@ -91,6 +91,13 @@ class TokyDoor():
         device = AnyDevice(mac_address=self.mac_address, manager=self.manager)
         try:  # 3 seconds max
             device.connect()
+            signal.alarm(0)  # cancel the alarm
+        except DBusException:
+            raise ValueError("ERR2 - Connection to {} by '{}' failed. Check using 'hciconfig' and 'hcitool'.".format(
+                self.mac_address, self.adapter_name))
+        except Alarm:
+            print("Oops, taking too long!")
+        else:
             try:
                 if device.is_connected():
                     device.services_resolved()
@@ -99,16 +106,8 @@ class TokyDoor():
                 else:
                     # signal.alarm(0)  # cancel the alarm
                     raise ValueError("ERR1 - Connection to {} failed. Try using 'hciconfig' and 'hcitool'".format(self.mac_address))
-            except DBusException:
-                raise ValueError("ERR2 - Connection to {} by '{}' failed. Check using 'hciconfig' and 'hcitool'.".format(self.mac_address, self.adapter_name))
             finally:
-                signal.alarm(0)  # cancel the alarm
-        except Alarm:
-            print ("Oops, taking too long!")
-            self.manager.stop()
-        finally:
-            device.disconnect()
-
+                device.disconnect()
 
 
 if __name__ == "__main__":
