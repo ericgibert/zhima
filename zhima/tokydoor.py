@@ -18,13 +18,8 @@ __license__ = "MIT"
 from dbus.exceptions import DBusException
 import gatt
 import argparse
-import signal
-
-class Alarm(Exception):
-    pass
-
-def alarm_handler(signum, frame):
-    raise Alarm
+from threading import Timer
+from time import sleep
 
 TOKYDOOR = '50:8C:B1:69:A2:F1'
 TOKYUUID = "0000ffe1-0000-1000-8000-00805f9b34fb"
@@ -85,29 +80,32 @@ class TokyDoor():
         self.adapter_name = adapter_name
         self.manager = gatt.DeviceManager(adapter_name=self.adapter_name)
 
-    def open(self):
-        signal.signal(signal.SIGALRM, alarm_handler)
-        signal.alarm(3)
+    def send_command_to_BLE(self):
+        """Creates a device object to connect the BLE and the run the messaging queue"""
         device = AnyDevice(mac_address=self.mac_address, manager=self.manager)
-        try:  # 3 seconds max
+        try:
             device.connect()
-            signal.alarm(0)  # cancel the alarm
-        except DBusException:
-            raise ValueError("ERR2 - Connection to {} by '{}' failed. Check using 'hciconfig' and 'hcitool'.".format(
-                self.mac_address, self.adapter_name))
-        except Alarm:
-            print("Oops, taking too long!")
-        else:
-            try:
-                if device.is_connected():
-                    device.services_resolved()
-                    device.write_characteristic(self.door_characteristic, self.command)
-                    self.manager.run()  # this run() loop will stop by the callback after the writing on uuid has been completed
-                else:
-                    # signal.alarm(0)  # cancel the alarm
-                    raise ValueError("ERR1 - Connection to {} failed. Try using 'hciconfig' and 'hcitool'".format(self.mac_address))
-            finally:
+            if device.is_connected():
+                device.services_resolved()
+                device.write_characteristic(self.door_characteristic, self.command)
+                self.manager.run()  # this run() loop will stop by the callback after the writing on uuid has been completed
+            else:
                 device.disconnect()
+                raise ValueError("ERR1 - Connection to {} failed. Try using 'hciconfig' and 'hcitool'".format(self.mac_address))
+        except DBusException:
+            raise ValueError("ERR2 - Connection to {} by '{}' failed. Check using 'hciconfig' and 'hcitool'.".format(self.mac_address, self.adapter_name))
+        finally:
+            device.disconnect()
+
+    def open(self):
+        """Opens the door..."""
+        ble_com_limit = Timer(3, self.send_command_to_BLE())
+        ble_com_limit.start()
+        sleep(3)
+        if ble_com_limit.is_alive():
+            print("BLE communiction takes too long: kill the com")
+            ble_com_limit.cancel()
+
 
 
 if __name__ == "__main__":
