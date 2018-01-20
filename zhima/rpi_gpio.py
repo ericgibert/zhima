@@ -107,6 +107,12 @@ class E18_D80nk(object):
     """
     Class to manage an IR distance switch e18-d80nk
     https://www.14core.com/wiring-the-e18-d80nk-infrared-distance-ranging-sensor/
+
+    Wiring:
+    Type 1      Type 2      Function
+    red         brown       Vcc  (+5V)
+    black       bleu        Gnd
+    Yellow      black       Signal   need to insert a 4.7kO to 10kO resitor before the pin
     """
     def __init__(self, rpi, pin):
         self.rpi, self.pin = rpi, pin
@@ -117,6 +123,20 @@ class E18_D80nk(object):
     def state(self):
         return int(not self.rpi.read(self.pin))
 
+
+class Dfrobot_Pir_v1_0(object):
+    """
+    Class to manage an IR distance switch from DFROBOT PIR Sensor V1.0
+    https://www.dfrobot.com/wiki/index.php/PIR_Motion_Sensor_V1.0_SKU:SEN0171
+    """
+    def __init__(self, rpi, pin):
+        self.rpi, self.pin = rpi, pin
+        rpi.pig.set_mode(pin, pigpio.INPUT)
+        # rpi.pig.set_pull_up_down(pin, pigpio.PUD_UP)
+
+    @property
+    def state(self):
+        return self.rpi.read(self.pin)
 
 
 class Rpi_Gpio(object):
@@ -163,13 +183,19 @@ if __name__ == "__main__":
     my_pig = Rpi_Gpio()
     my_pig.green1.ON()
     my_pig.red.ON()
-    if _simulation:
-        print(my_pig.pig.buffer)
 
-    # ed = E18_D80nk(my_pig, 17)
+    # dfrobot = Dfrobot_Pir_v1_0(my_pig, 17)
     # while True:
-    #     print(ed.state)
-    #     sleep(0.3)
+    #     print("Reading:", dfrobot.state)
+    #     sleep(1)
+
+    # if _simulation:
+    #     print(my_pig.pig.buffer)
+
+    ed = E18_D80nk(my_pig, 17)
+    while True:
+        print(ed.state)
+        sleep(0.3)
 
     # flash testing
     my_pig.green2.flash("SET", on_duration=0.2, off_duration=1)
