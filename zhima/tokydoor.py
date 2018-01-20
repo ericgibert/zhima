@@ -99,7 +99,7 @@ class TokyDoor():
 
     def open(self):
         """Opens the door..."""
-        ble_com_limit = Timer(3, self.send_command_to_BLE())
+        ble_com_limit = Timer(3, self.send_command_to_BLE)
         ble_com_limit.start()
         sleep(3)
         if ble_com_limit.is_alive():
