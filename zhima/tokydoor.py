@@ -18,6 +18,13 @@ __license__ = "MIT"
 from dbus.exceptions import DBusException
 import gatt
 import argparse
+import signal
+
+class Alarm(Exception):
+    pass
+
+def alarm_handler(signum, frame):
+    raise Alarm
 
 TOKYDOOR = '50:8C:B1:69:A2:F1'
 TOKYUUID = "0000ffe1-0000-1000-8000-00805f9b34fb"
@@ -88,7 +95,13 @@ class TokyDoor():
             raise ValueError("Connection to {} by '{}' failed. Check using 'hciconfig' and 'hcitool'.".format(self.mac_address, self.adapter_name))
         device.services_resolved()
         device.write_characteristic(self.door_characteristic, self.command)
+        signal.signal(signal.SIGALRM, alarm_handler)
+        signal.alarm(3)  # 3 seconds max
         try:
+            self.manager.run()
+            signal.alarm(0)  # reset the alarm
+        except Alarm:
+            print ("Oops, taking too long!")
             self.manager.run()
         finally:
             device.disconnect()
