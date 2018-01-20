@@ -86,26 +86,29 @@ class TokyDoor():
         self.manager = gatt.DeviceManager(adapter_name=self.adapter_name)
 
     def open(self):
-        device = AnyDevice(mac_address=self.mac_address, manager=self.manager)
-        device.connect()
-        try:
-            if not device.is_connected():
-                raise ValueError("Connection to {} failed. Try using 'hciconfig' and 'hcitool'".format(self.mac_address))
-        except DBusException:
-            raise ValueError("Connection to {} by '{}' failed. Check using 'hciconfig' and 'hcitool'.".format(self.mac_address, self.adapter_name))
-        device.services_resolved()
-        device.write_characteristic(self.door_characteristic, self.command)
         signal.signal(signal.SIGALRM, alarm_handler)
-        signal.alarm(3)  # 3 seconds max
-        try:
-            self.manager.run()
-            signal.alarm(0)  # reset the alarm
+        signal.alarm(3)
+        device = AnyDevice(mac_address=self.mac_address, manager=self.manager)
+        try:  # 3 seconds max
+            device.connect()
+            try:
+                if not device.is_connected():
+                    signal.alarm(0)  # cancel the alarm
+                    raise ValueError("Connection to {} failed. Try using 'hciconfig' and 'hcitool'".format(self.mac_address))
+                else:
+                    device.services_resolved()
+                    device.write_characteristic(self.door_characteristic, self.command)
+                    self.manager.run()  # this run() loop will stop by the callback after the writing on uuid has been completed
+            except DBusException:
+                raise ValueError("Connection to {} by '{}' failed. Check using 'hciconfig' and 'hcitool'.".format(self.mac_address, self.adapter_name))
+            finally:
+                signal.alarm(0)  # cancel the alarm
         except Alarm:
             print ("Oops, taking too long!")
-            self.manager.run()
+            self.manager.stop()
         finally:
             device.disconnect()
-        # this run() loop will stop by the callback after the writing on uuid has been completed
+
 
 
 if __name__ == "__main__":
