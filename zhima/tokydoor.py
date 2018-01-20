@@ -92,15 +92,15 @@ class TokyDoor():
         try:  # 3 seconds max
             device.connect()
             try:
-                if not device.is_connected():
-                    signal.alarm(0)  # cancel the alarm
-                    raise ValueError("Connection to {} failed. Try using 'hciconfig' and 'hcitool'".format(self.mac_address))
-                else:
+                if device.is_connected():
                     device.services_resolved()
                     device.write_characteristic(self.door_characteristic, self.command)
                     self.manager.run()  # this run() loop will stop by the callback after the writing on uuid has been completed
+                else:
+                    # signal.alarm(0)  # cancel the alarm
+                    raise ValueError("ERR1 - Connection to {} failed. Try using 'hciconfig' and 'hcitool'".format(self.mac_address))
             except DBusException:
-                raise ValueError("Connection to {} by '{}' failed. Check using 'hciconfig' and 'hcitool'.".format(self.mac_address, self.adapter_name))
+                raise ValueError("ERR2 - Connection to {} by '{}' failed. Check using 'hciconfig' and 'hcitool'.".format(self.mac_address, self.adapter_name))
             finally:
                 signal.alarm(0)  # cancel the alarm
         except Alarm:
