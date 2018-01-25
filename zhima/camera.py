@@ -35,14 +35,14 @@ class Camera():
 
     def close(self):
         """release the hardware"""
-        pass
-        # self.camera.release()
-        # del(self.camera)
+        self.camera.release()
+        del(self.camera)
 
     def save_photo(self, file_path=None):
         """save the current image"""
         _, self.file_path = mkstemp(prefix="QR-",suffix=".png", text=False) if file_path is None else (None, file_path) #open(file_path, mode="wb"))
-        cv2.imwrite(self.file_path, self.image)
+        cv2.imwrite(self.file_path, self.cv2_img)
+        return self.file_path
 
     def get_QRcode(self, max_photos=20, debug=False):
         """take max_photos until a QR code is found else returns []"""
@@ -52,20 +52,13 @@ class Camera():
             print("Taking photo", i, end="\r")
             sleep(0.1)
             try:
-                cv2_return_code, cv2_im = self.camera.read()
+                cv2_return_code, self.cv2_img = self.camera.read()
             except cv2.error as cv2_err:
                 print("Error with the camera:", cv2_err)
                 return None
             else:
-                # # img = cv2.cvtColor(cv2_im, cv2.COLOR_BGR2GRAY);
-                # # img = cv2.equalizeHist(cv2_im)  #cv2.cvtColor(cv2_im, cv2.COLOR_BGR2RGB)
-                # img_yuv = cv2.cvtColor(cv2_im, cv2.COLOR_BGR2YUV)
-                # # equalize the histogram of the Y channel
-                # img_yuv[:, :, 0] = cv2.equalizeHist(img_yuv[:, :, 0])
-                # # convert the YUV image back to RGB format
-                # img = cv2.cvtColor(img_yuv, cv2.COLOR_YUV2BGR)
                 try:
-                    self.image = Image.fromarray(cv2_im)
+                    self.image = Image.fromarray(self.cv2_img)
                     self.qr_codes = zbarlight.scan_codes('qrcode', self.image)
                 except AttributeError as err:
                     print("Warning: photo not taken properly")
@@ -86,4 +79,5 @@ class Camera():
 if __name__ == "__main__":
     with Camera() as my_camera:
         qr_codes = my_camera.get_QRcode(debug=True)
-    print("QR codes:", qr_codes)
+        print("QR codes:", qr_codes)
+        print(my_camera.save_photo())
