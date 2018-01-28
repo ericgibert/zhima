@@ -45,6 +45,7 @@ class Controller(object):
             6: self.unknown_qr_code,
            99: self.panic_mode,
         }
+        self.camera = Camera(self.db)
 
     def insert_log(self, log_type, code, msg, member_id=-1, qrcode_version='?'):
         """
@@ -68,7 +69,7 @@ class Controller(object):
                 current_state = task()
         finally:
             # clean up before stop
-            pass
+            self.camera.close()
 
     def wait_for_proximity(self):
         """State 1: Use GPIO to wait for a person to present a mobile phone to the camera"""
@@ -87,8 +88,7 @@ class Controller(object):
         self.gpio.green1.ON()
         self.gpio.green2.flash("SET", on_duration=0.5, off_duration=0.5)
         self.gpio.red.OFF()
-        with Camera(self.db) as cam:
-            self.qr_codes = cam.get_QRcode()
+        self.qr_codes = self.camera.get_QRcode()
         if self.qr_codes is None:  # webcam is not working: panic mode: all LED flashing!
             return 99
         next_state = 3 if self.qr_codes else 1  # qr_codes is a list, might be an empty one...
