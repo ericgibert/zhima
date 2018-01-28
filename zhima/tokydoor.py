@@ -66,19 +66,21 @@ class AnyDevice(gatt.Device):
 
 class TokyDoor():
     """Define the parameters to communicate with the TOKYDOOR BLE"""
-    def __init__(self, mac_address=TOKYDOOR, adapter_name='hci0', command="ONCE", uuid=""):
+    def __init__(self, mac_address=TOKYDOOR, adapter_name='hci0', command="ONCE", uuid="", database=None):
         """
         Prepare the access to the door's BLE
         :param mac_address: the BLE mac address
         :param adapter_name: the Raspberry Pi's Bluettoth device name (check with 'hciconfig')
         :param command: the coomand to send to the BLE on the characteristic uuid
         :param uuid: characteristic to use to send the commad. Must be 'writable'.
+        :param database: optional - to log errors in table tb_log
         """
         self.mac_address = mac_address
         self.door_characteristic = uuid or TOKYUUID
         self.command = command
         self.adapter_name = adapter_name
         self.manager = gatt.DeviceManager(adapter_name=self.adapter_name)
+        self.db = database
 
     def send_command_to_BLE(self):
         """Creates a device object to connect the BLE and the run the messaging queue"""
@@ -91,19 +93,37 @@ class TokyDoor():
                 self.manager.run()  # this run() loop will stop by the callback after the writing on uuid has been completed
             else:
                 device.disconnect()
-                raise ValueError("ERR1 - Connection to {} failed. Try using 'hciconfig' and 'hcitool'".format(self.mac_address))
-        except DBusException:
-            raise ValueError("ERR2 - Connection to {} by '{}' failed. Check using 'hciconfig' and 'hcitool'.".format(self.mac_address, self.adapter_name))
+                # raise ValueError("ERR1 - Connection to {} failed. Try using 'hciconfig' and 'hcitool'".format(self.mac_address))
+                msg = "Connection to {} failed. Try using 'hciconfig' and 'hcitool'".format(self.mac_address)
+                if  self.db:
+                    self.db.log("ERROR", 2001, msg)
+                else:
+                    print(msg)
+        except DBusException as err:
+        #     raise ValueError("ERR2 - Connection to {} by '{}' failed. Check using 'hciconfig' and 'hcitool'.".format(self.mac_address, self.adapter_name))
+            print(err)
+            msg = "Connection to {} by '{}' failed: Device does not exist, check adapter name and MAC address.".format(self.mac_address, self.adapter_name)
+            if  self.db:
+                self.db.log("ERROR", 2002, msg)
+            else:
+                print(msg)
         finally:
-            device.disconnect()
+            try:
+                device.disconnect()
+            except DBusException:
+                pass
 
     def open(self):
         """Opens the door..."""
         ble_com_limit = Timer(3, self.send_command_to_BLE)
         ble_com_limit.start()
-        sleep(3)
+        sleep(4)
         if ble_com_limit.is_alive():
-            print("BLE communiction takes too long: kill the com")
+            msg = "BLE communiction takes too long: kill the com"
+            if  self.db:
+                self.db.log("WARNING", 2000, msg, debug=True)
+            else:
+                print(msg)
             ble_com_limit.cancel()
 
 

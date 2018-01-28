@@ -26,11 +26,13 @@ from camera import Camera
 from rpi_gpio import Rpi_Gpio, _simulation as rpi_simulation
 from member_db import Member
 from tokydoor import TokyDoor
+from model_db import Database
 
 
 class Controller(object):
     def __init__(self):
         self.gpio = Rpi_Gpio()
+        self.db = Database()
         if rpi_simulation:
             print("PGIO simulation active")
         self.member = None
@@ -44,7 +46,7 @@ class Controller(object):
            99: self.panic_mode,
         }
 
-    def insert_log(self, log_type, msg, member_id=-1, qrcode_version='?'):
+    def insert_log(self, log_type, code, msg, member_id=-1, qrcode_version='?'):
         """
         Insert a log record in the database for tracking and print a message on terminal
         :param log_type: OPEN / ERROR / NOT_OK
@@ -52,7 +54,7 @@ class Controller(object):
         :param qrcode_version: if QR Code is found then record its version (tracking old QR Codes)
         :param member_id: if the QR Code matches a Member Id
         """
-        print(log_type, ":", msg)
+        self.db.log(log_type, code, msg, debug=True)
 
     def run(self):
         """
@@ -99,29 +101,28 @@ class Controller(object):
         self.gpio.red.OFF()
         # print("QR code:", self.qr_codes, type(self.qr_codes[0]))
         # try finding a member from the database based on the first QR code found on the image
-        self.member = Member(qrcode=self.qr_codes[0])
+        self.member = Member(self.db, qrcode=self.qr_codes[0])
         if self.member.id:
             if self.member.status.upper() in ("OK", "ACTIVE", "ENROLLED"):
-                self.insert_log("OPEN", "Welcome {}".format(self.member.name),
-                                member_id=self.member.id, qrcode_version=self.member.qrcode_version)
+                self.insert_log("OPEN", self.member.id, "Welcome {} - QR V{}".format(self.member.name, self.member.qrcode_version))
                 print()
                 return 4
             else:
-                self.insert_log("NOT_OK", "{}, please fix your status: {}".format(self.member.name, self.member.status),
-                                member_id=self.member.id, qrcode_version=self.member.qrcode_version)
+                self.insert_log("NOT_OK", self.member.id,
+                                "{}, please fix your status: {} - QR V{}".format(self.member.name, self.member.status,self.member.qrcode_version))
                 return 5
         else:
-            self.insert_log("ERROR", "Non XCJ QR Code or No member found for: {}".format(self.qr_codes[0].decode("utf-8")))
+            self.insert_log("ERROR", 1000, "Non XCJ QR Code or No member found for: {}".format(self.qr_codes[0].decode("utf-8")))
             return 6
 
     def open_the_door(self):
         """State 4: Proceed to open the door"""
         # Open the door using Bluetooth - all BLE parameters are defaulted for the TOKYDOOR BLE @ XCJ
-        tokydoor = TokyDoor()
+        tokydoor = TokyDoor(database=self.db)
         try:
             tokydoor.open()
         except ValueError as err:
-            self.insert_log("ERROR", "Cannot connect to TOKYDOOR: {}".format(err))
+            self.insert_log("ERROR", 1001, "Cannot connect to TOKYDOOR: {}".format(err))
             return 99 # cannot reach the BLE!!! Panic Mode!!
         # Happy flashing
         val = 0
