@@ -18,6 +18,7 @@ import zbarlight
 import cv2
 try:
     import picamera
+    import picamera.array
     has_picamera = True
 except ImportError:
     has_picamera = False
@@ -45,7 +46,7 @@ class Camera():
             pass
         else:
             self.camera.release()
-            del(self.camera)
+        del(self.camera)
 
     def save_photo(self, file_path=None):
         """save the current image"""
