@@ -87,7 +87,7 @@ class Controller(object):
         self.gpio.green1.ON()
         self.gpio.green2.flash("SET", on_duration=0.5, off_duration=0.5)
         self.gpio.red.OFF()
-        with Camera() as cam:
+        with Camera(self.db) as cam:
             self.qr_codes = cam.get_QRcode()
         if self.qr_codes is None:  # webcam is not working: panic mode: all LED flashing!
             return 99

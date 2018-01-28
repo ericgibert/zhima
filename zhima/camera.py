@@ -19,8 +19,9 @@ import cv2
 
 class Camera():
     """take a photo and keep it in memory for processing"""
-    def __init__(self):
+    def __init__(self, database=None):
         """open the camera hardware"""
+        self.db = database
         self.camera = cv2.VideoCapture(0)
         # self.camera.set(3, 640*2)
         # self.camera.set(4, 480 * 2)
@@ -54,14 +55,22 @@ class Camera():
             try:
                 cv2_return_code, self.cv2_img = self.camera.read()
             except cv2.error as cv2_err:
-                print("Error with the camera:", cv2_err)
+                msg = "Error with the camera: {}".format(cv2_err)
+                if self.db:
+                    self.db.log("ERROR", 3000, msg, debug=debug)
+                else:
+                    print(msg)
                 return None
             else:
                 try:
                     self.image = Image.fromarray(self.cv2_img)
                     self.qr_codes = zbarlight.scan_codes('qrcode', self.image)
                 except AttributeError as err:
-                    print("Warning: photo not taken properly")
+                    msg = "Photo not taken properly: {}".format(err)
+                    if self.db:
+                        self.db.log("WARNING", 3001, msg, debug=debug)
+                    else:
+                        print(msg)
                     # self.close()
                     # self.camera = cv2.VideoCapture(0)
                     return None
