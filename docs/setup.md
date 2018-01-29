@@ -88,3 +88,10 @@ OpenCV
 ======
 https://www.pyimagesearch.com/2017/09/04/raspbian-stretch-install-opencv-3-python-on-your-raspberry-pi/
 
+Bottle and Bottlesession
+========================
+
+pip3 install bottle
+
+git clone https://github.com/linsomniac/bottlesession.git
+cp botlesession.py  site-packages
