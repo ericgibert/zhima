@@ -42,12 +42,74 @@ class Database():
             with pymysql.connect(self.server_ip, self.login, self.passwd, self.dbname) as cursor:
                 cursor.execute(sql, params)
                 data = cursor.fetchone() if one_only else cursor.fetchall()
-        except pymysql.err.OperationalError as err:
+        except (pymysql.err.OperationalError, pymysql.err.ProgrammingError) as err:
             print(err)
+            print(sql)
+            print(params)
             return None
         else:
             return data
 
+    def select(self, table, columns='*', one_only=True, **where):
+        """build a SELECT statment and fetch its row"""
+        sql = "SELECT {} from {}".format(columns, table)
+        params = []
+        if where:
+            where_clause = []
+            for col, val in where.items():
+                where_clause.append(col+"=%s")
+                params.append(val)
+            sql += " WHERE " + ",".join(where_clause)
+        return self.fetch(sql, params, one_only)
+
+
+
+    def execute_sql(self, sql, params):
+        try:
+            with pymysql.connect(self.server_ip, self.login, self.passwd, self.dbname) as cursor:
+                cursor.execute(sql, params)
+                # self.db.conn.commit()
+                last_row_id = cursor.lastrowid
+        except (TypeError, ValueError, pymysql.err.OperationalError) as err:
+            print('ERROR on sql execute:', err)
+            print(sql)
+            print(params)
+            last_row_id = None
+        return last_row_id
+
+    def update(self, table, **kwargs):
+        """update the fields given as parameters with their values using the 'kwargs' dictionary"""
+        col_value, id, id_col_name = [], None, 'id'
+        for col, val in kwargs.items():
+            if col=='id':
+                id = val
+            elif col=='id_col_name':
+                id_col_name = val
+            else:
+                col_value.append((col, val))
+        if col_value:
+            sql = "UPDATE {0} SET {1} WHERE {2}=%s".format(table,
+                                                          ",".join([c+"=%s" for c, v in col_value]),
+                                                          id_col_name)
+            self.execute_sql(sql, [v for c, v in col_value] + [ id ])
+        return id
+
+    def insert(self, table, **kwargs):
+        """INSERT a record in the table"""
+        col_value, id, id_col_name, last_row_id = [], None, 'id', None
+        for col, val in kwargs.items():
+            if col=='id':
+                id = val
+            elif col=='id_col_name':
+                id_col_name = val
+            else:
+                col_value.append((col, val))
+        if col_value:
+            sql = "INSERT INTO {0} ({1}) VALUES ({2})".format(table,
+                                                              ",".join([c for c, v in col_value]),
+                                                              ",".join(["%s" for i in range(len(col_value))]))
+            last_row_id = self.execute_sql(sql, [v for c, v in col_value])
+        return last_row_id
 
     def log(self, log_type, code, message, debug=False):
         """
@@ -80,15 +142,20 @@ class Database():
         """
         if debug:
             print(datetime.now(), log_type, code, message)
-        sql = "INSERT INTO tb_log(type, code, message) values (%s,%s,%s)"
-        try:
-            with pymysql.connect(self.server_ip, self.login, self.passwd, self.dbname) as cursor:
-                cursor.execute(sql, (log_type, code, message))
-        except pymysql.err.OperationalError as err:
-            print(err) # cannot log as we have en error!
+        return self.insert('tb_log', type=log_type, code=code, message=message)
+        # sql = "INSERT INTO tb_log(type, code, message) values (%s,%s,%s)"
+        # try:
+        #     with pymysql.connect(self.server_ip, self.login, self.passwd, self.dbname) as cursor:
+        #         cursor.execute(sql, (log_type, code, message))
+        # except pymysql.err.OperationalError as err:
+        #     print(err) # cannot log as we have en error!
 
 if __name__ == "__main__":
     db = Database()
     result = db.fetch("select count(*) from users", ())
     print(result)
-    db.log('INFO', 1, "Testing log INSERT", debug=True)
+    row_id = db.log('INFO', 1, "Testing log INSERT", debug=True)
+    print(row_id)
+    db.update('tb_log', id=row_id, code=2)
+    row = db.select('tb_log', id=row_id)
+    print(row)
