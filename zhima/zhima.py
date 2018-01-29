@@ -21,16 +21,20 @@ __author__ = "Eric Gibert"
 __version__ = "1.0.20170119"
 __email__ =  "ericgibert@yahoo.fr"
 __license__ = "MIT"
+import sys, os
+import signal
 from time import sleep
 from camera import Camera
 from rpi_gpio import Rpi_Gpio, _simulation as rpi_simulation
 from member_db import Member
 from tokydoor import TokyDoor
 from model_db import Database
+from http_view import http_view, stop as bottle_stop
 
 
 class Controller(object):
-    def __init__(self):
+    def __init__(self, bottle_ip=None):
+        self.bottle_ip = bottle_ip or '127.0.0.1'
         self.gpio = Rpi_Gpio()
         self.db = Database()
         if rpi_simulation:
@@ -62,7 +66,16 @@ class Controller(object):
         Main loop to move from one state to the next
         :return:
         """
+        with open("zhima.pid", "wt") as fpid:
+            print(os.getpid(), file=fpid)
+        def stop_handler(signum, frame):
+            """ allow:   kill -10 `cat ponicwatch.pid`   """
+            self.stop()
+            sys.exit()
+        signal.signal(signal.SIGUSR1, stop_handler)
         current_state = 1  # initial state: waiting for proximity detection
+        http_view.controller = self
+        http_view.run(host=self.bottle_ip)
         try:
             while current_state:  # can be stopped by program by return a next state as 0
                 task = self.TASKS[current_state]
@@ -70,6 +83,7 @@ class Controller(object):
         finally:
             # clean up before stop
             self.camera.close()
+            bottle_stop()
 
     def wait_for_proximity(self):
         """State 1: Use GPIO to wait for a person to present a mobile phone to the camera"""

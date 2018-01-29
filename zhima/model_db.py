@@ -36,17 +36,18 @@ class Database():
             print("Cannot find entry {} in db_access.data".format(ip_3))
             exit(1)
 
-    def fetchone(self, sql, params):
+    def fetch(self, sql, params, one_only=True):
         """execute a SELECT statment with theparameters and fetch one row only"""
         try:
             with pymysql.connect(self.server_ip, self.login, self.passwd, self.dbname) as cursor:
                 cursor.execute(sql, params)
-                data = cursor.fetchone()
+                data = cursor.fetchone() if one_only else cursor.fetchall()
         except pymysql.err.OperationalError as err:
             print(err)
             return None
         else:
             return data
+
 
     def log(self, log_type, code, message, debug=False):
         """
@@ -88,6 +89,6 @@ class Database():
 
 if __name__ == "__main__":
     db = Database()
-    result = db.fetchone("select count(*) from users", ())
+    result = db.fetch("select count(*) from users", ())
     print(result)
     db.log('INFO', 1, "Testing log INSERT", debug=True)
