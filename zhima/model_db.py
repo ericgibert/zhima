@@ -37,7 +37,7 @@ class Database():
             exit(1)
 
     def fetch(self, sql, params, one_only=True):
-        """execute a SELECT statment with theparameters and fetch one row only"""
+        """execute a SELECT statement with the parameters and fetch row/rows"""
         try:
             with pymysql.connect(self.server_ip, self.login, self.passwd, self.dbname) as cursor:
                 cursor.execute(sql, params)
@@ -51,7 +51,7 @@ class Database():
             return data
 
     def select(self, table, columns='*', one_only=True, **where):
-        """build a SELECT statment and fetch its row"""
+        """build a SELECT statement and fetch its row(s)"""
         sql = "SELECT {} from {}".format(columns, table)
         params = []
         if where:
@@ -62,23 +62,24 @@ class Database():
             sql += " WHERE " + ",".join(where_clause)
         return self.fetch(sql, params, one_only)
 
-
-
     def execute_sql(self, sql, params):
+        """Generic SQL statement execution"""
         try:
             with pymysql.connect(self.server_ip, self.login, self.passwd, self.dbname) as cursor:
                 cursor.execute(sql, params)
-                # self.db.conn.commit()
-                last_row_id = cursor.lastrowid
+                return cursor.lastrowid
         except (TypeError, ValueError, pymysql.err.OperationalError) as err:
             print('ERROR on sql execute:', err)
             print(sql)
             print(params)
-            last_row_id = None
-        return last_row_id
+        return None
 
     def update(self, table, **kwargs):
-        """update the fields given as parameters with their values using the 'kwargs' dictionary"""
+        """
+        Update the fields given as parameters with their values using the 'kwargs' dictionary
+        'id' should be part of the kwargs to ensure a single row update
+        If the table's primary key is not named 'id' then provide its name on the 'id_col_name' argument
+        """
         col_value, id, id_col_name = [], None, 'id'
         for col, val in kwargs.items():
             if col=='id':
@@ -96,20 +97,16 @@ class Database():
 
     def insert(self, table, **kwargs):
         """INSERT a record in the table"""
-        col_value, id, id_col_name, last_row_id = [], None, 'id', None
+        col_value = []
         for col, val in kwargs.items():
-            if col=='id':
-                id = val
-            elif col=='id_col_name':
-                id_col_name = val
-            else:
-                col_value.append((col, val))
+            col_value.append((col, val))
         if col_value:
             sql = "INSERT INTO {0} ({1}) VALUES ({2})".format(table,
                                                               ",".join([c for c, v in col_value]),
                                                               ",".join(["%s" for i in range(len(col_value))]))
-            last_row_id = self.execute_sql(sql, [v for c, v in col_value])
-        return last_row_id
+            return self.execute_sql(sql, [v for c, v in col_value])
+        else:
+            return None
 
     def log(self, log_type, code, message, debug=False):
         """
@@ -129,26 +126,18 @@ class Database():
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
         --
-        -- Indexes for dumped tables
-        --
-
-        --
         -- Indexes for table `tb_log`
         --
         ALTER TABLE `tb_log`
           MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
         COMMIT;
-        :return:
+
+        :return: last inserted row id
         """
         if debug:
             print(datetime.now(), log_type, code, message)
         return self.insert('tb_log', type=log_type, code=code, message=message)
-        # sql = "INSERT INTO tb_log(type, code, message) values (%s,%s,%s)"
-        # try:
-        #     with pymysql.connect(self.server_ip, self.login, self.passwd, self.dbname) as cursor:
-        #         cursor.execute(sql, (log_type, code, message))
-        # except pymysql.err.OperationalError as err:
-        #     print(err) # cannot log as we have en error!
+
 
 if __name__ == "__main__":
     db = Database()
