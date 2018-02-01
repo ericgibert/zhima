@@ -41,7 +41,7 @@ class Member(object):
 
     def get_from_db(self, member_id):
         """Connects to the database to fetch a member table record or simulation"""
-        data = self.db.fetchone("SELECT id, username, birthdate, status from users where id=%s", (member_id,))
+        data = self.db.fetch("SELECT id, username, birthdate, status from users where id=%s", (member_id,))
         self.id, self.name, self.birthdate, self.status = data or (None, None, None, None)
         if self.birthdate and not isinstance(self.birthdate, (datetime, date)):
             self.birthdate = datetime.strptime(self.birthdate, "%Y-%m-%d")
