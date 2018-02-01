@@ -36,7 +36,7 @@ class Database():
             print("Cannot find entry {} in db_access.data".format(ip_3))
             exit(1)
 
-    def fetch(self, sql, params, one_only=True):
+    def fetch(self, sql, params = (), one_only=True):
         """execute a SELECT statement with the parameters and fetch row/rows"""
         try:
             with pymysql.connect(self.server_ip, self.login, self.passwd, self.dbname) as cursor:

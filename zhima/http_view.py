@@ -23,6 +23,25 @@ def default():
     rows = http_view.controller.db.fetch(sql, (), one_only=False)
     return template("default", session_valid=session["valid"], controller=http_view.controller, rows=rows)
 
+@http_view.get('/entries')
+def list_entries():
+    sql = "SELECT * from tb_log WHERE type='OPEN' and datediff(CURDATE(), created_on)  < 32 ORDER BY created_on desc"
+    rows = http_view.controller.db.fetch(sql, (), one_only=False)
+    return template("entries", rows=rows)
+
+@http_view.get('/log')
+@http_view.get('/log/<page:int>')
+def log(page=0):
+    """Log dump - can be filterer with filter=<log_type>"""
+    PAGE_LENGTH = 25  # rows per page
+    try:
+        req_query = "?filter=" + request.query["filter"]
+        sql = "SELECT * FROM tb_log WHERE type='{}'".format(request.query["filter"])
+    except KeyError:
+        sql, req_query = "SELECT * FROM tb_log", ""
+    sql += " ORDER BY created_on DESC LIMIT {},{}".format(page * PAGE_LENGTH, PAGE_LENGTH)
+    rows = http_view.controller.db.fetch(sql, one_only=False)
+    return template("log", rows=rows, current_page=page, req_query=req_query)
 
 #
 ### Login/Logout form & process
@@ -45,11 +64,13 @@ def do_login():
     session = session_manager.get_session()
     session['valid'] = False
 
-    new_user = Member(http_view.controller)
-    new_user.get_user(username, password)
-    if new_user["id"]:
-        session['valid'] = True
-        session['name'] = username
+    new_user = Member(http_view.controller.db)
+    new_user_id = new_user.db.fetch("SELECT id from users where username=%s and role>0", (username,))
+    if new_user_id:
+        new_user.get_user(new_user_id)
+        if new_user.id:
+            session['valid'] = True
+            session['name'] = username
 
     session_manager.save(session)
     if not session['valid']:
@@ -78,4 +99,7 @@ def stop():
     sys.stderr.close()
 
 if __name__ == "__main__":
+    from model_db import Database
+    http_view.controller = object()
+    http_view.controller.db = Database()
     http_view.run()
