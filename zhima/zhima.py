@@ -23,6 +23,7 @@ __email__ =  "ericgibert@yahoo.fr"
 __license__ = "MIT"
 import sys, os
 import signal
+import threading
 from time import sleep
 from camera import Camera
 from rpi_gpio import Rpi_Gpio, _simulation as rpi_simulation
@@ -75,7 +76,9 @@ class Controller(object):
         signal.signal(signal.SIGUSR1, stop_handler)
         current_state = 1  # initial state: waiting for proximity detection
         http_view.controller = self
-        http_view.run(host=self.bottle_ip)
+        #thread.start_new_thread(http_view.run, (, ))
+        t = threading.Thread(target=http_view.run, kwargs={'host':self.bottle_ip})
+        t.start()
         try:
             while current_state:  # can be stopped by program by return a next state as 0
                 task = self.TASKS[current_state]
