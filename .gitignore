@@ -103,3 +103,4 @@ ENV/
 /zhima/zhima.pid
 /*.xml
 
+/zhima/images/

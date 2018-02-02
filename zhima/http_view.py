@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import sys
 from os import path, system
-from bottle import Bottle, template, request, BaseTemplate, redirect, error
+from bottle import Bottle, template, request, BaseTemplate, redirect, error, static_file
 from bottlesession import CookieSession, authenticator
 from member_db import Member
 
@@ -97,6 +97,10 @@ def stop():
     """Stops the application"""
     # http_view.controller.stop(from_bottle=True)
     sys.stderr.close()
+
+@http_view.route("/images/<filepath>")
+def img(filepath):
+    return static_file(filepath, root="images")
 
 if __name__ == "__main__":
     from model_db import Database

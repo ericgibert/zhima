@@ -14,6 +14,14 @@
    Author: &nbsp;{{__author__}}<br/>
    License: {{__license__}}<br/>
 </p>
+
+<table border="1">
+    % for row in rows:
+    <tr><td>{{row[0]}}</td><td>{{row[1]}}</td><td>{{row[2]}}</td><td>{{row[3]}}</td><td>{{row[4]}}</td></tr>
+    %end
+</table>
+
+
 <ul>
 % import sys
     <li>Python: {{sys.version}}</li>
@@ -25,11 +33,6 @@
 % except pkg_resources.DistributionNotFound:
     <li>pigpio: not installed</li>
 </ul>
-<table border="1">
-% for row in rows:
-    <tr><td>{{row[0]}}</td><td>{{row[1]}}</td><td>{{row[2]}}</td><td>{{row[3]}}</td><td>{{row[4]}}</td></tr>
-%end
-</table>
 
 <p>
 <hr/>
