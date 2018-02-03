@@ -7,12 +7,27 @@
 <body>
 % include('header.html')
 <h1>Entries @ XCJ</h1>
-
-<table border="1">
-% for row in rows:
-    <tr><td>{{row[0]}}</td><td>{{row[1]}}</td><td>{{row[2]}}</td><td>{{row[3]}}</td><td>{{row[4]}}</td></tr>
-%end
+<table>
+    <tr>
+        % for k in rows[0].keys():
+        <th>{{k}}</th>
+        % end
+    </tr>
+    % for row in rows:
+    <tr>
+        % for v in row.values():
+        <td>{{v}}</td>
+        % end
+    </tr>
+    % end
 </table>
-
+<p>
+    % if current_page > 0:
+    <a href="/entries/{{current_page-1}}">Previous</a>
+    % end
+    % if len(rows) == 25:
+    <a href="/entries/{{current_page+1}}">Next</a>
+    % end
+</p>
 </body>
 </html>

@@ -39,7 +39,7 @@ class Database():
     def fetch(self, sql, params = (), one_only=True):
         """execute a SELECT statement with the parameters and fetch row/rows"""
         try:
-            with pymysql.connect(self.server_ip, self.login, self.passwd, self.dbname) as cursor:
+            with pymysql.cursors.DictCursor(pymysql.connect(self.server_ip, self.login, self.passwd, self.dbname)) as cursor:
                 cursor.execute(sql, params)
                 data = cursor.fetchone() if one_only else cursor.fetchall()
         except (pymysql.err.OperationalError, pymysql.err.ProgrammingError) as err:

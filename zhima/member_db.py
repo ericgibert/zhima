@@ -41,10 +41,17 @@ class Member(object):
 
     def get_from_db(self, member_id):
         """Connects to the database to fetch a member table record or simulation"""
-        data = self.db.fetch("SELECT id, username, birthdate, status from users where id=%s", (member_id,))
-        self.id, self.name, self.birthdate, self.status = data or (None, None, None, None)
-        if self.birthdate and not isinstance(self.birthdate, (datetime, date)):
-            self.birthdate = datetime.strptime(self.birthdate, "%Y-%m-%d")
+        self.data = self.db.fetch("SELECT * from users where id=%s", (member_id,))
+        try:
+            self.id, self.name = self.data['id'], self.data['username']
+            self.status = self.data['status']
+            if isinstance(self.data['birthdate'], (datetime, date)):
+                self.birthdate = self.data['birthdate']
+            else:
+                self.birthdate = datetime.strptime(self.data['birthdate'], "%Y-%m-%d")
+
+        except KeyError:
+            self.id, self.name, self.birthdate, self.status = (None, None, None, None)
 
     def decode_qrcode(self, qrcode):
         """Decode a QR code in its component based on its version number"""
@@ -82,8 +89,10 @@ class Member(object):
         print("Decoded QR Code:", clear_qrcode)
 
 
-    def encode_qrcode(self, version=1):
-        """Encode this member's data into a QR Code string/payload"""
+    def encode_qrcode(self, version=2):
+        """Encode this member's data into a QR Code string/payload
+        :param version: defaulted to the latest version
+        """
         if version==1:
             return "XCJ{}#{}#{}".format(version, self.id, self.name)
         elif version==2:
@@ -110,7 +119,7 @@ if __name__ == "__main__":
     m = Member(database=db, member_id=123456)
     print("Found in db:", m.name, m.birthdate, m.status)
     print("Make QR Code:", m.encode_qrcode())
-    n = Member(database=db, qrcode=m.encode_qrcode())
+    n = Member(database=db, qrcode=m.encode_qrcode(version=1))
     assert(str(m) == str(n))
     print("m==n:", str(m) == str(n))
 

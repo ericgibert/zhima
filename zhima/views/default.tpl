@@ -15,9 +15,13 @@
    License: {{__license__}}<br/>
 </p>
 
-<table border="1">
+<table>
     % for row in rows:
-    <tr><td>{{row[0]}}</td><td>{{row[1]}}</td><td>{{row[2]}}</td><td>{{row[3]}}</td><td>{{row[4]}}</td></tr>
+    <tr>
+        % for v in row.values():
+        <td>{{v}}</td>
+        % end
+    </tr>
     %end
 </table>
 
