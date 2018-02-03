@@ -50,7 +50,7 @@ class Database():
         else:
             return data
 
-    def select(self, table, columns='*', one_only=True, **where):
+    def select(self, table, columns='*', one_only=True, order_by="", **where):
         """build a SELECT statement and fetch its row(s)"""
         sql = "SELECT {} from {}".format(columns, table)
         params = []
@@ -60,6 +60,7 @@ class Database():
                 where_clause.append(col+"=%s")
                 params.append(val)
             sql += " WHERE " + ",".join(where_clause)
+            if order_by: sql += " ORDER BY " + order_by
         return self.fetch(sql, params, one_only)
 
     def execute_sql(self, sql, params):

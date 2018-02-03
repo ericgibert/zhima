@@ -2,10 +2,12 @@
 import sys
 from shutil import copy2
 from os import path, system
+from datetime import datetime
 from bottle import Bottle, template, request, BaseTemplate, redirect, error, static_file
 from bottlesession import CookieSession, authenticator
 from member_db import Member
 from make_qrcode import make_qrcode
+from transaction_db import Transaction
 
 session_manager = CookieSession()    #  NOTE: you should specify a secret
 valid_user = authenticator(session_manager)
@@ -80,6 +82,34 @@ def get_member(id):
 def upd_member(id):
     """update a member database record"""
     pass
+
+@http_view.get('/transaction/<member_id:int>')
+@http_view.get('/transaction/<member_id:int>/<id:int>')
+def get_transaction(member_id, id=0):
+    if id:
+        transaction = Transaction(http_view.controller.db, id)
+        read_only = True
+    elif member_id:
+        transaction = Transaction(http_view.controller.db, member_id=member_id)
+        read_only = False
+    return template("transaction", transaction=transaction, read_only=read_only)
+
+@http_view.post('/transaction/add')
+def add_transaction():
+    transaction = Transaction(http_view.controller.db)
+    if request.forms['id'] == 'None':
+        id = transaction.db.insert('transactions',
+                                member_id = int(request.forms['member_id']),
+                                type = request.forms['type'],
+                                description = request.forms['description'],
+                                amount = float(request.forms['amount']),
+                                currency = request.forms['currency'],
+                                valid_from = request.forms['valid_from'],
+                                valid_until = request.forms['valid_until'],
+                                created_on = datetime.now()
+                              )
+        redirect("/transaction/{}/{}".format(request.forms['member_id'], id))
+    return template("transaction", transaction=transaction, read_only=True)
 
 #
 ### Login/Logout form & process

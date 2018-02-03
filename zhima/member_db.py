@@ -18,6 +18,7 @@ __license__ = "MIT"
 from datetime import datetime, timedelta, date
 from binascii import hexlify, unhexlify, Error as binascii_error
 from Crypto.Cipher import DES
+from transaction_db import Transaction
 
 
 class Member(object):
@@ -38,10 +39,12 @@ class Member(object):
             self.get_from_db(member_id)
         elif qrcode:
             self.decode_qrcode(qrcode)
+        else:
+            self.data = {}
 
     def get_from_db(self, member_id):
         """Connects to the database to fetch a member table record or simulation"""
-        self.data = self.db.fetch("SELECT * from users where id=%s", (member_id,))
+        self.data = self.db.select('users', id=member_id)  # fetch("SELECT * from users where id=%s", (member_id,))
         try:
             self.id, self.name = self.data['id'], self.data['username']
             self.status = self.data['status']
@@ -49,7 +52,14 @@ class Member(object):
                 self.birthdate = self.data['birthdate']
             else:
                 self.birthdate = datetime.strptime(self.data['birthdate'], "%Y-%m-%d")
-
+            # fetch this member's transactions
+            self.transactions = self.db.select('transactions',
+                                               columns="""type, description, 
+                                                       CONCAT(FORMAT(amount, 2), ' ', currency) as amount,
+                                                       valid_from, valid_until, created_on""",
+                                               one_only=False,
+                                               order_by="created_on DESC",
+                                               member_id=self.id)
         except KeyError:
             self.id, self.name, self.birthdate, self.status = (None, None, None, None)
 
@@ -112,6 +122,7 @@ class Member(object):
 
     def __str__(self):
         return "{} ({})".format(self.name, self.id)
+
 
 if __name__ == "__main__":
     from model_db import Database
