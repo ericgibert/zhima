@@ -76,6 +76,11 @@ def get_member(id):
         copy2("images/emoji-not-happy.jpg", qr_file)
     return template("member", member=member, read_only=True)
 
+@http_view.get('/member/edit/<id:int>')
+def upd_member(id):
+    """update a member database record"""
+    pass
+
 #
 ### Login/Logout form & process
 #
