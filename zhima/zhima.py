@@ -24,6 +24,7 @@ __license__ = "MIT"
 import sys, os
 import signal
 import threading
+import argparse
 from time import sleep
 from camera import Camera
 from rpi_gpio import Rpi_Gpio, _simulation as rpi_simulation
@@ -34,8 +35,8 @@ from http_view import http_view, stop as bottle_stop
 
 
 class Controller(object):
-    def __init__(self, bottle_ip='127.0.0.1'):
-        self.bottle_ip = bottle_ip
+    def __init__(self, bottle_ip=None):
+        self.bottle_ip = bottle_ip or '127.0.0.1'
         self.gpio = Rpi_Gpio()
         self.db = Database()
         if rpi_simulation:
@@ -179,5 +180,10 @@ class Controller(object):
         return 1
 
 if __name__ == "__main__":
-    ctrl = Controller()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-b", "--bottle", dest="bottle_ip", help="Optional: Raspberry Pi IP address to allow remote connections", required=False,  default="")
+    parser.add_argument('-v', '--version', action='version', version=__version__)
+    # parser.add_argument('config_file', nargs='?', default='')
+    args, unk = parser.parse_known_args()
+    ctrl = Controller(bottle_ip=args.bottle_ip)
     ctrl.run()
