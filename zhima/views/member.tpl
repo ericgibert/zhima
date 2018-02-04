@@ -6,7 +6,7 @@
 </head>
 <body>
 % include('header.html')
-<h1>Zhima - Member {{session['id']}}</h1>
+<h1>Zhima - Member {{member.data['username']}} ({{member.data['id']}})</h1>
 
 % if read_only:
 % from time import time
@@ -14,7 +14,9 @@
 % else:
 <form method="POST" id="form" action="/member/edit/{{member.data['id']}}">
 % end
-
+% if session['id']!=member.data['id']:
+<p>You are logged as {{session['name']}} ({{session['id']}})</p>
+% end
 <table style="border: 3px solid black;">
     % for k,v in member.data.items():
     <tr><td style="text-align:right; border: 0px;">{{k.capitalize()}}</td>

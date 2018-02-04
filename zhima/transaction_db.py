@@ -63,7 +63,7 @@ class Transaction():
         elif member_id:
             self.data = {
                 'id': None, 'member_id': member_id, 'type':'1M MEMBERSHIP',
-                'description': "", 'amount': 0.0, 'currency':'CNY',
+                'description': "", 'amount': 100.0, 'currency':'CNY',
                 'valid_from': date.today(), 'valid_until': date.today()+timedelta(days=31),
                 'created_on': datetime.now()
             }

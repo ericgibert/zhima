@@ -61,7 +61,7 @@ def list_sql(table, filter_col, order_by="", page=0, select_cols="*"):
 @need_admin
 def list_entries(page=0):
     sql = """SELECT code, message, created_on from tb_log 
-             WHERE type='OPEN' and datediff(CURDATE(), created_on) < 32 
+             WHERE (type='OPEN' or type='NOT_OK') and datediff(CURDATE(), created_on) < 32 
              ORDER BY created_on desc LIMIT {}, {}""".format(page * PAGE_LENGTH, PAGE_LENGTH)
     rows = http_view.controller.db.fetch(sql, (), one_only=False)
     return template("entries", rows=rows, current_page=page, session=session_manager.get_session())

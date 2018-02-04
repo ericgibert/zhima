@@ -6,7 +6,7 @@
 </head>
 <body>
 % include('header.html')
-<h1>Welcome {{session['name']}} to Zhima</h1>
+<h1>Welcome {{session.get('name', "")}} to Zhima</h1>
 
 <table>
 
@@ -25,7 +25,7 @@
 
 
 <hr/>
-% if session['admin']:
+% if session.get('admin', None):
 <ul>
 % import sys
     <li>Python: {{sys.version}}</li>

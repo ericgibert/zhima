@@ -45,7 +45,7 @@ table, td {
 <ul class="menu">
   <li><a href="/"><IMG src="/images/XCJ.png" height="50px" width="50px"></a></li>
   <li><a href="/">Home</a></li>
-  % if session['admin']:
+  % if 'admin' in session and session['admin']:
   <li><a href="/log">Log</a></li>
   <li><a href="/entries">Entries</a></li>
   <li><a href="/members">Members</a></li>
