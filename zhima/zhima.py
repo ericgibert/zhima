@@ -181,7 +181,7 @@ class Controller(object):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("-b", "--bottle", dest="bottle_ip", help="Optional: Raspberry Pi IP address to allow remote connections", required=False,  default="")
+    parser.add_argument("-b", "--bottle", dest="bottle_ip", help="Optional: Raspberry Pi IP address to allow remote connections", required=False,  default="127.0.0.1")
     parser.add_argument('-v', '--version', action='version', version=__version__)
     # parser.add_argument('config_file', nargs='?', default='')
     args, unk = parser.parse_known_args()
