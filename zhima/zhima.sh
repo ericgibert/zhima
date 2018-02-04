@@ -13,6 +13,7 @@ start)
     sudo pigpiod
 
     cd $CWD
+    python3 http_view.py -b $_IP > $CWD/../Private/http_view.log 2>&1 &
     python3 zhima.py -b $_IP > $CWD/../Private/zhima.log 2>&1 &
     echo http://$_IP:8080
     ;;

@@ -1,7 +1,18 @@
 #!/usr/bin/env python3
+""" HTTP server for XCJ member database management
+
+- Record the members
+- Record their payments (called transactions)
+
+"""
+__author__ = "Eric Gibert"
+__version__ = "1.0.20180204"
+__email__ =  "ericgibert@yahoo.fr"
+__license__ = "MIT"
 import sys
 from shutil import copy2
 from os import path, system
+import argparse
 from datetime import datetime
 from bottle import Bottle, template, request, BaseTemplate, redirect, error, static_file
 from bottlesession import CookieSession, authenticator
@@ -225,4 +236,11 @@ if __name__ == "__main__":
         def __init__(self, db):
             self.db = db
     http_view.controller = ctrl(Database())
-    http_view.run()
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-b", "--bottle", dest="bottle_ip", help="Optional: Raspberry Pi IP address to allow remote connections", required=False,  default="127.0.0.1")
+    parser.add_argument('-v', '--version', action='version', version=__version__)
+    # parser.add_argument('config_file', nargs='?', default='')
+    args, unk = parser.parse_known_args()
+
+    http_view.run(host=args.bottle_ip)
