@@ -7,13 +7,13 @@ PID=$(cat $CWD/zhima.pid)
 # See how we were called.
 case "$1" in
 start)
-     export WORKON_HOME=$HOME/.virtualenvs
-     source $WORKON_HOME/zhima/bin/activate
+    export WORKON_HOME=$HOME/.virtualenvs
+    source $WORKON_HOME/zhima/bin/activate
 
     sudo pigpiod
 
     cd $CWD
-    python zhima.py -b $_IP > $CWD/../Private/zhima.log 2>&1 &
+    python3 zhima.py -b $_IP > $CWD/../Private/zhima.log 2>&1 &
     echo http://$_IP:8080
     ;;
 stop)
