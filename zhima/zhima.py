@@ -18,7 +18,7 @@ Gr1 Gr2 Red
 
 """
 __author__ = "Eric Gibert"
-__version__ = "1.0.20170119"
+__version__ = "1.0.20180204"
 __email__ =  "ericgibert@yahoo.fr"
 __license__ = "MIT"
 import sys, os
@@ -34,8 +34,8 @@ from http_view import http_view, stop as bottle_stop
 
 
 class Controller(object):
-    def __init__(self, bottle_ip=None):
-        self.bottle_ip = bottle_ip or '127.0.0.1'
+    def __init__(self, bottle_ip='127.0.0.1'):
+        self.bottle_ip = bottle_ip
         self.gpio = Rpi_Gpio()
         self.db = Database()
         if rpi_simulation:

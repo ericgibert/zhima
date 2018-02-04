@@ -7,7 +7,7 @@
 <body>
 % include('header.html')
 <h1>Log</h1>
-<p>You can add a filter by 'type' on the URL like so: <a href="/log?filter=INFO">/log?filter=INFO</a></p>
+<p>You can add a filter by 'type' on the URL like so: <a href="/log?filter=ERROR">/log?filter=ERROR</a></p>
 % if len(rows):
 <style>
 table {

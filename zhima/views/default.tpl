@@ -6,7 +6,13 @@
 </head>
 <body>
 % include('header.html')
-<h1>Dashboard for Zhima</h1>
+<h1>Welcome {{session['name']}} to Zhima</h1>
+
+<table>
+
+
+
+</table>
 
 
 % from zhima import __version__, __author__, __license__
@@ -15,17 +21,11 @@
    License: {{__license__}}<br/>
 </p>
 
-<table>
-    % for row in rows:
-    <tr>
-        % for v in row.values():
-        <td>{{v}}</td>
-        % end
-    </tr>
-    %end
-</table>
 
 
+
+<hr/>
+% if session['admin']:
 <ul>
 % import sys
     <li>Python: {{sys.version}}</li>
@@ -39,8 +39,7 @@
 </ul>
 
 <p>
-<hr/>
-% if session_valid:
+
 <b><a href="/restart">Restart</a></b> the application.
 <hr/>
 To stop the application, click <a href="/stop">here</a>.

@@ -11,11 +11,13 @@
 %end
 
 <form method="POST" id="form" action="/Login">
+    <p>
     <table>
         <tr><td>Login name: </td><td> <input type="text" name="username" /></td></tr>
         <tr><td>Password: </td><td> <input type="password" name="password" /></td></tr>
     </table>
-    <input type="submit" value="Login" name="submit" />
+    <p><input type="submit" value="Login" name="submit" /></p>
+    </p>
 </form>
 </body>
 </html>
