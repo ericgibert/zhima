@@ -11,7 +11,7 @@ __email__ =  "ericgibert@yahoo.fr"
 __license__ = "MIT"
 import sys
 from shutil import copy2
-from os import path, system
+from os import path, system, getpid
 import argparse
 from datetime import datetime
 from bottle import Bottle, template, request, BaseTemplate, redirect, error, static_file
@@ -242,5 +242,8 @@ if __name__ == "__main__":
     parser.add_argument('-v', '--version', action='version', version=__version__)
     # parser.add_argument('config_file', nargs='?', default='')
     args, unk = parser.parse_known_args()
+
+    with open("http_view.pid", "wt") as fpid:
+        print(getpid(), file=fpid)
 
     http_view.run(host=args.bottle_ip)

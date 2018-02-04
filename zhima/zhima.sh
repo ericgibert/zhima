@@ -4,6 +4,7 @@ CWD=$(dirname $(readlink -f $BASH_SOURCE))
 _IP=$(hostname -I | awk '{print $1}')
 rc=0
 PID=$(cat $CWD/zhima.pid)
+HTTP_PID=$(cat $CWD/http_view.pid)
 # See how we were called.
 case "$1" in
 start)
@@ -19,11 +20,14 @@ start)
     ;;
 stop)
     kill -10 $PID
+    kill -10 $HTTP_PID
     ;;
 status)
     echo "Current IP:" $_IP
     echo "Zhima pid:" $PID
     ps -fp $PID
+    echo "HTTP view pid:" $HTTP_PID
+    ps -fp $HTTP_PID
     ;;
 restart|reload|force-reload)
     $0 stop
