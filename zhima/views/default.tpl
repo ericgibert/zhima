@@ -6,7 +6,13 @@
 </head>
 <body>
 % include('header.html')
-<h1>Dashboard for Zhima</h1>
+<h1>Welcome {{session.get('name', "")}} to Zhima</h1>
+
+<table>
+
+
+
+</table>
 
 
 % from zhima import __version__, __author__, __license__
@@ -14,6 +20,12 @@
    Author: &nbsp;{{__author__}}<br/>
    License: {{__license__}}<br/>
 </p>
+
+
+
+
+<hr/>
+% if session.get('admin', None):
 <ul>
 % import sys
     <li>Python: {{sys.version}}</li>
@@ -25,15 +37,9 @@
 % except pkg_resources.DistributionNotFound:
     <li>pigpio: not installed</li>
 </ul>
-<table border="1">
-% for row in rows:
-    <tr><td>{{row[0]}}</td><td>{{row[1]}}</td><td>{{row[2]}}</td><td>{{row[3]}}</td><td>{{row[4]}}</td></tr>
-%end
-</table>
 
 <p>
-<hr/>
-% if session_valid:
+
 <b><a href="/restart">Restart</a></b> the application.
 <hr/>
 To stop the application, click <a href="/stop">here</a>.

@@ -36,18 +36,78 @@ class Database():
             print("Cannot find entry {} in db_access.data".format(ip_3))
             exit(1)
 
-    def fetch(self, sql, params, one_only=True):
-        """execute a SELECT statment with theparameters and fetch one row only"""
+    def fetch(self, sql, params = (), one_only=True):
+        """execute a SELECT statement with the parameters and fetch row/rows"""
         try:
-            with pymysql.connect(self.server_ip, self.login, self.passwd, self.dbname) as cursor:
+            with pymysql.cursors.DictCursor(pymysql.connect(self.server_ip, self.login, self.passwd, self.dbname)) as cursor:
                 cursor.execute(sql, params)
                 data = cursor.fetchone() if one_only else cursor.fetchall()
-        except pymysql.err.OperationalError as err:
+        except (pymysql.err.OperationalError, pymysql.err.ProgrammingError) as err:
             print(err)
+            print(sql)
+            print(params)
             return None
         else:
             return data
 
+    def select(self, table, columns='*', one_only=True, order_by="", **where):
+        """build a SELECT statement and fetch its row(s)"""
+        sql = "SELECT {} from {}".format(columns, table)
+        params = []
+        if where:
+            where_clause = []
+            for col, val in where.items():
+                where_clause.append(col+"=%s")
+                params.append(val)
+            sql += " WHERE " + ",".join(where_clause)
+            if order_by: sql += " ORDER BY " + order_by
+        return self.fetch(sql, params, one_only)
+
+    def execute_sql(self, sql, params):
+        """Generic SQL statement execution"""
+        try:
+            with pymysql.connect(self.server_ip, self.login, self.passwd, self.dbname) as cursor:
+                cursor.execute(sql, params)
+                return cursor.lastrowid
+        except (TypeError, ValueError, pymysql.err.OperationalError) as err:
+            print('ERROR on sql execute:', err)
+            print(sql)
+            print(params)
+        return None
+
+    def update(self, table, **kwargs):
+        """
+        Update the fields given as parameters with their values using the 'kwargs' dictionary
+        'id' should be part of the kwargs to ensure a single row update
+        If the table's primary key is not named 'id' then provide its name on the 'id_col_name' argument
+        """
+        col_value, id, id_col_name = [], None, 'id'
+        for col, val in kwargs.items():
+            if col=='id':
+                id = val
+            elif col=='id_col_name':
+                id_col_name = val
+            else:
+                col_value.append((col, val))
+        if col_value:
+            sql = "UPDATE {0} SET {1} WHERE {2}=%s".format(table,
+                                                          ",".join([c+"=%s" for c, v in col_value]),
+                                                          id_col_name)
+            self.execute_sql(sql, [v for c, v in col_value] + [ id ])
+        return id
+
+    def insert(self, table, **kwargs):
+        """INSERT a record in the table"""
+        col_value = []
+        for col, val in kwargs.items():
+            col_value.append((col, val))
+        if col_value:
+            sql = "INSERT INTO {0} ({1}) VALUES ({2})".format(table,
+                                                              ",".join([c for c, v in col_value]),
+                                                              ",".join(["%s" for i in range(len(col_value))]))
+            return self.execute_sql(sql, [v for c, v in col_value])
+        else:
+            return None
 
     def log(self, log_type, code, message, debug=False):
         """
@@ -67,28 +127,25 @@ class Database():
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
         --
-        -- Indexes for dumped tables
-        --
-
-        --
         -- Indexes for table `tb_log`
         --
         ALTER TABLE `tb_log`
           MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
         COMMIT;
-        :return:
+
+        :return: last inserted row id
         """
         if debug:
             print(datetime.now(), log_type, code, message)
-        sql = "INSERT INTO tb_log(type, code, message) values (%s,%s,%s)"
-        try:
-            with pymysql.connect(self.server_ip, self.login, self.passwd, self.dbname) as cursor:
-                cursor.execute(sql, (log_type, code, message))
-        except pymysql.err.OperationalError as err:
-            print(err) # cannot log as we have en error!
+        return self.insert('tb_log', type=log_type, code=code, message=message)
+
 
 if __name__ == "__main__":
     db = Database()
     result = db.fetch("select count(*) from users", ())
     print(result)
-    db.log('INFO', 1, "Testing log INSERT", debug=True)
+    row_id = db.log('INFO', 1, "Testing log INSERT", debug=True)
+    print(row_id)
+    db.update('tb_log', id=row_id, code=2)
+    row = db.select('tb_log', id=row_id)
+    print(row)

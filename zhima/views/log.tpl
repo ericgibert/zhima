@@ -2,29 +2,52 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Ponicwatch</title>
+    <title>Zhima - Log</title>
 </head>
 <body>
 % include('header.html')
-% import datetime
-<p>{{!pwo}}</p>
-<table border="1">
-    <tr><th>log_id</th><th>Log Type</th><th>System/PWO</th><th>Value</th><th>Text</th><th>Timestamp</th></tr>
+<h1>Log</h1>
+<p>You can add a filter by 'type' on the URL like so: <a href="/log?filter=ERROR">/log?filter=ERROR</a></p>
+% if len(rows):
+<style>
+table {
+    border-collapse: collapse;
+}
+
+table, th {
+    border: 1px solid black;
+    padding: 5px;
+    text-align: center;
+}
+table, td {
+    border: 1px solid black;
+    padding: 5px;
+    text-align: left;
+}
+</style>
+<table>
+    <tr>
+        % for k in rows[0].keys():
+        <th>{{k}}</th>
+        % end
+    </tr>
 % for row in rows:
-<tr><td>{{row[0]}}</td>
-    <td>{{row[2]}}</td>
-    <td><a href="/log?system={{row[2]+'_'+str(row[3])}}">{{row[4]}}</a></td>
-    <td>{{row[5]}}</td>
-    <td>{{row[6] if row[2] in ("INFO", "WARNING", "ERROR") else ""}}</td>
-    <td>{{str(row[7].replace(tzinfo=datetime.timezone.utc).astimezone())[2:19]}}</td></tr>
+    <tr>
+    % for v in row.values():
+    <td>{{v}}</td>
+    % end
+    </tr>
 % end
 </table>
 <p>
 % if current_page > 0:
     <a href="/log/{{current_page-1}}{{req_query}}">Previous</a>
 % end
-% if len(rows) == 20:
+% if len(rows) == 25:
     <a href="/log/{{current_page+1}}{{req_query}}">Next</a>
+% end
+% else:
+<h2>Sorry, no rows found.</h2>
 % end
 </p>
 </body>

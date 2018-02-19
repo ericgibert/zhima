@@ -136,7 +136,7 @@ class Dfrobot_Pir_v1_0(object):
 
     @property
     def state(self):
-        return self.rpi.read(self.pin)
+        return int(not self.rpi.read(self.pin))
 
 
 class Rpi_Gpio(object):
@@ -148,6 +148,7 @@ class Rpi_Gpio(object):
         self.pig = pigpio.pi(pigpio_host, pigpio_port) if not _simulation else pigpio()
         # self.proximity_pin = self.set_pin_as_input(17)
         self.proximity = E18_D80nk(self, 17)          # PROXIMITY PIN
+        #self.proximity = Dfrobot_Pir_v1_0(self, 17)
         self.green1 = Led(self, 20)                     # GREEN LED 1 on GPIO20
         self.green2 = Led(self, 21)                     # GREEN LED 2 on GPIO21
         self.red = Led(self, 16)                        # RED LED on GPIO16
@@ -192,7 +193,8 @@ if __name__ == "__main__":
     # if _simulation:
     #     print(my_pig.pig.buffer)
 
-    ed = E18_D80nk(my_pig, 17)
+    #ed = E18_D80nk(my_pig, 17)
+    ed = Dfrobot_Pir_v1_0(my_pig, 17)
     while True:
         print(ed.state)
         sleep(0.3)
