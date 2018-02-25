@@ -43,10 +43,13 @@ class Camera():
     def close(self):
         """release the hardware"""
         if has_picamera:
-            pass
+            try:
+                self.camera.close()
+            except:
+                pass
         else:
             self.camera.release()
-        del(self.camera)
+            del(self.camera)
 
     def save_photo(self, file_path=None):
         """save the current image"""
@@ -56,6 +59,7 @@ class Camera():
 
     def get_QRcode(self, max_photos=20, debug=False):
         """take max_photos until a QR code is found else returns []"""
+        # self.camera = picamera.PiCamera() if has_picamera else cv2.VideoCapture(0)
         self.qr_codes = []  # reset any previous QR code found
         self.image = None
         for i in range(max_photos):
@@ -98,6 +102,7 @@ class Camera():
             if debug:self.image.show()
             print("\n")
             return []
+        
 
 
 if __name__ == "__main__":

@@ -147,12 +147,12 @@ class Rpi_Gpio(object):
         """
         self.pig = pigpio.pi(pigpio_host, pigpio_port) if not _simulation else pigpio()
         # self.proximity_pin = self.set_pin_as_input(17)
-        self.proximity = E18_D80nk(self, 17)          # PROXIMITY PIN
+        self.proximity = E18_D80nk(self, 23)          # PROXIMITY PIN
         #self.proximity = Dfrobot_Pir_v1_0(self, 17)
-        self.green1 = Led(self, 20)                     # GREEN LED 1 on GPIO20
-        self.green2 = Led(self, 21)                     # GREEN LED 2 on GPIO21
-        self.red = Led(self, 16)                        # RED LED on GPIO16
-
+        self.green1 = Led(self, 14)                     # GREEN LED 1 on GPIO20
+        self.green2 = Led(self, 15)                     # GREEN LED 2 on GPIO21
+        self.red = Led(self, 18)                        # RED LED on GPIO16
+        self.relay = Led(self, 24)
 
     def check_proximity(self):
         return 1 if _simulation else self.proximity.state
@@ -184,6 +184,7 @@ if __name__ == "__main__":
     my_pig = Rpi_Gpio()
     my_pig.green1.ON()
     my_pig.red.ON()
+ 
 
     # dfrobot = Dfrobot_Pir_v1_0(my_pig, 17)
     # while True:
@@ -193,18 +194,18 @@ if __name__ == "__main__":
     # if _simulation:
     #     print(my_pig.pig.buffer)
 
-    #ed = E18_D80nk(my_pig, 17)
-    ed = Dfrobot_Pir_v1_0(my_pig, 17)
-    while True:
-        print(ed.state)
-        sleep(0.3)
+##    ed = E18_D80nk(my_pig, 24)
+##    ed = Dfrobot_Pir_v1_0(my_pig, 17)
+##    while True:
+##        print(ed.state)
+##        sleep(0.3)
 
     # flash testing
-    my_pig.green2.flash("SET", on_duration=0.2, off_duration=1)
+    my_pig.relay.flash("SET", on_duration=0.2, off_duration=1)
     try:
         while True:
             print("Proximity:", my_pig.check_proximity())
-            sleep(1)
+    #        sleep(1)
     finally:
         my_pig.green2.flash("STOP")
-        my_pig.red.OFF()
+        my_pig.relay.OFF()

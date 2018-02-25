@@ -47,6 +47,8 @@ Camera control
 - pip install opencv-python
 - https://pypi.python.org/pypi/opencv-python
 
+- pip install picamera
+
 Bluetooth with Python
 ---------------------
 - https://github.com/karulis/pybluez
