@@ -97,3 +97,8 @@ pip3 install bottle
 
 git clone https://github.com/linsomniac/bottlesession.git
 cp botlesession.py  site-packages
+
+Crypto
+======
+
+pip install pycrypto
