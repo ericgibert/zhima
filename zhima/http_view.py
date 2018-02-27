@@ -124,7 +124,7 @@ def upd_member(id):
     """update a member database record"""
     if str(id) not in request.forms['id']:
         return "<h1>Error - The form's id is not the same as the id on the link</h1>"
-    can_upd_fields = ('username', 'birthdate', 'status', 'role')
+    can_upd_fields = ('username', 'birthdate', 'status', 'role', 'passwd')
     need_upd = {}
     member = Member(http_view.controller.db, id)
     for field in can_upd_fields:
@@ -186,11 +186,11 @@ def do_login():
 
     session = session_manager.get_session()
     new_user = Member(http_view.controller.db)
-    new_user = new_user.db.select('users', username=username)
+    new_user = new_user.db.select('users', username=username, passwd=password)
     if new_user:
         session['valid'] = True
         session['name'] = username
-        session['admin'] = new_user['role'] > 0 and new_user['status'] == 'OK'
+        session['admin'] = new_user['role'] > 1 and new_user['status'] == 'OK'
         session['id'] = new_user['id']
         session_manager.save(session)
         BaseTemplate.defaults['login_logout'] = "Logout"

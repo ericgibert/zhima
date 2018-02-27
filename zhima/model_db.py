@@ -57,9 +57,9 @@ class Database():
         if where:
             where_clause = []
             for col, val in where.items():
-                where_clause.append(col+"=%s")
+                where_clause.append(col+("=%s" if col!='passwd' else "=PASSWORD(%s)"))
                 params.append(val)
-            sql += " WHERE " + ",".join(where_clause)
+            sql += " WHERE " + " AND ".join(where_clause)
             if order_by: sql += " ORDER BY " + order_by
         return self.fetch(sql, params, one_only)
 
@@ -91,7 +91,7 @@ class Database():
                 col_value.append((col, val))
         if col_value:
             sql = "UPDATE {0} SET {1} WHERE {2}=%s".format(table,
-                                                          ",".join([c+"=%s" for c, v in col_value]),
+                                                          ",".join([c+("=%s" if c!='passwd' else "=PASSWORD(%s)") for c, v in col_value]),
                                                           id_col_name)
             self.execute_sql(sql, [v for c, v in col_value] + [ id ])
         return id
@@ -114,25 +114,6 @@ class Database():
         :param log_type: ENTRY when a user gets in or INFO/WARNING/ERROR for technical issue
         :param code: either the member id concerned by the log entry OR the error code
         :param message: the log message
-        --
-        -- Table structure for table `tb_log`
-        --
-
-        CREATE TABLE `tb_log` (
-          `id` int(11) NOT NULL,
-          `type` varchar(20) NOT NULL,
-          `code` int(11) NOT NULL,
-          `message` text NOT NULL,
-          `created_on` timestamp NOT NULL DEFAULT current_timestamp()
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
-        --
-        -- Indexes for table `tb_log`
-        --
-        ALTER TABLE `tb_log`
-          MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
-        COMMIT;
-
         :return: last inserted row id
         """
         if debug:
