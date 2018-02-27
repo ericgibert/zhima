@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Ponicwatch</title>
+    <title>Zhima - Login</title>
 </head>
 <body>
 % include('header.html')
