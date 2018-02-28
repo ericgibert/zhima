@@ -60,7 +60,7 @@ class Member(object):
                                                one_only=False,
                                                order_by="created_on DESC",
                                                member_id=self.id)
-        except KeyError:
+        except (TypeError, KeyError):
             self.id, self.name, self.birthdate, self.status = (None, None, None, None)
 
     def decode_qrcode(self, qrcode):
