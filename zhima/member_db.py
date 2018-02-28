@@ -68,35 +68,42 @@ class Member(object):
         if isinstance(qrcode, bytes) or isinstance(qrcode, bytearray):
             qrcode = qrcode.decode("utf-8")
         print("Read QR code:", qrcode)
+        self.qrcode_is_valid = False
         # QR Code Version 1
         if qrcode.startswith("XCJ1"):
             try:
-                clear_qrcode = qrcode.split('#')  #     10  XCJ1#123456#My Name
-                member_id = clear_qrcode[1]
+                self.clear_qrcode = qrcode.split('#')  #     10  XCJ1#123456#My Name
+                member_id = self.clear_qrcode[1]
                 self.qrcode_version = '1'
+                print("Decoded QR Code V{}: {}".format(self.qrcode_version, self.clear_qrcode))
             except ValueError:
                 return
         else: #  QR Code Version > 1
             des = DES.new(self.db.key, DES.MODE_ECB)
             try:
-                clear_qrcode = des.decrypt(unhexlify(qrcode)).decode("utf-8").strip().split('#') # XCJ2#123456#2015#2018-07-17
+                self.clear_qrcode = des.decrypt(unhexlify(qrcode)).decode("utf-8").strip().split('#') # XCJ2#123456#2015#2018-07-17
                 self.qrcode_version = '2'
+                print("Decoded QR Code V{}: {}".format(self.qrcode_version, self.clear_qrcode))
             except (binascii_error, UnicodeDecodeError):
                 return
-            member_id = clear_qrcode[1]
+            member_id = self.clear_qrcode[1]
         self.get_from_db(member_id)
         #
         # Validation of the decoded QR Code
         #
-        if self.qrcode_version >= '2':
-            crc = self.birthdate.year ^ (self.birthdate.day*100 + self.birthdate.month)
-            if int(clear_qrcode[2]) != crc:
-                print("Incorrect CRC based on birthdate", crc)
-            validity = datetime.strptime(clear_qrcode[3], "%Y-%m-%d" if len(clear_qrcode[3]) == 10 else "%Y-%m-%d %H:%M:%S")
-            print("QR code valid until", validity)
-            if datetime.now() > validity:
-                print("QR Code has expired.")
-        print("Decoded QR Code:", clear_qrcode)
+        if self.id:
+            self.qrcode_is_valid = True
+            if self.qrcode_version >= '2' and self.birthdate:
+                crc = self.birthdate.year ^ (self.birthdate.day*100 + self.birthdate.month)
+                if int(self.clear_qrcode[2]) != crc:
+                    print("Incorrect CRC based on birthdate", crc)
+                    self.qrcode_is_valid = False
+                validity = datetime.strptime(self.clear_qrcode[3], "%Y-%m-%d" if len(self.clear_qrcode[3]) == 10 else "%Y-%m-%d %H:%M:%S")
+                print("QR code valid until", validity)
+                if datetime.now() > validity:
+                    print("QR Code has expired.")
+                    self.qrcode_is_valid = False
+
 
 
     def encode_qrcode(self, version=2):
