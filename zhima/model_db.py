@@ -12,11 +12,17 @@ __license__ = "MIT"
 from datetime import datetime
 import json
 from subprocess import check_output
-try:
-    import pymysql
-    _simulation = False
-except ImportError:
-    _simulation = True
+# try:
+#     import pymysql
+#     from pymysql.cursors import DictCursorMixin, Cursor
+#     _simulation = False
+# except ImportError:
+#     _simulation = True
+import pymysql
+from pymysql.cursors import DictCursorMixin, Cursor
+from collections import OrderedDict
+class OrderedDictCursor(DictCursorMixin, Cursor):
+    dict_type = OrderedDict
 
 class Database():
     """Database interface"""
