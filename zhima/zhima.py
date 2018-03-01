@@ -135,13 +135,27 @@ class Controller(object):
 
     def open_the_door(self):
         """State 4: Proceed to open the door"""
+        # Open the door using the electric relay
+        self.gpio.relay.ON()  
+        # Happy flashing
+        val = 0
+        for i in range(10):
+            self.gpio.green1.set(val)
+            val = int(not val)
+            self.gpio.green2.set(val)
+            sleep(0.3)  # 0.3 x 10 = 3 seconds == ONCE BLE command duration
+        self.gpio.relay.OFF()
+        return 1          
+          
+    def open_the_door_BLE(self):
+        """State 4: Proceed to open the door"""
         # Open the door using Bluetooth - all BLE parameters are defaulted for the TOKYDOOR BLE @ XCJ
         tokydoor = TokyDoor(database=self.db)
         try:
             tokydoor.open()
         except ValueError as err:
             self.insert_log("ERROR", 1001, "Cannot connect to TOKYDOOR: {}".format(err))
-            return 99 # cannot reach the BLE!!! Panic Mode!!
+            return 99 # cannot reach the BLE!!! Panic Mode!! 
         # Happy flashing
         val = 0
         for i in range(10):
