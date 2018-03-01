@@ -62,13 +62,14 @@ class Member(object):
                                                member_id=self.id)
         except (TypeError, KeyError):
             self.id, self.name, self.birthdate, self.status = (None, None, None, None)
+        return self.id
 
     def decode_qrcode(self, qrcode):
         """Decode a QR code in its component based on its version number"""
         if isinstance(qrcode, bytes) or isinstance(qrcode, bytearray):
             qrcode = qrcode.decode("utf-8")
         print("Read QR code:", qrcode)
-        self.qrcode_is_valid = False
+        self.qrcode_is_valid, member_id = False, None
         # QR Code Version 1
         if qrcode.startswith("XCJ1"):
             try:
@@ -77,7 +78,7 @@ class Member(object):
                 self.qrcode_version = '1'
                 print("Decoded QR Code V{}: {}".format(self.qrcode_version, self.clear_qrcode))
             except ValueError:
-                return
+                return None
         else: #  QR Code Version > 1
             des = DES.new(self.db.key, DES.MODE_ECB)
             try:
@@ -85,14 +86,15 @@ class Member(object):
                 self.qrcode_version = '2'
                 print("Decoded QR Code V{}: {}".format(self.qrcode_version, self.clear_qrcode))
             except (binascii_error, UnicodeDecodeError):
-                return
-            member_id = self.clear_qrcode[1]
-        self.get_from_db(member_id)
+                return None
+            else:
+                member_id = self.clear_qrcode[1]
+        # self.get_from_db(member_id)
         #
         # Validation of the decoded QR Code
         #
-        if self.id:
-            self.qrcode_is_valid = True
+        if member_id and self.get_from_db(member_id):
+            self.qrcode_is_valid = True  # benefice of doubt...
             if self.qrcode_version >= '2' and self.birthdate:
                 crc = self.birthdate.year ^ (self.birthdate.day*100 + self.birthdate.month)
                 if int(self.clear_qrcode[2]) != crc:
