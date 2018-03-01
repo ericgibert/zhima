@@ -104,8 +104,6 @@ class Member(object):
                     print("QR Code has expired.")
                     self.qrcode_is_valid = False
 
-
-
     def encode_qrcode(self, version=2):
         """Encode this member's data into a QR Code string/payload
         :param version: defaulted to the latest version
