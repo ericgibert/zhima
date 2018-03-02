@@ -12,15 +12,46 @@
 % from time import time
 <img src="/images/XCJ_{{member.data['id']}}.png?{{time()}}"/>
 % else:
-<form method="POST" id="form" action="/member/edit/{{member.data['id']}}">
+<script>
+    function check_pass() {
+    document.getElementById('submit').disabled =
+        (document.getElementById('passwd').value !=
+            document.getElementById('passwdchk').value);
+    }
+    function validate_me() {
+      if (document.forms["form"]["passwd"].value=="") {
+        alert("Password cannot be be blank");
+        return false;
+      }
+      if (!isValidDate(document.forms["form"]["birthdate"].value)) {
+        alert(document.forms["form"]["birthdate"].value + " is not a valid birth date in the format YYYY-MM-DD");
+        return false;
+      }
+    }
+    function isValidDate(date) {
+        var temp = date.split('-');
+        var yyyy = Number(temp[0]);
+        var mm = Number(temp[1]);
+        var dd = Number(temp[2]);
+        var d = new Date(yyyy, mm-1, dd);
+        return d && (d.getMonth() + 1)==mm && d.getDate()==dd && d.getFullYear()==yyyy;
+    }
+</script>
+<form method="POST" id="form" action="/member/edit/{{member.data['id']}}" onsubmit="return validate_me()">
 % end
 % if session['id']!=member.data['id']:
 <p>You are logged as {{session['name']}} ({{session['id']}})</p>
 % end
+
 <table style="border: 3px solid black;">
     % for k,v in member.data.items():
     <tr><td style="text-align:right; border: 0px;">{{k.capitalize()}}</td>
-        <td style="border: 0px;"><input type="text" size="40" value="{{v}}" name="{{k}}"{{" readonly" if read_only or k=='id' else ""}}/></td></tr>
+        <td style="border: 0px;">
+            <input type="text" size="40" value="{{v}}" name="{{k}}" id="{{k}}"
+                   {{"readonly" if read_only or k=='id' else ""}}
+                   {{!"onchange='check_pass();'" if k.startswith('passwd') else ""}}
+            />
+        </td></tr>
     % end
     % if session['admin']:
     <tr><td style="border: 0px;"> </td>
@@ -28,7 +59,7 @@
             % if read_only:
             <button type="button" onclick="location.href='/member/edit/{{member.data['id']}}'">Edit</button>
             % else:
-            <input type="submit" value="Update" name="submit" />
+            <input type="submit" value="Submit" name="submit" id="submit" {{ "disabled" if member.data['id']==0 else ''}}/>
             % end
         </td></tr>
     % end

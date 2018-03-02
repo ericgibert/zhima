@@ -13,6 +13,7 @@ import sys
 from shutil import copy2
 from os import path, system, getpid
 import argparse
+from collections import OrderedDict
 from datetime import datetime
 from bottle import Bottle, template, request, BaseTemplate, redirect, error, static_file
 from bottlesession import CookieSession, authenticator
@@ -128,13 +129,30 @@ def upd_member(id):
     need_upd = {}
     member = Member(http_view.controller.db, id)
     for field in can_upd_fields:
-        if request.forms[field] != str(member.data[field]):
+        if id==0 or request.forms[field] != str(member.data[field]):
             need_upd[field] = request.forms[field]
     if need_upd:
-        need_upd['id'] = id
-        member.db.update('users', **need_upd)
+        if id:
+            need_upd['id'] = id
+            member.db.update('users', **need_upd)
+        else:
+            member.db.insert('users', **need_upd)
     redirect('/member/{}'.format(id))
 
+@http_view.get('/members/new')
+@need_admin
+def new_form_member():
+    """add a new member database record"""
+    member = Member(http_view.controller.db)
+    member.data = OrderedDict()
+    member.data['id'] = 0
+    member.data['username'] = '<New>'
+    member.data['birthdate'] = 'YYYY-MM-DD'
+    member.data['status'] = 'OK'
+    member.data['role'] = 0
+    member.data['passwd'] = ''
+    member.data['passwdchk'] = ''
+    return template("member", member=member, read_only=False, session=session_manager.get_session())
 
 @http_view.get('/transaction/<member_id:int>')
 @http_view.get('/transaction/<member_id:int>/<id:int>')

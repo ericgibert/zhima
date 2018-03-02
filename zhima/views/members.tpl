@@ -8,6 +8,7 @@
 % include('header.html')
 <h1>XCJ Members</h1>
 <p>You can add a filter by 'status' on the URL like so: <a href="/members?filter=OK">/members?filter=OK</a></p>
+<p>You can create a new member here: <a href="/members/new">/members/new</a></p>
 % if len(rows):
 <table>
         <tr>
