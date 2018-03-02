@@ -104,3 +104,13 @@ ENV/
 /*.xml
 
 /zhima/images/
+/_linux/
+/codestyles/
+/markdown.xml
+/vcs.xml
+/editor.xml
+/ignore.xml
+/baseRefactoring.xml
+/ide.general.xml
+/filetypes.xml
+/debugger.xml
