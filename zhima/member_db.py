@@ -22,7 +22,9 @@ from model_db import Database
 
 class Member(Database):
     """
-    A member record in the member database - SELECT mode only supported
+    A member record in the member database
+    - Database is super class to connect to the db itself and perform all SQL queries
+    - Member (db.users) is master table to Transactions (db.transactions)
     """
     def __init__(self, member_id=None, qrcode=None, *args, **kwargs):
         """
@@ -43,7 +45,7 @@ class Member(Database):
 
     def get_from_db(self, member_id):
         """Connects to the database to fetch a member table record or simulation"""
-        self.data = self.select('users', id=member_id)  # fetch("SELECT * from users where id=%s", (member_id,))
+        self.data = self.select('users', id=member_id)
         try:
             self.id, self.name = self.data['id'], self.data['username']
             self.status = self.data['status']
@@ -82,7 +84,7 @@ class Member(Database):
             des = DES.new(self.key, DES.MODE_ECB)
             try:
                 self.clear_qrcode = des.decrypt(unhexlify(qrcode)).decode("utf-8").strip().split('#') # XCJ2#123456#2015#2018-07-17
-                self.qrcode_version = '2'
+                self.qrcode_version = self.clear_qrcode[0][3:]
                 print("Decoded QR Code V{}: {}".format(self.qrcode_version, self.clear_qrcode))
             except (binascii_error, UnicodeDecodeError):
                 return None
@@ -123,7 +125,7 @@ class Member(Database):
             # print(qrcode, encrypted_qrcode)
             return encrypted_qrcode
         else:
-            return "Unknown Encoding Version{}".format(version)
+            return "Unknown Encoding Version {}".format(version)
 
 
     def __str__(self):

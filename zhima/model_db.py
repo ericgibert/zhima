@@ -45,7 +45,6 @@ class Database():
     def fetch(self, sql, params = (), one_only=True):
         """execute a SELECT statement with the parameters and fetch row/rows"""
         try:
-            # with pymysql.cursors.DictCursor(pymysql.connect(self.server_ip, self.login, self.passwd, self.dbname)) as cursor:
             with pymysql.connect(self.server_ip, self.login, self.passwd, self.dbname).cursor(OrderedDictCursor) as cursor:
                 cursor.execute(sql, params)
                 data = cursor.fetchone() if one_only else cursor.fetchall()
@@ -154,6 +153,7 @@ CREATE TABLE `transactions` (
 CREATE TABLE `users` (
   `id` int(11) NOT NULL,
   `username` varchar(200) DEFAULT NULL,
+  `passwd` varchar(50) NOT NULL,
   `birthdate` date DEFAULT NULL,
   `status` varchar(20) DEFAULT NULL,
   `role` int(11) NOT NULL
