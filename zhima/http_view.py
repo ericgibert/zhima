@@ -136,7 +136,7 @@ def upd_member(id):
             need_upd['id'] = id
             member.db.update('users', **need_upd)
         else:
-            member.db.insert('users', **need_upd)
+            id = member.db.insert('users', **need_upd)
     redirect('/member/{}'.format(id))
 
 @http_view.get('/members/new')
