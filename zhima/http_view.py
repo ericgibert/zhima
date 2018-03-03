@@ -127,16 +127,23 @@ def upd_member(id):
         return "<h1>Error - The form's id is not the same as the id on the link</h1>"
     can_upd_fields = ('username', 'birthdate', 'status', 'role', 'passwd')
     need_upd = {}
-    member = Member(id)
+    member = Member(member_id=id)
     for field in can_upd_fields:
-        if id==0 or request.forms[field] != str(member.data[field]):
+        if id==0 or (request.forms[field] != str(member.data[field])):
             need_upd[field] = request.forms[field]
+            # check unicity of the 'username'
+            if field=='username':
+                nb_username = member.fetch("select count(id) as cnt from users where username=%s", (request.forms[field],))
+                if nb_username['cnt']>0:
+                    return "<h1>Error - This Username already exists - Duplicates are forbidden</h1>"
     if need_upd:
         if id:
             need_upd['id'] = id
             member.update('users', **need_upd)
         else:
             id = member.insert('users', **need_upd)
+    else:
+        print("Post with nothing to do...")
     redirect('/member/{}'.format(id))
 
 @http_view.get('/members/new')
