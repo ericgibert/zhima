@@ -18,21 +18,20 @@ __license__ = "MIT"
 from datetime import datetime, timedelta, date
 from binascii import hexlify, unhexlify, Error as binascii_error
 from Crypto.Cipher import DES
-from transaction_db import Transaction
+from model_db import Database
 
-
-class Member(object):
+class Member(Database):
     """
     A member record in the member database - SELECT mode only supported
     """
-    def __init__(self, database, member_id=None, qrcode=None):
+    def __init__(self, member_id=None, qrcode=None, *args, **kwargs):
         """
         Select a record from the database based on a member table id or the id found in a QR code
         :param member_id: int for member tbale key
         :param qrcode: string read in a qrcode
         """
+        super().__init__(*args, **kwargs)
         self.id, self.name, self.birthdate, self.status = None, None, None, None
-        self.db = database
         # create a member based on an ID or QR Code
         self.qrcode_version = '?'
         if member_id:
@@ -44,7 +43,7 @@ class Member(object):
 
     def get_from_db(self, member_id):
         """Connects to the database to fetch a member table record or simulation"""
-        self.data = self.db.select('users', id=member_id)  # fetch("SELECT * from users where id=%s", (member_id,))
+        self.data = self.select('users', id=member_id)  # fetch("SELECT * from users where id=%s", (member_id,))
         try:
             self.id, self.name = self.data['id'], self.data['username']
             self.status = self.data['status']
@@ -53,7 +52,7 @@ class Member(object):
             else:
                 self.birthdate = datetime.strptime(self.data['birthdate'], "%Y-%m-%d")
             # fetch this member's transactions
-            self.transactions = self.db.select('transactions',
+            self.transactions = self.select('transactions',
                                                columns="""type, description, 
                                                        CONCAT(FORMAT(amount, 2), ' ', currency) as amount,
                                                        valid_from, valid_until, created_on""",
@@ -80,7 +79,7 @@ class Member(object):
             except ValueError:
                 return None
         else: #  QR Code Version > 1
-            des = DES.new(self.db.key, DES.MODE_ECB)
+            des = DES.new(self.key, DES.MODE_ECB)
             try:
                 self.clear_qrcode = des.decrypt(unhexlify(qrcode)).decode("utf-8").strip().split('#') # XCJ2#123456#2015#2018-07-17
                 self.qrcode_version = '2'
@@ -116,7 +115,7 @@ class Member(object):
             crc = self.birthdate.year ^ (self.birthdate.day*100 + self.birthdate.month)
             validity = '{0:%Y-%m-%d}'.format(datetime.today() + timedelta(days=180))    # 6 months validity
             qrcode = "XCJ{}#{}#{}#{}".format(version, self.id, crc, validity)           # XCJ2#123456#2015#2018-07-17
-            des = DES.new(self.db.key, DES.MODE_ECB)
+            des = DES.new(self.key, DES.MODE_ECB)
             # turn qrcode into bytes and pad to multiple of 8 bytes
             qrcode = qrcode.encode("utf-8")
             qrcode += ((((len(qrcode)+7) // 8) * 8) - len(qrcode)) * b' '
@@ -132,30 +131,28 @@ class Member(object):
 
 
 if __name__ == "__main__":
-    from model_db import Database
-    db = Database()
-    m = Member(database=db, member_id=123456)
+    m = Member(member_id=123456)
     print("Found in db:", m.name, m.birthdate, m.status)
     print("Make QR Code:", m.encode_qrcode())
-    n = Member(database=db, qrcode=m.encode_qrcode(version=1))
+    n = Member(qrcode=m.encode_qrcode(version=1))
     assert(str(m) == str(n))
     print("m==n:", str(m) == str(n))
 
     print('-' * 20)
     qr_v2 = m.encode_qrcode(version=2)
-    o = Member(database=db, qrcode=qr_v2)
+    o = Member(qrcode=qr_v2)
     assert(str(m) == str(o))
     print("m==o:", str(m) == str(o))
 
     # failure expected --> None (None)
     print('-' * 20)
-    not_good=Member(database=db, qrcode="ahahah")
+    not_good=Member(qrcode="ahahah")
     print("Fail 1", not_good)
-    not_good=Member(database=db, member_id=-1)
+    not_good=Member(member_id=-1)
     print("Fail 2", not_good)
-    not_good = Member(database=db, qrcode="XCJ1#-1#ahahah")
+    not_good = Member(qrcode="XCJ1#-1#ahahah")
     print("Fail 3", not_good)
     # alter a byte in the read code....
     qr_v2=qr_v2[:6] + b'e' + qr_v2[7:]
-    not_good=Member(database=db, qrcode=qr_v2)
+    not_good=Member(qrcode=qr_v2)
     print("Fail 4", not_good)

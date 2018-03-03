@@ -26,7 +26,7 @@ class OrderedDictCursor(DictCursorMixin, Cursor):
 
 class Database():
     """Database interface"""
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
         # MySQL database parameters
         self.access = json.load(open("../Private/db_access.data"))
         my_IP = check_output(['hostname', '-I']).decode("utf-8").strip()
@@ -110,7 +110,7 @@ class Database():
         if col_value:
             sql = "INSERT INTO {0} ({1}) VALUES ({2})".format(table,
                                                               ",".join([c for c, v in col_value]),
-                                                              ",".join(["%s" for i in range(len(col_value))]))
+                                                              ",".join([("%s" if c!='passwd' else "PASSWORD(%s)") for c, v in col_value]))
             return self.execute_sql(sql, [v for c, v in col_value])
         else:
             return None

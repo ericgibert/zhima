@@ -102,7 +102,7 @@ def list_members(page=0):
 @need_login
 def get_member(id):
     """Display the form in R/O mode for a member"""
-    member = Member(http_view.controller.db, id)
+    member = Member(id)
     qr_file = "images/XCJ_{}.png".format(id)
     if member.data['status']=="OK":
         qrcode_text = member.encode_qrcode()
@@ -116,7 +116,7 @@ def get_member(id):
 @need_admin
 def upd_form_member(id):
     """update a member database record"""
-    member = Member(http_view.controller.db, id)
+    member = Member(id)
     return template("member", member=member, read_only=False, session=session_manager.get_session())
 
 @http_view.post('/member/edit/<id:int>')
@@ -127,31 +127,32 @@ def upd_member(id):
         return "<h1>Error - The form's id is not the same as the id on the link</h1>"
     can_upd_fields = ('username', 'birthdate', 'status', 'role', 'passwd')
     need_upd = {}
-    member = Member(http_view.controller.db, id)
+    member = Member(id)
     for field in can_upd_fields:
         if id==0 or request.forms[field] != str(member.data[field]):
             need_upd[field] = request.forms[field]
     if need_upd:
         if id:
             need_upd['id'] = id
-            member.db.update('users', **need_upd)
+            member.update('users', **need_upd)
         else:
-            id = member.db.insert('users', **need_upd)
+            id = member.insert('users', **need_upd)
     redirect('/member/{}'.format(id))
 
 @http_view.get('/members/new')
 @need_admin
 def new_form_member():
     """add a new member database record"""
-    member = Member(http_view.controller.db)
+    member = Member()
     member.data = OrderedDict()
     member.data['id'] = 0
     member.data['username'] = '<New>'
+    member.data['passwd'] = ''
+    member.data['passwdchk'] = ''
     member.data['birthdate'] = 'YYYY-MM-DD'
     member.data['status'] = 'OK'
     member.data['role'] = 0
-    member.data['passwd'] = ''
-    member.data['passwdchk'] = ''
+
     return template("member", member=member, read_only=False, session=session_manager.get_session())
 
 @http_view.get('/transaction/<member_id:int>')
@@ -203,8 +204,8 @@ def do_login():
         return template('login.tpl', error='Please specify username and password', session=session_manager.get_session())
 
     session = session_manager.get_session()
-    new_user = Member(http_view.controller.db)
-    new_user = new_user.db.select('users', username=username, passwd=password)
+    new_user = Member()
+    new_user = new_user.select('users', username=username, passwd=password)
     if new_user:
         session['valid'] = True
         session['name'] = username

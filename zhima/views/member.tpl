@@ -47,7 +47,7 @@
     % for k,v in member.data.items():
     <tr><td style="text-align:right; border: 0px;">{{k.capitalize()}}</td>
         <td style="border: 0px;">
-            <input type="text" size="40" value="{{v}}" name="{{k}}" id="{{k}}"
+            <input type={{!'"password"' if k.startswith('passwd') else '"text"'}} size="40" value="{{v}}" name="{{k}}" id="{{k}}"
                    {{"readonly" if read_only or k=='id' else ""}}
                    {{!"onchange='check_pass();'" if k.startswith('passwd') else ""}}
             />
