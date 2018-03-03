@@ -201,10 +201,17 @@ if __name__ == "__main__":
 ##        sleep(0.3)
 
     # flash testing
-    my_pig.relay.flash("SET", on_duration=0.2, off_duration=1)
+
+    
     try:
         while True:
-            print("Proximity:", my_pig.check_proximity())
+            print("ON")
+            my_pig.relay.ON()
+            sleep(3)
+            print("OFF")
+            my_pig.relay.OFF()
+            sleep(3) 
+    #        print("Proximity:", my_pig.check_proximity())
     #        sleep(1)
     finally:
         my_pig.green2.flash("STOP")

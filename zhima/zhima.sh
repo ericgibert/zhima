@@ -19,8 +19,8 @@ start)
     echo http://$_IP:8080
     ;;
 stop)
-    kill -10 $PID
-    kill -10 $HTTP_PID
+    kill -9 $PID
+    kill -9 $HTTP_PID
     ;;
 status)
     echo "Current IP:" $_IP
