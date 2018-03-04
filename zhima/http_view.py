@@ -130,7 +130,7 @@ def upd_member(id):
     member = Member(member_id=id)
     for field in can_upd_fields:
         if id==0 or (request.forms[field] != str(member.data[field])):
-            need_upd[field] = request.forms[field]
+            need_upd[field] = request.forms[field] if field!='username' else request.forms[field].lower()
             # check unicity of the 'username'
             if field=='username':
                 nb_username = member.fetch("select count(id) as cnt from users where username=%s", (request.forms[field],))
@@ -159,7 +159,6 @@ def new_form_member():
     member.data['birthdate'] = 'YYYY-MM-DD'
     member.data['status'] = 'OK'
     member.data['role'] = 0
-
     return template("member", member=member, read_only=False, session=session_manager.get_session())
 
 @http_view.get('/transaction/<member_id:int>')
@@ -204,7 +203,7 @@ def do_login():
     """
     Fetch the login/password from the form and check this couple against the tb_user table
     """
-    username = request.forms.get('username')
+    username = request.forms.get('username').lower()
     password = request.forms.get('password')
 
     if not username or not password:
