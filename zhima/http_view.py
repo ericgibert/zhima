@@ -133,7 +133,7 @@ def upd_member(id):
             need_upd[field] = request.forms[field] if field!='username' else request.forms[field].lower()
             # check unicity of the 'username'
             if field=='username':
-                nb_username = member.fetch("select count(id) as cnt from users where username=%s", (request.forms[field],))
+                nb_username = member.fetch("select count(id) as cnt from users where username=%s and id<>%s", (request.forms[field], id))
                 if nb_username['cnt']>0:
                     return "<h1>Error - This Username already exists - Duplicates are forbidden</h1>"
     if need_upd:
