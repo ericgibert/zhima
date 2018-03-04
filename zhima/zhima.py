@@ -120,7 +120,7 @@ class Controller(object):
         self.gpio.red.OFF()
         # print("QR code:", self.qr_codes, type(self.qr_codes[0]))
         # try finding a member from the database based on the first QR code found on the image
-        self.member = Member(self.db, qrcode=self.qr_codes[0])
+        self.member = Member(qrcode=self.qr_codes[0])
         if self.member.id and self.member.qrcode_is_valid:
             if self.member.status.upper() in ("OK", "ACTIVE", "ENROLLED"):
                 self.insert_log("OPEN", self.member.id, "Welcome {} - QR V{}".format(self.member.name, self.member.qrcode_version))
