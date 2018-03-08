@@ -47,17 +47,18 @@ __version__ = "1.0.20170113"
 __email__ =  "ericgibert@yahoo.fr"
 __license__ = "MIT"
 from datetime import datetime, timedelta, date
+from model_db import Database
 
-class Transaction():
+class Transaction(Database):
     """
     A transaction record in the database - SELECT mode only supported
     """
-    def __init__(self, database, transac_id=None, member_id=None):
+    def __init__(self, transac_id=None, member_id=None, *args, **kwargs):
         """
         Select a record from the database based on a transactions table id
         :param transac_id: int for transaction table key
         """
-        self.db = database
+        super().__init__(*args, **kwargs)
         if transac_id:
             self.get_from_db(transac_id)
         elif member_id:
@@ -72,5 +73,5 @@ class Transaction():
 
     def get_from_db(self, transac_id):
         """Connects to the database to fetch a transaction table record or simulation"""
-        self.data = self.db.select("transactions", id=transac_id)
+        self.data = self.select("transactions", id=transac_id)
 

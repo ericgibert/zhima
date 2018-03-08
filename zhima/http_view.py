@@ -166,19 +166,19 @@ def new_form_member():
 @need_admin
 def get_transaction(member_id, id=0):
     if id:
-        transaction = Transaction(http_view.controller.db, id)
+        transaction = Transaction(id)
         read_only = True
     elif member_id:
-        transaction = Transaction(http_view.controller.db, member_id=member_id)
+        transaction = Transaction(member_id=member_id)
         read_only = False
     return template("transaction", transaction=transaction, read_only=read_only, session=session_manager.get_session())
 
 @http_view.post('/transaction/add')
 @need_admin
 def add_transaction():
-    transaction = Transaction(http_view.controller.db)
+    transaction = Transaction()
     if request.forms['id'] == 'None':
-        id = transaction.db.insert('transactions',
+        id = transaction.insert('transactions',
                                 member_id = int(request.forms['member_id']),
                                 type = request.forms['type'],
                                 description = request.forms['description'],

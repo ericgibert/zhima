@@ -115,7 +115,12 @@ class Member(Database):
             return "XCJ{}#{}#{}".format(version, self.id, self.name)
         elif version==2:
             crc = self.birthdate.year ^ (self.birthdate.day*100 + self.birthdate.month)
-            validity = '{0:%Y-%m-%d}'.format(datetime.today() + timedelta(days=180))    # 6 months validity
+            try:
+                row = self.fetch("SELECT max(valid_until) as max_valid from transactions where member_id=%s and RIGHT(type, 10)='MEMBERSHIP'", (self.id,))
+                print("Valid until", row['max_valid'])
+                validity = '{0:%Y-%m-%d}'.format(row['max_valid'])  #datetime.today() + timedelta(days=180))    # 6 months validity
+            except (AttributeError, TypeError):
+                return None
             qrcode = "XCJ{}#{}#{}#{}".format(version, self.id, crc, validity)           # XCJ2#123456#2015#2018-07-17
             des = DES.new(self.key, DES.MODE_ECB)
             # turn qrcode into bytes and pad to multiple of 8 bytes
