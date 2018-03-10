@@ -26,26 +26,39 @@ class OrderedDictCursor(DictCursorMixin, Cursor):
 
 class Database():
     """Database interface"""
+    dbname = None
+    login = None
+    passwd = None
+    server_ip = None
+    key = None
+    mailbox = {}
+
     def __init__(self, *args, **kwargs):
-        # MySQL database parameters
-        self.access = json.load(open("../Private/db_access.data"))
-        my_IP = check_output(['hostname', '-I']).decode("utf-8").strip()
-        # print("My IP:", my_IP)
-        ip_3 = '.'.join(my_IP.split('.')[:3])
-        try:
-            self.dbname = self.access[ip_3]["dbname"]
-            self.login = self.access[ip_3]["login"]
-            self.passwd = self.access[ip_3]["passwd"]
-            self.server_ip = "localhost" if my_IP==self.access[ip_3]["server_ip"] else self.access[ip_3]["server_ip"]
-            self.key = self.access["key"].encode("utf-8")
-        except KeyError:
-            print("Cannot find entry {} in db_access.data".format(ip_3))
-            exit(1)
+        """Load from Private file the various connection parameters the first time a DB object is instantiated"""
+        if self.dbname is None:
+            # MySQL database parameters
+            self.access = json.load(open("../Private/db_access.data"))
+            my_IP = check_output(['hostname', '-I']).decode("utf-8").strip()
+            # print("My IP:", my_IP)
+            ip_3 = '.'.join(my_IP.split('.')[:3])
+            try:
+                Database.dbname = self.access[ip_3]["dbname"]
+                Database.login = self.access[ip_3]["login"]
+                Database.passwd = self.access[ip_3]["passwd"]
+                Database.server_ip = "localhost" if my_IP==self.access[ip_3]["server_ip"] else self.access[ip_3]["server_ip"]
+                Database.key = self.access["key"].encode("utf-8")
+                Database.mailbox = self.access["mailbox"]
+            except KeyError:
+                print("Cannot find entry {} in db_access.data".format(ip_3))
+                exit(1)
+        self.key = Database.key
+        self.mailbox = Database.mailbox
+
 
     def fetch(self, sql, params = (), one_only=True):
         """execute a SELECT statement with the parameters and fetch row/rows"""
         try:
-            with pymysql.connect(self.server_ip, self.login, self.passwd, self.dbname).cursor(OrderedDictCursor) as cursor:
+            with pymysql.connect(Database.server_ip, Database.login, Database.passwd, Database.dbname).cursor(OrderedDictCursor) as cursor:
                 cursor.execute(sql, params)
                 data = cursor.fetchone() if one_only else cursor.fetchall()
         except (pymysql.err.OperationalError, pymysql.err.ProgrammingError) as err:
@@ -72,7 +85,7 @@ class Database():
     def execute_sql(self, sql, params):
         """Generic SQL statement execution"""
         try:
-            with pymysql.connect(self.server_ip, self.login, self.passwd, self.dbname) as cursor:
+            with pymysql.connect(Database.server_ip, Database.login, Database.passwd, Database.dbname) as cursor:
                 cursor.execute(sql, params)
                 return cursor.lastrowid
         except (TypeError, ValueError, pymysql.err.OperationalError) as err:

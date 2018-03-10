@@ -31,6 +31,7 @@ from rpi_gpio import Rpi_Gpio, _simulation as rpi_simulation
 from member_db import Member
 from tokydoor import TokyDoor
 from model_db import Database
+from send_email import send_email
 # from http_view import http_view, stop as bottle_stop
 
 
@@ -172,6 +173,19 @@ class Controller(object):
         self.gpio.green2.ON()
         self.gpio.red.ON()
         print("Email to", self.member.name)
+        send_email(
+            "XCJ doorman cannot open the door",
+            from_=self.member.mailbox["username"],
+            to_=(self.member.data["email"],),
+            message_HTML = """
+                <P>You status in the XCJ database is set to: {}</P>
+                <p>You membership expiration date is {}</p>
+                <p></p>
+                """.format(self.member.data["status"], self.member.validity),
+            images=[r"images/emoji-not-happy.jpg"],
+            server=self.member.mailbox["server"], port=self.member.mailbox["port"],
+            login=self.member.mailbox["username"], passwd=self.member.mailbox["password"]
+        )
         sleep(3)
         return 1
 

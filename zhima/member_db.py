@@ -20,6 +20,7 @@ from binascii import hexlify, unhexlify, Error as binascii_error
 from Crypto.Cipher import DES
 from model_db import Database
 
+
 class Member(Database):
     """
     A member record in the member database
@@ -43,6 +44,7 @@ class Member(Database):
             self.decode_qrcode(qrcode)
         else:
             self.data = {}
+        self.data["email"] = "ericgibert@yahoo.fr"  # for debugging
 
     def get_max_valid_until(self):
         """
