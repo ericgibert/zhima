@@ -35,13 +35,28 @@ class Member(Database):
         super().__init__(*args, **kwargs)
         self.id, self.name, self.birthdate, self.status = None, None, None, None
         # create a member based on an ID or QR Code
-        self.qrcode_version = '?'
+        self.qrcode_version, self.qrcode_is_valid = '?', False
+        self.transactions = []
         if member_id:
             self.get_from_db(member_id)
         elif qrcode:
             self.decode_qrcode(qrcode)
         else:
             self.data = {}
+
+    def get_max_valid_until(self):
+        """
+        Check among the member's transactions if any transcation ends with 'MEMBERSHIP'.
+        Return the max(valid_until) of these memberships transactions or None
+        """
+        try:
+            row = self.fetch("""SELECT max(valid_until) as max_valid from transactions 
+                                where member_id=%s and RIGHT(type, 10)='MEMBERSHIP'""", (self.id,))
+            # print("- Valid until", row['max_valid'])
+            valid_until = '{0:%Y-%m-%d}'.format(row['max_valid'])
+        except (AttributeError, TypeError):
+            valid_until = '{0:%Y-%m-%d}'.format(datetime.today() - timedelta(days=1))   # if no memberhsip found then validity==yesterday!
+        self.validity = valid_until
 
     def get_from_db(self, member_id):
         """Connects to the database to fetch a member table record or simulation"""
@@ -61,6 +76,9 @@ class Member(Database):
                                                one_only=False,
                                                order_by="created_on DESC",
                                                member_id=self.id)
+            self.get_max_valid_until()
+            if self.validity >= '{0:%Y-%m-%d}'.format(datetime.today()):
+                self.qrcode_is_valid = True
         except (TypeError, KeyError):
             self.id, self.name, self.birthdate, self.status = (None, None, None, None)
         return self.id
@@ -115,13 +133,8 @@ class Member(Database):
             return "XCJ{}#{}#{}".format(version, self.id, self.name)
         elif version==2:
             crc = self.birthdate.year ^ (self.birthdate.day*100 + self.birthdate.month)
-            try:
-                row = self.fetch("SELECT max(valid_until) as max_valid from transactions where member_id=%s and RIGHT(type, 10)='MEMBERSHIP'", (self.id,))
-                print("Valid until", row['max_valid'])
-                validity = '{0:%Y-%m-%d}'.format(row['max_valid'])  #datetime.today() + timedelta(days=180))    # 6 months validity
-            except (AttributeError, TypeError):
-                return None
-            qrcode = "XCJ{}#{}#{}#{}".format(version, self.id, crc, validity)           # XCJ2#123456#2015#2018-07-17
+            self.get_max_valid_until()
+            qrcode = "XCJ{}#{}#{}#{}".format(version, self.id, crc, self.validity)               # XCJ2#123456#2015#2018-07-17
             des = DES.new(self.key, DES.MODE_ECB)
             # turn qrcode into bytes and pad to multiple of 8 bytes
             qrcode = qrcode.encode("utf-8")
@@ -163,3 +176,12 @@ if __name__ == "__main__":
     qr_v2=qr_v2[:6] + b'e' + qr_v2[7:]
     not_good=Member(qrcode=qr_v2)
     print("Fail 4", not_good)
+
+    # test the validity duration
+    print('-' * 20)
+    m = Member(member_id=123459)  # no membership transaction record
+    print("Found in db:", m.name, m.birthdate, m.status)
+    print("Make QR Code:", m.encode_qrcode())
+    n = Member(qrcode=m.encode_qrcode())
+    assert(str(m) == str(n))
+    print("m==n:", str(m) == str(n))

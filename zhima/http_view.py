@@ -109,6 +109,7 @@ def get_member(id):
         img = make_qrcode(qrcode_text)
         img.save(qr_file)
     else:
+        member.qrcode_is_valid = False
         copy2("images/emoji-not-happy.jpg", qr_file)
     return template("member", member=member, read_only=True, session=session_manager.get_session())
 

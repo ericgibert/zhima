@@ -10,7 +10,11 @@
 
 % if read_only:
 % from time import time
-<img src="/images/XCJ_{{member.data['id']}}.png?{{time()}}"/>
+    % if member.qrcode_is_valid:
+    <img src="/images/XCJ_{{member.data['id']}}.png?{{time()}}"/>
+    % else:
+    <img src="/images/emoji-not-happy.jpg"/>
+    % end
 % else:
 <script>
     function check_pass() {
@@ -75,6 +79,7 @@
 
 % if read_only:
     % if member.transactions:
+    <p>Membership valid until {{member.validity}}</p>
     <style>
     table, td {
     border: 1px solid black;
