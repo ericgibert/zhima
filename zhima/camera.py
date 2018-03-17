@@ -107,6 +107,6 @@ class Camera():
 
 if __name__ == "__main__":
     with Camera() as my_camera:
-        qr_codes = my_camera.get_QRcode(debug=True)
+        qr_codes = my_camera.get_QRcode(max_photos=3, debug=True)
         print("QR codes:", qr_codes)
         print(my_camera.save_photo())
