@@ -19,7 +19,7 @@ On the 40 pins GPIO, only outside pins from 4 (2nd +5V) till 18 (GPIO24) are use
  =====
  
  
-   1 +5V       2
+   2 +5V       1
    | |         |
  +---------------+
  | o o         o |
@@ -27,7 +27,7 @@ On the 40 pins GPIO, only outside pins from 4 (2nd +5V) till 18 (GPIO24) are use
  | o o         o |
  +---------------+
    | |         |
-   1 |         3
+   3 |         1
      |
      +-------------->  Collector
 GPIO -> resistance ->  Base
