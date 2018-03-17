@@ -164,18 +164,19 @@ def upd_member(id):
 def new_form_member():
     """add a new member database record"""
     member = Member()
-    member.data = OrderedDict({
-    'id': 0,
-    'username': '<New>',
-    'passwd': '',
-    'passwdchk': '',
-    'email': '',
-    'birthdate': 'YYYY-MM-DD',
-    'status': 'OK',
-    'role': 0,
-    'createTime': datetime.now(),
-    'lastUpdate': datetime.now(),
-    })
+    member.data = OrderedDict()
+    for k,v in (
+        ('id', 0),
+        ('username', '<New>'),
+        ('passwd', ''),
+        ('passwdchk', ''),
+        ('email', ''),
+        ('birthdate', 'YYYY-MM-DD'),
+        ('status', 'OK'),
+        ('role', 0),
+        ('createTime', datetime.now()),
+        ('lastUpdate', datetime.now()),
+    ): member.data[k] = v
     return template("member", member=member, read_only=False, session=session_manager.get_session())
 
 @http_view.get('/transaction/<member_id:int>')
