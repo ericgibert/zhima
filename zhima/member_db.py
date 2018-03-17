@@ -79,7 +79,10 @@ class Member(Database):
             self.decode_qrcode(qrcode)
         else:
             self.data = {}
-        self.data["email"] = "ericgibert@yahoo.fr"  # for debugging
+        try:
+            self.data["email"] = "ericgibert@yahoo.fr"  # for debugging
+        except:
+            pass
 
     def get_max_valid_until(self):
         """
