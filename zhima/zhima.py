@@ -215,5 +215,5 @@ if __name__ == "__main__":
     parser.add_argument('-v', '--version', action='version', version=__version__)
     # parser.add_argument('config_file', nargs='?', default='')
     args, unk = parser.parse_known_args()
-    ctrl = Controller(bottle_ip=args.bottle_ip, port=args["port"])
+    ctrl = Controller(bottle_ip=args.bottle_ip, port=args.port)
     ctrl.run()
