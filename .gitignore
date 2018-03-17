@@ -116,3 +116,4 @@ ENV/
 /ide.general.xml
 /filetypes.xml
 /debugger.xml
+/zhima/http_view.pid
