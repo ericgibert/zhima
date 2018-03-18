@@ -15,10 +15,10 @@ from os import path, system, getpid
 import argparse
 from collections import OrderedDict
 from datetime import datetime
-from datetime import datetime
 from bottle import Bottle, template, request, BaseTemplate, redirect, error, static_file
 from bottlesession import CookieSession, authenticator
 from member_db import Member
+from member_api import Member_Api
 from make_qrcode import make_qrcode
 from transaction_db import Transaction
 
@@ -132,7 +132,7 @@ def upd_member(id):
     # force username to lower case and ensure its unicity:
     try:
         request.forms['username'] = request.forms['username'].lower()
-        nb_username = member.fetch("select count(id) as cnt from users where username=%s and id<>%s", (request.forms[field], id))
+        nb_username = member.fetch("select count(id) as cnt from users where username=%s and id<>%s", (request.forms['username'], id))
         if nb_username['cnt']>0:
             return "<h1>Error - This Username already exists - Duplicates are forbidden</h1>"
     except:
@@ -140,14 +140,9 @@ def upd_member(id):
     # if the user has changed the value of a legit fioeld then add it to the list of updates
     need_upd = {}
     for field in [f for f in request.forms if f not in CANT_UPD_FIELDS]:
-        print(field)
+        # print(field)
         if id==0 or (request.forms[field] != str(member.data[field])):
             need_upd[field] = request.forms[field]
-            # # check unicity of the 'username'
-            # if field=='username':
-            #     nb_username = member.fetch("select count(id) as cnt from users where username=%s and id<>%s", (request.forms[field], id))
-            #     if nb_username['cnt']>0:
-            #         return "<h1>Error - This Username already exists - Duplicates are forbidden</h1>"
     if need_upd:
         if id:
             need_upd['id'] = id
@@ -155,6 +150,7 @@ def upd_member(id):
         else:
             need_upd['openid'] = 0
             id = member.insert('users', **need_upd)
+            member.update('users', id=id, openid=id)
     else:
         print("Post has nothing to do...")
     redirect('/member/{}'.format(id))
@@ -173,9 +169,9 @@ def new_form_member():
         ('email', ''),
         ('birthdate', 'YYYY-MM-DD'),
         ('status', 'OK'),
-        ('role', 0),
-        ('createTime', datetime.now()),
-        ('lastUpdate', datetime.now()),
+        ('role', 1),
+        ('create_time', datetime.now()),
+        ('last_update', datetime.now()),
     ): member.data[k] = v
     return template("member", member=member, read_only=False, session=session_manager.get_session())
 
@@ -233,7 +229,7 @@ def do_login():
     if new_user:
         session['valid'] = True
         session['name'] = username
-        session['admin'] = new_user['role'] > 1 and new_user['status'] == 'OK'
+        session['admin'] = new_user['role'] >= Member.ROLE['STAFF'] and new_user['status'] == 'OK'
         session['id'] = new_user['id']
         session_manager.save(session)
         BaseTemplate.defaults['login_logout'] = "Logout"
@@ -272,6 +268,19 @@ def stop():
 @http_view.route("/images/<filepath>")
 def img(filepath):
     return static_file(filepath, root="images")
+
+###  APIs
+@http_view.get('/api/v1.0/member/openid/<openid>')
+def get_member(openid):
+    member = Member_Api(openid=openid)
+    return member.to_json()
+
+@http_view.post('/api/v1.0/member/new')
+def add_member():
+    member = Member_Api(member_id=0) # new member
+    result = member.from_json(request.json())
+    return result
+
 
 if __name__ == "__main__":
     from model_db import Database

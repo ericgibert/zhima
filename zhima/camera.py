@@ -76,7 +76,7 @@ class Camera():
                 except cv2.error as cv2_err:
                     msg = "Error with the camera: {}".format(cv2_err)
                     if self.db:
-                        self.db.log("ERROR", 3000, msg, debug=debug)
+                        self.db.log("ERROR", -3000, msg, debug=debug)
                     else:
                         print(msg)
                     return None
@@ -87,7 +87,7 @@ class Camera():
             except AttributeError as err:
                 msg = "Photo not taken properly: {}".format(err)
                 if self.db:
-                    self.db.log("WARNING", 3001, msg, debug=debug)
+                    self.db.log("WARNING", -3001, msg, debug=debug)
                 else:
                     print(msg)
                 # self.close()

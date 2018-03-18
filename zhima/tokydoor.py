@@ -96,7 +96,7 @@ class TokyDoor():
                 # raise ValueError("ERR1 - Connection to {} failed. Try using 'hciconfig' and 'hcitool'".format(self.mac_address))
                 msg = "Connection to {} failed. Try using 'hciconfig' and 'hcitool'".format(self.mac_address)
                 if  self.db:
-                    self.db.log("ERROR", 2001, msg)
+                    self.db.log("ERROR", -2001, msg)
                 else:
                     print(msg)
         except DBusException as err:
@@ -104,7 +104,7 @@ class TokyDoor():
             print(err)
             msg = "Connection to {} by '{}' failed: Device does not exist, check adapter name and MAC address.".format(self.mac_address, self.adapter_name)
             if  self.db:
-                self.db.log("ERROR", 2002, msg)
+                self.db.log("ERROR", -2002, msg)
             else:
                 print(msg)
         finally:
@@ -121,7 +121,7 @@ class TokyDoor():
         if ble_com_limit.is_alive():
             msg = "BLE communiction takes too long: kill the com"
             if  self.db:
-                self.db.log("WARNING", 2000, msg, debug=True)
+                self.db.log("WARNING", -2000, msg, debug=True)
             else:
                 print(msg)
             ble_com_limit.cancel()

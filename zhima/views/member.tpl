@@ -48,9 +48,9 @@
 % end
 
 <table style="border: 3px solid black;">
-    % ALWAYS_RO=('id', 'createTime', 'lastUpdate')
+    % ALWAYS_RO=('id', 'create_time', 'last_update', 'last_active_type', 'last_active_time')
     % for k,v in member.data.items():
-    <tr><td style="text-align:right; border: 0px;">{{k.capitalize()}}</td>
+    <tr><td style="text-align:right; border: 0px;">{{k.replace('_', ' ').capitalize()}}</td>
         <td style="border: 0px;">
             <input type={{!'"password"' if k.startswith('passwd') else '"text"'}} size="40" value="{{v}}" name="{{k}}" id="{{k}}"
                    {{"readonly" if read_only or k in ALWAYS_RO else ""}}
@@ -89,7 +89,7 @@
     <p><table>
         <tr>
         % for k in member.transactions[0].keys():
-        <th>{{k}}</th>
+        <th>{{k.replace('_', ' ').capitalize()}}</th>
         % end
         % for row in member.transactions:
         </tr><tr>

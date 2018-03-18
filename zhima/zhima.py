@@ -132,7 +132,7 @@ class Controller(object):
                                 "{}, please fix your status: {} - QR V{}".format(self.member.name, self.member.status,self.member.qrcode_version))
                 return 5
         else:
-            self.insert_log("ERROR", 1000, "Non XCJ QR Code or No member found for: {}".format(self.qr_codes[0].decode("utf-8")))
+            self.insert_log("ERROR", -1000, "Non XCJ QR Code or No member found for: {}".format(self.qr_codes[0].decode("utf-8")))
             return 6
 
     def open_the_door(self):
@@ -156,7 +156,7 @@ class Controller(object):
         try:
             tokydoor.open()
         except ValueError as err:
-            self.insert_log("ERROR", 1001, "Cannot connect to TOKYDOOR: {}".format(err))
+            self.insert_log("ERROR", -1001, "Cannot connect to TOKYDOOR: {}".format(err))
             return 99 # cannot reach the BLE!!! Panic Mode!! 
         # Happy flashing
         val = 0
