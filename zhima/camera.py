@@ -57,7 +57,7 @@ class Camera():
         cv2.imwrite(self.file_path, self.cv2_img)
         return self.file_path
 
-    def get_QRcode(self, max_photos=20, debug=False):
+    def get_QRcode(self, max_photos=10, debug=False):
         """take max_photos until a QR code is found else returns []"""
         # self.camera = picamera.PiCamera() if has_picamera else cv2.VideoCapture(0)
         self.qr_codes = []  # reset any previous QR code found

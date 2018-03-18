@@ -178,7 +178,7 @@ class Controller(object):
             from_=self.member.mailbox["username"],
             to_=(self.member.data["email"],),
             message_HTML = """
-                <P>You status in the XCJ database is set to: {}</P>
+                <P>Your status in the XCJ database is set to: {}</P>
                 <p>You membership expiration date is {}</p>
                 <p></p>
                 """.format(self.member.data["status"], self.member.validity),
