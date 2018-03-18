@@ -140,7 +140,8 @@ class Database():
             print(datetime.now(), log_type, code, message)
         log_id = self.insert('tb_log', type=log_type, code=code, message=message)
         if code>0:
-            self.update('users', id=code, lastActiveType="[{}] {}".format(log_type, message), lastActiveTime=datetime.now())
+            self.update('users', id=code, last_active_type="[{}] {}".format(log_type, message),
+                        last_active_time=datetime.now())
         return log_id
 
     def create_tables(self):
