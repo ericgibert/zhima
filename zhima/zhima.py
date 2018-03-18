@@ -96,6 +96,7 @@ class Controller(object):
         self.gpio.green2.OFF()
         self.gpio.red.OFF()
         self.gpio.relay.OFF()
+        self.gpio.proximity.reset()
         points, max_pts = 1, 10
         while not self.gpio.check_proximity():
             print("Waiting for proximity", '.' * points, " " * max_pts, end="\r")

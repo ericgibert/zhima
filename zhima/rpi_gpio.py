@@ -123,6 +123,9 @@ class E18_D80nk(object):
     def state(self):
         return int(not self.rpi.read(self.pin))
 
+    def reset(self):
+        self.rpi.write(self.pin, 1)
+
 
 class Dfrobot_Pir_v1_0(object):
     """
