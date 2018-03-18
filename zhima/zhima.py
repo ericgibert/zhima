@@ -174,7 +174,7 @@ class Controller(object):
         self.gpio.red.ON()
         print("Email to", self.member.name)
         send_email(
-            "XCJ doorman cannot open the door",
+            "Sorry, XCJ doorman cannot open the door for you",
             from_=self.member.mailbox["username"],
             to_=(self.member.data["email"],),
             message_HTML = """
