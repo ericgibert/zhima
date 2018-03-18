@@ -50,10 +50,12 @@ __author__ = "Eric Gibert"
 __version__ = "1.0.20170113"
 __email__ =  "ericgibert@yahoo.fr"
 __license__ = "MIT"
-from datetime import datetime
+from datetime import datetime, date, timedelta
 import pymysql
 from json import dumps
 from member_db import Member
+from transaction_db import Transaction
+
 
 class Member_Api(Member):
     """Surclass Member to add JSON facilities to interact with John's WeCHap app"""
@@ -64,15 +66,38 @@ class Member_Api(Member):
         """Fill the user's field from a JSON object and INSERT in database"""
         try:
             d = {
+                # mandatory fields
                 "openid": data['openid'],
-                "avatarUrl": data['avatarUrl'],
+                "avatar_url": data['avatarUrl'],
                 'username': data['basicInfo']['nickName'],
+                # optional fields
+                'city': data['basicInfo'].get('city', ''),
+                'country': data['basicInfo'].get('country', ''),
+                'gender': data['basicInfo'].get('gender', 0),
+                'language': data['basicInfo'].get('language', ''),
+                'province': data['basicInfo'].get('province', ''),
+                # set by this function
+                'birthdate': '1970-01-01',
+                'passwd': "*A0F874BC7F54EE086FCE60A37CE7887D8B31086B",  # password123
                 'status': 'OK',
                 'role': 1,
                 'create_time': datetime.now(),
                 'last_update': datetime.now(),
             }
-            self.insert(table='users', **d)
+            new_id = self.insert(table='users', **d)
+            # do we have a payment record to insert?
+            if 'paymentInfo' in data:
+                payment = Transaction(member_id=new_id)
+                data = {
+                    'member_id': new_id,
+                    'type':'1M MEMBERSHIP',
+                    'description': data['paymentInfo']['payIndex'],
+                    'amount': data['paymentInfo']['CNYAmount'], 'currency':'CNY',
+                    'valid_from': datetime.strptime(data['paymentInfo']['paidTime'], '%Y%m%d%H%M'),
+                    'valid_until': date.today()+timedelta(days=31),
+                    'created_on': datetime.now()
+                }
+                payment.insert('transactions', **data)
         except (ValueError, TypeError, KeyError) as err:
                 dico = {
                     'errno': '1002',  #// no error with 1000, error numbers for others
@@ -89,7 +114,7 @@ class Member_Api(Member):
             dico = {
                 'errno': '1000',  #// no error with 1000, error numbers for others
                 'errmsg': "Success",
-                'data': {}   # // you may put data at here,in json format.
+                'data': {'new_id': new_id}   # // you may put data at here,in json format.
             }
         return dumps(dico)
 

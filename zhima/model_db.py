@@ -37,7 +37,8 @@ class Database():
         """Load from Private file the various connection parameters the first time a DB object is instantiated"""
         if self.dbname is None:
             # MySQL database parameters
-            self.access = json.load(open("../Private/db_access.data"))
+            with open("../Private/db_access.data") as json_file:
+                self.access = json.load(json_file)
             my_IP = check_output(['hostname', '-I']).decode("utf-8").strip()
             ip_3 = '.'.join(my_IP.split('.')[:3])
             # print("My IP:", my_IP, "ip_3:", ip_3, "\nThis access:",self.access[ip_3])

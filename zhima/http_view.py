@@ -277,8 +277,8 @@ def get_member(openid):
 
 @http_view.post('/api/v1.0/member/new')
 def add_member():
-    member = Member_Api(member_id=0) # new member
-    result = member.from_json(request.json())
+    member = Member_Api(member_id=0) # empty new member
+    result = member.from_json(request.json)
     return result
 
 
