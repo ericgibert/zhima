@@ -275,12 +275,25 @@ def get_member(openid):
     member = Member_Api(openid=openid)
     return member.to_json()
 
+@http_view.patch('/api/v1.0/member/openid/<openid>')
+def upd_member(openid):
+    member = Member_Api(openid=openid)
+    operations = request.json
+    if operations['op'] == "update":
+        upd_fields = {'id': openid}
+        for field in [f for f in operations['data'] if f in Member_Api.API_MAPPING_TO_DB]:
+            upd_fields[Member_Api.API_MAPPING_TO_DB[field]] = operations['data'][field]
+        if upd_fields:
+            print("Update", openid,"with",upd_fields)
+            member.update(**upd_fields)
+
+    return member.to_json()
+
 @http_view.post('/api/v1.0/member/new')
 def add_member():
     member = Member_Api(member_id=0) # empty new member
     result = member.from_json(request.json)
     return result
-
 
 if __name__ == "__main__":
     from model_db import Database

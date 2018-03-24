@@ -59,6 +59,16 @@ from transaction_db import Transaction
 
 class Member_Api(Member):
     """Surclass Member to add JSON facilities to interact with John's WeCHap app"""
+    API_MAPPING_TO_DB = {
+        "openid": "openid",
+        "avatarUrl": "avatar_url",
+        "nickName": "username",
+        "city": "city",
+        "country": "country",
+        "gender": "gender",
+        "language": "language",
+        "province": "province",
+    }
     def __int__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 

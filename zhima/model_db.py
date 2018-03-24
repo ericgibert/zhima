@@ -33,8 +33,9 @@ class Database():
     key = None
     mailbox = {}
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, table=None, *args, **kwargs):
         """Load from Private file the various connection parameters the first time a DB object is instantiated"""
+        self.table = table
         if self.dbname is None:
             # MySQL database parameters
             with open("../Private/db_access.data") as json_file:
@@ -70,8 +71,9 @@ class Database():
         else:
             return data
 
-    def select(self, table, columns='*', one_only=True, order_by="", **where):
+    def select(self, table=None, columns='*', one_only=True, order_by="", **where):
         """build a SELECT statement and fetch its row(s)"""
+        table = table or self.table
         sql = "SELECT {} from {}".format(columns, table)
         params = []
         if where:
@@ -95,12 +97,13 @@ class Database():
             print(params)
         return None
 
-    def update(self, table, **kwargs):
+    def update(self, table=None, **kwargs):
         """
         Update the fields given as parameters with their values using the 'kwargs' dictionary
         'id' should be part of the kwargs to ensure a single row update
         If the table's primary key is not named 'id' then provide its name on the 'id_col_name' argument
         """
+        table = table or self.table
         col_value, id, id_col_name = [], None, 'id'
         for col, val in kwargs.items():
             if col=='id':
@@ -116,8 +119,9 @@ class Database():
             self.execute_sql(sql, [v for c, v in col_value] + [ id ])
         return id
 
-    def insert(self, table, **kwargs):
+    def insert(self, table=None, **kwargs):
         """INSERT a record in the table"""
+        table= table or self.table
         col_value = []
         for col, val in kwargs.items():
             col_value.append((col, val))

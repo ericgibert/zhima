@@ -39,19 +39,21 @@ class Member(Database):
         :param member_id: int for member tbale key
         :param qrcode: string read in a qrcode
         """
-        super().__init__(*args, **kwargs)
+        super().__init__(table="users", *args, **kwargs)
         self.id, self.name, self.birthdate, self.status = None, None, None, None
         # create a member based on an ID or QR Code
         self.qrcode_version, self.qrcode_is_valid = '?', False
         self.transactions = []
         if member_id:
             self.get_from_db(member_id)
+            self.id = member_id
         elif qrcode:
             self.decode_qrcode(qrcode)
         elif 'openid' in kwargs:
-            result = self.select('users', columns='id', openid=kwargs['openid'])
+            result = self.select(columns='id', openid=kwargs['openid'])
             try:
                 self.get_from_db(result['id'])
+                self.id = result['id']
             except TypeError:
                 self.data = {}
         else:
@@ -77,7 +79,7 @@ class Member(Database):
 
     def get_from_db(self, member_id):
         """Connects to the database to fetch a member table record or simulation"""
-        self.data = self.select('users', id=member_id)
+        self.data = self.select(id=member_id)
         try:
             self.id, self.name = self.data['id'], self.data['username']
             self.status = self.data['status']
@@ -130,6 +132,7 @@ class Member(Database):
         # Validation of the decoded QR Code
         #
         if member_id and self.get_from_db(member_id):
+            self.id = member_id
             self.qrcode_is_valid = True  # benefice of doubt...
             if self.qrcode_version >= '2' and self.birthdate:
                 crc = self.birthdate.year ^ (self.birthdate.day*100 + self.birthdate.month)
