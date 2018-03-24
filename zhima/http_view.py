@@ -279,15 +279,16 @@ def get_member(openid):
 def upd_member(openid):
     member = Member_Api(openid=openid)
     operations = request.json
-    if operations['op'] == "update":
+    if operations['op'] == "update": # update a member's profile
         upd_fields = {'id': openid}
         for field in [f for f in operations['data'] if f in Member_Api.API_MAPPING_TO_DB]:
             upd_fields[Member_Api.API_MAPPING_TO_DB[field]] = operations['data'][field]
         if upd_fields:
-            print("Update", openid,"with",upd_fields)
+            print("Update", openid, "with", upd_fields)
             member.update(**upd_fields)
-
-    return member.to_json()
+    elif operations['op'] == "add": # add a new payment record
+        member.add_payment(operations['data'])
+    return member.to_json()  # <-- to do proper return  { JSON }
 
 @http_view.post('/api/v1.0/member/new')
 def add_member():

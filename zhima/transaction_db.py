@@ -58,7 +58,7 @@ class Transaction(Database):
         Select a record from the database based on a transactions table id
         :param transac_id: int for transaction table key
         """
-        super().__init__(*args, **kwargs)
+        super().__init__(table="transactions", *args, **kwargs)
         if transac_id:
             self.get_from_db(transac_id)
         elif member_id:
@@ -73,5 +73,5 @@ class Transaction(Database):
 
     def get_from_db(self, transac_id):
         """Connects to the database to fetch a transaction table record or simulation"""
-        self.data = self.select("transactions", id=transac_id)
+        self.data = self.select(id=transac_id)
 
