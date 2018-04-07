@@ -173,21 +173,22 @@ class Controller(object):
         self.gpio.green1.OFF()
         self.gpio.green2.ON()
         self.gpio.red.ON()
-        print("Email to", self.member.name)
-        send_email(
-            "Sorry, XCJ doorman cannot open the door for you",
-            from_=self.member.mailbox["username"],
-            to_=(self.member.data["email"],),
-            message_HTML = """
-                <P>Your status in the XCJ database is set to: {}</P>
-                <p>You membership expiration date is {}</p>
-                <p></p>
-                """.format(self.member.data["status"], self.member.validity),
-            images=[r"images/emoji-not-happy.jpg"],
-            server=self.member.mailbox["server"], port=self.member.mailbox["port"],
-            login=self.member.mailbox["username"], passwd=self.member.mailbox["password"]
-        )
-        sleep(3)
+        if self.member.data["email"]:
+            print("Email to", self.member.name)
+            send_email(
+                "Sorry, XCJ doorman cannot open the door for you",
+                from_=self.member.mailbox["username"],
+                to_=(self.member.data["email"],),
+                message_HTML = """
+                    <P>Your status in the XCJ database is set to: {}</P>
+                    <p>You membership expiration date is {}</p>
+                    <p></p>
+                    """.format(self.member.data["status"], self.member.validity),
+                images=[r"images/emoji-not-happy.jpg"],
+                server=self.member.mailbox["server"], port=self.member.mailbox["port"],
+                login=self.member.mailbox["username"], passwd=self.member.mailbox["password"]
+            )
+            sleep(3)
         return 1
 
     def unknown_qr_code(self):
