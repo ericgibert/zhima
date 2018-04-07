@@ -192,8 +192,9 @@ def get_transaction(member_id, id=0):
 def add_transaction():
     transaction = Transaction()
     if request.forms['id'] == '':
+        member_id = int(request.forms['member_id'])
         id = transaction.insert('transactions',
-                                member_id = int(request.forms['member_id']),
+                                member_id = member_id,
                                 type = request.forms['type'],
                                 description = request.forms['description'],
                                 amount = float(request.forms['amount']),
@@ -202,7 +203,8 @@ def add_transaction():
                                 valid_until = request.forms['valid_until'],
                                 created_on = datetime.now()
                               )
-        redirect("/transaction/{}/{}".format(request.forms['member_id'], id))
+        transaction.update_member_status(member_id)
+        redirect("/transaction/{}/{}".format(member_id, id))
     return template("transaction", transaction=transaction, read_only=True, session=session_manager.get_session())
 
 #

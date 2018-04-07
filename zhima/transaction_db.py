@@ -48,6 +48,7 @@ __email__ =  "ericgibert@yahoo.fr"
 __license__ = "MIT"
 from datetime import datetime, timedelta, date
 from model_db import Database
+from member_db import Member
 
 class Transaction(Database):
     """
@@ -74,4 +75,14 @@ class Transaction(Database):
     def get_from_db(self, transac_id):
         """Connects to the database to fetch a transaction table record or simulation"""
         self.data = self.select(id=transac_id)
+
+    def update_member_status(self, member_id):
+        """Update the status of a member to OK or NOT_OK accordingly to the mambership payment"""
+        result = self.fetch("select max(valid_until) as max_valid from transactions where member_id=%s and right(type,10)='MEMBERSHIP'", params=(member_id,))
+        try:
+            new_status = 'OK' if result['max_valid']>=date.today() else 'NOT_OK'
+        except TypeError:
+            new_status = 'NOT_OK'
+        member = Member(member_id=member_id)
+        member.update(id=member_id, status=new_status)
 
