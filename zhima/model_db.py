@@ -143,7 +143,7 @@ class Database():
         if debug:
             print(datetime.now(), log_type, code, message)
         log_id = self.insert('tb_log', type=log_type, code=code, message=message)
-        if code>0:
+        if int(code)>0:
             self.update('users', id=code, last_active_type="[{}] {}".format(log_type, message),
                         last_active_time=datetime.now())
         return log_id
