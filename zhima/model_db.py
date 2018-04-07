@@ -42,7 +42,8 @@ class Database():
                 self.access = json.load(json_file)
             my_IP = check_output(['hostname', '-I']).decode("utf-8").strip()
             ip_3 = '.'.join(my_IP.split('.')[:3])
-            # print("My IP:", my_IP, "ip_3:", ip_3, "\nThis access:",self.access[ip_3])
+            print("My IP:", my_IP, "ip_3:", ip_3, "\nThis access:",self.access[ip_3])
+            print(self.access)
             try:
                 Database.dbname = self.access[ip_3]["dbname"]
                 Database.login = self.access[ip_3]["login"]

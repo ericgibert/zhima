@@ -102,3 +102,31 @@ Crypto
 ======
 
 pip install pycrypto
+
+
+Auto-start at boot
+==================
+
+
+cat /lib/systemd/system/zhima.service
+--------
+
+[Unit]
+Description=zhima service
+After=network.target multi-user.target
+
+[Service]
+Type=forking
+User=pi
+ExecStart=/home/pi/zhima/zhima/zhima.sh start 
+
+
+[Install]
+WantedBy=multi-user.target
+
+--------
+
+then 
+sudo chmod 644 /lib/systemd/system/zhima.service
+sudo systemctl daemon-reload
+sudo systemctl enable zhima.service

@@ -14,7 +14,7 @@
     % for k,v in transaction.data.items():
     <tr><td style="text-align:right">{{k.replace('_', ' ').capitalize()}}</td>
         % if k == 'type':
-        <td><select id="type" name="type" {{" disabled" if read_only or k in ro_fields else ""}} onchange="onChangeType(this)">
+        <td><select id="type" name="type" {{" readonly" if read_only or k in ro_fields else ""}} onchange="onChangeType(this)">
             <option value="1M MEMBERSHIP">1 month membership</option>
             <option value="6M MEMBERSHIP">6 months membership</option>
             <option value="DONATION">Donation</option>
@@ -27,11 +27,13 @@
         % end
     % end
 </table>
-    % if transaction.data['id'] is None:
+    % if "id" not in transaction.data or transaction.data['id'] is None:
     <p>&nbsp;&nbsp;&nbsp;<input type="submit" value="Post" name="submit" /></p>
     % end
 </form>
+% if "member_id" in transaction.data:
 <p>Back to this <a href="/member/{{transaction.data['member_id']}}">member's information page</a></p>
+% end
 <script type="text/javascript" language="javascript">
 window.addEventListener("load",function(){
     document.getElementById("type").value = "{{transaction.data["type"] if "type" in transaction.data else ""}}";

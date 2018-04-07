@@ -191,7 +191,7 @@ def get_transaction(member_id, id=0):
 @need_admin
 def add_transaction():
     transaction = Transaction()
-    if request.forms['id'] == 'None':
+    if request.forms['id'] == '':
         id = transaction.insert('transactions',
                                 member_id = int(request.forms['member_id']),
                                 type = request.forms['type'],
