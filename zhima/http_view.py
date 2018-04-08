@@ -140,7 +140,7 @@ def upd_member(id):
     # if the user has changed the value of a legit fioeld then add it to the list of updates
     need_upd = {}
     for field in [f for f in request.forms if f not in CANT_UPD_FIELDS]:
-        print(field, ",", request.forms[field], ",", str(member[field] or ''))
+        # print(field, ",", request.forms[field], ",", str(member[field] or ''))
         if id==0 or (request.forms[field] != str(member.data[field] or '')):
             need_upd[field] = request.forms[field]
     if need_upd:
