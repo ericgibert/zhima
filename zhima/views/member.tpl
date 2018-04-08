@@ -54,13 +54,22 @@
     % for k,v in member.data.items():
     <tr><td style="text-align:right; border: 0px;">{{k.replace('_', ' ').capitalize()}}</td>
         <td style="border: 0px;">
-            <input type={{!'"password"' if k.startswith('passwd') else '"text"'}} size="40" value="{{v}}" name="{{k}}" id="{{k}}"
-                   {{"readonly" if read_only or k in ALWAYS_RO else ""}}
-                   {{!"onchange='check_pass();'" if k.startswith('passwd') else ""}}
-            % if k in ("birthdate", ):
-            class='datepicker' title='YYYY-MM-DD'
-            % end
-            />
+            % if k == 'gender':
+                <select id="gender" name="gender" {{"disabled" if read_only else ""}}>
+                <option value="0" {{"selected" if v==0 else ""}}>Male</option>
+                <option value="1" {{"selected" if v==1 else ""}}>Female</option>
+                <option value="2" {{"selected" if v==2 else ""}}>Undefined</option>
+                <option value="5" {{"selected" if v==5 else ""}}>Event</option>
+                </select>
+            % else:
+                <input type={{!'"password"' if k.startswith('passwd') else '"text"'}} size="40" value="{{v}}" name="{{k}}" id="{{k}}"
+                       {{"readonly" if read_only or k in ALWAYS_RO else ""}}
+                       {{!"onchange='check_pass();'" if k.startswith('passwd') else ""}}
+                % if k in ("birthdate", ):
+                class='datepicker' title='YYYY-MM-DD'
+                % end
+                />
+            %end
         </td></tr>
     % end
     % if session['admin']:
