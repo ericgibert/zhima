@@ -22,7 +22,7 @@ from member_api import Member_Api
 from make_qrcode import make_qrcode
 from transaction_db import Transaction
 
-session_manager = CookieSession()    #  NOTE: you should specify a secret
+session_manager = CookieSession(cookie_expires=30 * 60, secret="huitchar")    #  NOTE: you should specify a secret
 valid_user = authenticator(session_manager)
 
 http_view = Bottle()
@@ -103,15 +103,15 @@ def list_members(page=0):
 @need_login
 def get_member(id):
     """Display the form in R/O mode for a member"""
-    member = Member(id)
+    member = Member(member_id=id)
     qr_file = "images/XCJ_{}.png".format(id)
-    if member.data['status']=="OK":
+    if member['status'] == "OK":
         qrcode_text = member.encode_qrcode()
         img = make_qrcode(qrcode_text)
         img.save(qr_file)
     else:
         member.qrcode_is_valid = False
-        copy2("images/emoji-not-happy.jpg", qr_file)
+        copy2("images/emoji-not-happy.jpg", qr_file) # overwrite any previous QR code .png
     return template("member", member=member, read_only=True, session=session_manager.get_session())
 
 @http_view.get('/member/edit/<id:int>')

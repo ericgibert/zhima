@@ -3,6 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <title>Zhima - Transaction</title>
+    <link rel="stylesheet" type="text/css" href="/images/datepicker.css" />
+    <script type="text/javascript" src="/images/datepicker.js"></script>
 </head>
 <body>
 % include('header.html')
@@ -23,7 +25,11 @@
             <option value="CROWD FUNDING">Crowd Funding</option>
         </select></td>
         % else:
-        <td><input type="text" size="40" value="{{v}}" name="{{k}}" id="{{k}}"{{" readonly" if read_only or k in ro_fields else ""}}/></td></tr>
+        <td><input type="text" size="40" value="{{v}}" name="{{k}}" id="{{k}}"{{" readonly" if read_only or k in ro_fields else ""}}
+            % if k in ("valid_from", "valid_until"):
+            class='datepicker' title='YYYY-MM-DD'
+            % end
+            /></td></tr>
         % end
     % end
 </table>
