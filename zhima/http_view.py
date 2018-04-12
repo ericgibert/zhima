@@ -17,10 +17,10 @@ from collections import OrderedDict
 from datetime import datetime
 from bottle import Bottle, template, request, BaseTemplate, redirect, error, static_file
 from bottlesession import CookieSession, authenticator
-from member_db import Member
+from member import Member
 from member_api import Member_Api
 from make_qrcode import make_qrcode
-from transaction_db import Transaction
+from transaction import Transaction
 
 session_manager = CookieSession(cookie_expires=30 * 60, secret="huitchar")    #  NOTE: you should specify a secret
 valid_user = authenticator(session_manager)
@@ -94,7 +94,7 @@ def log(page=0):
 @need_admin
 def list_members(page=0):
     """List the members and provide link to add new ones"""
-    sql, req_query = list_sql("users", "status", page)
+    sql, req_query = list_sql("users", "status", page=page)
     rows = http_view.controller.db.fetch(sql, one_only=False)
     return template("members", rows=rows, current_page=page, req_query=req_query, session=session_manager.get_session())
 
@@ -103,7 +103,7 @@ def list_members(page=0):
 @need_login
 def get_member(id):
     """Display the form in R/O mode for a member"""
-    member = Member(member_id=id)
+    member = Member(id)
     qr_file = "images/XCJ_{}.png".format(id)
     if member['status'] == "OK":
         qrcode_text = member.encode_qrcode()
@@ -128,7 +128,7 @@ def upd_member(id):
     if str(id) not in request.forms['id']:
         return "<h1>Error - The form's id is not the same as the id on the link</h1>"
     CANT_UPD_FIELDS = ('submit', 'id', 'openid', 'passwdchk')
-    member = Member(member_id=id)  # get current db record or an empty member if id==0
+    member = Member(id)  # get current db record or an empty member if id==0
     # force username to lower case and ensure its unicity:
     try:
         request.forms['username'] = request.forms['username'].lower()
@@ -282,7 +282,7 @@ def upd_member(openid):
     member = Member_Api(openid=openid)
     operations = request.json
     if operations['op'] == "update": # update a member's profile
-        upd_fields = {'id': openid}
+        upd_fields = {'id': member.id}
         for field in [f for f in operations['data'] if f in Member_Api.API_MAPPING_TO_DB]:
             upd_fields[Member_Api.API_MAPPING_TO_DB[field]] = operations['data'][field]
         if upd_fields:
@@ -294,9 +294,14 @@ def upd_member(openid):
 
 @http_view.post('/api/v1.0/member/new')
 def add_member():
-    member = Member_Api(member_id=0) # empty new member
+    member = Member_Api() # empty new member
     result = member.from_json(request.json)
     return result
+
+@http_view.post('/api/v1.0/open/seconds/<sec:int>')
+def open_door(sec):
+    pass
+
 
 if __name__ == "__main__":
     from model_db import Database

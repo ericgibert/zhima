@@ -56,10 +56,25 @@
         <td style="border: 0px;">
             % if k == 'gender':
                 <select id="gender" name="gender" {{"disabled" if read_only else ""}}>
-                <option value="0" {{"selected" if v==0 else ""}}>Male</option>
-                <option value="1" {{"selected" if v==1 else ""}}>Female</option>
-                <option value="2" {{"selected" if v==2 else ""}}>Undefined</option>
+                <option value="0" {{"selected" if v==0 else ""}}>Unassigned</option>
+                <option value="1" {{"selected" if v==1 else ""}}>Male</option>
+                <option value="2" {{"selected" if v==2 else ""}}>Female</option>
                 <option value="5" {{"selected" if v==5 else ""}}>Event</option>
+                </select>
+            % elif k == 'status':
+                <select id="status" name="status" {{"disabled" if read_only else ""}}>
+                <option value="OK" {{"selected" if v=="OK" else ""}}>OK</option>
+                <option value="NOT_OK" {{"selected" if v=="NOT_OK" else ""}}>Not OK</option>
+                <option value="INVALID" {{"selected" if v=="INVALID" else ""}}>Invalid</option>
+                </select>
+            % elif k == 'role':
+                <select id="role" name="role" {{"disabled" if read_only else ""}}>
+                <option value="0" {{"selected" if v==0 else ""}}>Visitor</option>
+                <option value="1" {{"selected" if v==1 else ""}}>Member</option>
+                <option value="2" {{"selected" if v==2 else ""}}>Master</option>
+                <option value="4" {{"selected" if v==4 else ""}}>Group</option>
+                <option value="5" {{"selected" if v==5 else ""}}>Staff</option>
+                <option value="10" {{"selected" if v==10 else ""}}>Admin</option>
                 </select>
             % else:
                 <input type={{!'"password"' if k.startswith('passwd') else '"text"'}} size="40" value="{{v}}" name="{{k}}" id="{{k}}"

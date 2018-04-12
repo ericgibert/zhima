@@ -9,7 +9,8 @@ Test the APIs developped for John's Wechat application
 import unittest
 import requests
 from datetime import datetime
-from zhima.model_db import Database
+from model_db import Database
+from member import Member
 
 class TestApi(unittest.TestCase):
     """
@@ -33,7 +34,7 @@ class TestApi(unittest.TestCase):
         self.assertEqual(200, response.status_code)
         unknown = response.json()
         print("test_get_by_openid_unknown: JSON:", unknown)
-        self.assertEqual('1001', unknown['errno'])
+        self.assertEqual('1999', unknown['errno'])
 
 
     def test_add_new_member(self, keep_member=False):
@@ -78,7 +79,7 @@ class TestApi(unittest.TestCase):
         response = requests.post(url, json=minimum_data)
         self.assertEqual(200, response.status_code)
         result = response.json()
-        print(result)
+        # print(result)
         self.assertEqual('1000', result['errno'])
         new_id = result['data']['new_id']
         if not keep_member: self.delete_user(new_id)
@@ -87,8 +88,11 @@ class TestApi(unittest.TestCase):
     def test_upd_member_profile(self, keep_member=False):
         # create a member
         new_id = self.test_add_new_member(keep_member=True)
+        member = Member(id=new_id)
+        current_avatarUrl = member["avatar_url"]
+        current_username = member["username"]
         # call update API
-        url = "{}/member/openid/{}".format(self.base_url, new_id)
+        url = "{}/member/openid/{}".format(self.base_url, member["openid"])
         patch = {
             "op": "update",
             "data": {
@@ -97,9 +101,16 @@ class TestApi(unittest.TestCase):
             }
         }
         response = requests.patch(url, json=patch)
-        self.assertEqual(200, response.status_code)
+        # self.assertEqual(200, response.status_code)
         result = response.json()
-        print(result)
+        print("->", result)
+        # fetch record again
+        member = Member(id=new_id)
+        upd_avatarUrl = member["avatar_url"]
+        upd_username = member["username"]
+        self.assertNotEqual(current_avatarUrl, upd_avatarUrl)
+        self.assertNotEqual(current_username, upd_username)
+        self.assertEqual("new_nickName", upd_username)
         if not keep_member: self.delete_user(new_id)
 
 

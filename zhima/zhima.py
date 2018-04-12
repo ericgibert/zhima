@@ -23,12 +23,11 @@ __email__ =  "ericgibert@yahoo.fr"
 __license__ = "MIT"
 import sys, os
 import signal
-import threading
 import argparse
 from time import sleep
 from camera import Camera
 from rpi_gpio import Rpi_Gpio, _simulation as rpi_simulation
-from member_db import Member
+from member import Member
 from tokydoor import TokyDoor
 from model_db import Database
 from send_email import send_email

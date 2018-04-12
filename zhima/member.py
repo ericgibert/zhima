@@ -33,10 +33,10 @@ class Member(Database):
         'STAFF': 5,
         'ADMIN': 10
     }
-    def __init__(self, member_id=None, qrcode=None, *args, **kwargs):
+    def __init__(self, id=None, qrcode=None, *args, **kwargs):
         """
         Select a record from the database based on a member table id or the id found in a QR code
-        :param member_id: int for member tbale key
+        :param id: int for member tbale key
         :param qrcode: string read in a qrcode
         """
         super().__init__(table="users", *args, **kwargs)
@@ -44,8 +44,8 @@ class Member(Database):
         # create a member based on an ID or QR Code
         self.qrcode_version, self.qrcode_is_valid = '?', False
         self.transactions = []
-        if member_id:
-            self.get_from_db(member_id)
+        if id:
+            self.get_from_db(id)
         elif qrcode:
             self.decode_qrcode(qrcode)  # which calls get_from_db if the QR code is valid
         elif 'openid' in kwargs:
@@ -167,7 +167,7 @@ class Member(Database):
 
 
 if __name__ == "__main__":
-    m = Member(member_id=123456)
+    m = Member(id=123456)
     print("Found in db:", m.name, m.birthdate, m.status)
     print("Make QR Code:", m.encode_qrcode())
     n = Member(qrcode=m.encode_qrcode(version=1))
@@ -188,7 +188,7 @@ if __name__ == "__main__":
     print('-' * 20)
     not_good=Member(qrcode="ahahah")
     print("Fail 1", not_good)
-    not_good=Member(member_id=-1)
+    not_good=Member(id=-1)
     print("Fail 2", not_good)
     not_good = Member(qrcode="XCJ1#-1#ahahah")
     print("Fail 3", not_good)
@@ -199,7 +199,7 @@ if __name__ == "__main__":
 
     # test the validity duration
     print('-' * 20)
-    m = Member(member_id=123459)  # no membership transaction record
+    m = Member(id=123459)  # no membership transaction record
     print("Found in db:", m.name, m.birthdate, m.status)
     print("Make QR Code:", m.encode_qrcode())
     n = Member(qrcode=m.encode_qrcode())

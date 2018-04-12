@@ -48,7 +48,7 @@ __email__ =  "ericgibert@yahoo.fr"
 __license__ = "MIT"
 from datetime import datetime, timedelta, date
 from model_db import Database
-from member_db import Member
+from member import Member
 
 class Transaction(Database):
     """

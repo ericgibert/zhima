@@ -10,7 +10,7 @@ import argparse
 import qrcode
 from PIL import Image
 import zbarlight
-from member_db import Member
+from member import Member
 
 XCJ_LOGO = "../Private/XCJ.png"
 QR_CODE_QUALITY = {
