@@ -63,7 +63,7 @@ class Camera():
         self.qr_codes = []  # reset any previous QR code found
         self.image = None
         for i in range(max_photos):
-            print("Taking photo", i, end="\r")
+            if debug: print("Taking photo", i, end="\r")
             sleep(0.1)
             if has_picamera:
                 with picamera.array.PiRGBArray(self.camera) as stream:
@@ -94,12 +94,16 @@ class Camera():
                 # self.camera = cv2.VideoCapture(0)
                 return None
             if self.qr_codes:
-                if debug: self.image.show()
+                if debug: print("QR code found on", self.save_photo())
                 print("\n")
                 return self.qr_codes
+            else:
+                if debug: print("NO QR code found on", self.save_photo(), "[", i, "]")
+                print("\n")
+
 
         else:
-            if debug:self.image.show()
+            # if debug:self.image.show()
             print("\n")
             return []
         

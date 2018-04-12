@@ -35,10 +35,11 @@ from send_email import send_email
 
 
 class Controller(object):
-    def __init__(self, bottle_ip='127.0.0.1', port=8080):
+    def __init__(self, bottle_ip='127.0.0.1', port=8080, debug=False):
         self.bottle_ip, self.port = bottle_ip, port
         self.gpio = Rpi_Gpio()
         self.db = Database()
+        self.debug = debug
         if rpi_simulation:
             print("PGIO simulation active")
         self.member = None
@@ -108,7 +109,7 @@ class Controller(object):
         self.gpio.green1.ON()
         self.gpio.green2.flash("SET", on_duration=0.5, off_duration=0.5)
         self.gpio.red.OFF()
-        self.qr_codes = self.camera.get_QRcode()
+        self.qr_codes = self.camera.get_QRcode(debug=self.debug)
         if self.qr_codes is None:  # webcam is not working: panic mode: all LED flashing!
             return 99
         next_state = 3 if self.qr_codes else 1  # qr_codes is a list, might be an empty one...
@@ -214,7 +215,8 @@ if __name__ == "__main__":
     parser.add_argument("-b", "--bottle", dest="bottle_ip", help="Optional: Raspberry Pi IP address to allow remote connections", required=False,  default="127.0.0.1")
     parser.add_argument("-p", "--port", dest="port", help="Optional: port for HTTP (8080: test / 80: PROD)", required=False,  default=8080, type=int)
     parser.add_argument('-v', '--version', action='version', version=__version__)
+    parser.add_argument('-d', '--debug', dest='debug', help='debug mode - kep photos', action='store_true', default=False)
     # parser.add_argument('config_file', nargs='?', default='')
     args, unk = parser.parse_known_args()
-    ctrl = Controller(bottle_ip=args.bottle_ip, port=args.port)
+    ctrl = Controller(bottle_ip=args.bottle_ip, port=args.port, debug=args.debug)
     ctrl.run()
