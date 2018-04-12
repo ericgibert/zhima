@@ -15,12 +15,14 @@ from os import path, system, getpid
 import argparse
 from collections import OrderedDict
 from datetime import datetime
+from time import sleep
 from bottle import Bottle, template, request, BaseTemplate, redirect, error, static_file
 from bottlesession import CookieSession, authenticator
 from member import Member
 from member_api import Member_Api
 from make_qrcode import make_qrcode
 from transaction import Transaction
+from rpi_gpio import Rpi_Gpio
 
 session_manager = CookieSession(cookie_expires=30 * 60, secret="huitchar")    #  NOTE: you should specify a secret
 valid_user = authenticator(session_manager)
@@ -298,9 +300,14 @@ def add_member():
     result = member.from_json(request.json)
     return result
 
-@http_view.post('/api/v1.0/open/seconds/<sec:int>')
+@http_view.get('/api/v1.0/open/seconds/<sec:int>')
 def open_door(sec):
-    pass
+    if 0 < sec < 99999:
+        rpi = Rpi_Gpio()
+        rpi.relay.ON()
+        sleep(sec)
+        rpi.relay.OFF()
+        return "Door is now closed"
 
 
 if __name__ == "__main__":
