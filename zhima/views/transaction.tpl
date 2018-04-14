@@ -53,13 +53,13 @@ function onChangeType(selectType)
     {
         valid_from.setDate(valid_from.getDate() + 31);
         document.getElementById("valid_until").value = valid_from.toISOString().substr(0,10);
-        document.getElementById("amount").value = 100.00;
+        document.getElementById("amount").value = 200.00;
     }
     else if (value=="6M MEMBERSHIP")
     {
         valid_from.setDate(valid_from.getDate() + 181);
         document.getElementById("valid_until").value = valid_from.toISOString().substr(0,10);
-        document.getElementById("amount").value = 450.00;
+        document.getElementById("amount").value = 900.00;
     }
     else if (value=="DONATION")
     {

@@ -297,23 +297,31 @@ def img(filepath):
 ###  APIs
 @http_view.get('/api/v1.0/member/openid/<openid>')
 def get_member(openid):
+    """Return a Member JSON object based on a member db record and its last transaction"""
     member = Member_Api(openid=openid)
     return member.to_json()
 
 @http_view.patch('/api/v1.0/member/openid/<openid>')
 def upd_member(openid):
+    """
+    If operation is "update": Update a member record designated by the provided 'openid'
+    If operation is "add": Add a new transaction to the designated member
+    """
     member = Member_Api(openid=openid)
-    operations = request.json
-    if operations['op'] == "update": # update a member's profile
-        upd_fields = {'id': member.id}
-        for field in [f for f in operations['data'] if f in Member_Api.API_MAPPING_TO_DB]:
-            upd_fields[Member_Api.API_MAPPING_TO_DB[field]] = operations['data'][field]
-        if upd_fields:
-            print("Update", openid, "with", upd_fields)
-            member.update(**upd_fields)
-    elif operations['op'] == "add": # add a new payment record
-        member.add_payment(operations['data'])
-    return member.to_json()  # <-- to do proper return  { JSON }
+    if member.id:
+        operations = request.json
+        if operations['op'] == "update": # update a member's profile
+            upd_fields = {'id': member.id}
+            for field in [f for f in operations['data'] if f in Member_Api.API_MAPPING_TO_DB]:
+                upd_fields[Member_Api.API_MAPPING_TO_DB[field]] = operations['data'][field]
+            if upd_fields:
+                print("Update", openid, "with", upd_fields)
+                result = member.update(**upd_fields)
+        elif operations['op'] == "add": # add a new payment record
+            result = member.add_payment(operations['data'])
+    else:
+        result = member.to_json()  # generates the 1999 message
+    return result
 
 @http_view.post('/api/v1.0/member/new')
 def add_member():

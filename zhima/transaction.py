@@ -75,6 +75,7 @@ class Transaction(Database):
     def get_from_db(self, transac_id):
         """Connects to the database to fetch a transaction table record or simulation"""
         self.data = self.select(id=transac_id)
+        self.id = transac_id
 
     def update_member_status(self, member_id):
         """Update the status of a member to OK or NOT_OK accordingly to the mambership payment"""

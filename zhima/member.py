@@ -88,7 +88,7 @@ class Member(Database):
                 self.birthdate = datetime.strptime(self.data['birthdate'], "%Y-%m-%d")
             # fetch this member's transactions
             self.transactions = self.select('transactions',
-                                               columns="""type, description, 
+                                               columns="""id, type, description, 
                                                        CONCAT(FORMAT(amount, 2), ' ', currency) as amount,
                                                        valid_from, valid_until, created_on""",
                                                one_only=False,

@@ -9,8 +9,8 @@ Test the APIs developped for John's Wechat application
 import unittest
 import requests
 from datetime import datetime
-from model_db import Database
 from member import Member
+from transaction import Transaction
 
 class TestApi(unittest.TestCase):
     """
@@ -67,7 +67,11 @@ class TestApi(unittest.TestCase):
                     'country': "China",
                     'gender': 1,
                     'language': "zh_CN",
-                }
+                },
+            'memberInfo':{
+                'tags': 'Master'
+            }
+
         }
         response = requests.post(url, json=minimum_data)
         self.assertEqual(200, response.status_code)
@@ -75,6 +79,9 @@ class TestApi(unittest.TestCase):
         self.print_JSON(result, title="test_add_new_member:")
         self.assertEqual('1000', result['errno'])
         new_id = result['data']['new_id']
+        member = Member(new_id)
+        print("Created as [role:", member['role'], "] with status:", member["status"])
+        self.assertEqual('NOT_OK', member["status"])
         if not keep_member: self.delete_member(new_id)
         return new_id
 
@@ -101,6 +108,10 @@ class TestApi(unittest.TestCase):
         self.print_JSON(result, title="test_add_new_member_with_payment:")
         self.assertEqual('1000', result['errno'])
         new_id = result['data']['new_id']
+        member = Member(new_id)
+        print("Created as [role:", member['role'], "] with status:", member["status"])
+        self.assertEqual('OK', member["status"])
+        print("Transaction:", member.transactions)
         if not keep_member: self.delete_member(new_id)
         return new_id
 
@@ -118,7 +129,8 @@ class TestApi(unittest.TestCase):
             "op": "update",
             "data": {
                 "avatarUrl": "https://new/link/to_avatar.html",
-                'nickName': "new_nickName"
+                'nickName': "new_nickName",
+                'tags': 5
             }
         }
         response = requests.patch(url, json=patch)
@@ -133,6 +145,7 @@ class TestApi(unittest.TestCase):
         self.assertNotEqual(current_username, upd_username)
         self.assertEqual("new_nickName", upd_username)
         if not keep_member: self.delete_member(new_id)
+
 
     def test_upd_unknown_member_profile(self, keep_member=False):
         """Negative Test: try to update an unknown Member"""
@@ -154,11 +167,66 @@ class TestApi(unittest.TestCase):
         self.assertEqual(1999, int(result['errno']))
         self.assertEqual(unk_openid, result['data']['id'])
 
+    def test_upd_unknown_field_member(self, keep_member=False):
+        """
+        Positive Test: try to update an unknown field for a given Member
+        The fields not declared in Member_Api.API_MAPPING_TO_DB are ignored
+        """
+        # create a member
+        new_id = self.test_add_new_member(keep_member=True)
+        member = Member(id=new_id)
+        # call update API
+        url = "{}/member/openid/{}".format(self.base_url, member["openid"])
+        print("Path:", url)
+        patch = {
+            "op": "update",
+            "data": {
+                "avatarUrl": "https://new/link/to_avatar.html",
+                'nickName': "new_nickName",
+                "unknow_field___": "incorrect field"
+            }
+        }
+        response = requests.patch(url, json=patch)
+        self.assertEqual(200, response.status_code)
+        result = response.json()
+        self.print_JSON(result, title="test_upd_unknown_field_member:")
+        self.assertEqual(1000, int(result['errno']))
+        # self.assertEqual(new_id, result['data']['id'])
+        if not keep_member: self.delete_member(new_id)
+
+    def test_add_payment(self, keep_member=False):
+        """Positive test: add a payment to a new Member"""
+        # create a member
+        new_id = self.test_add_new_member(keep_member=True)
+        member = Member(id=new_id)
+        current_avatarUrl = member["avatar_url"]
+        current_username = member["username"]
+        # call update API
+        url = "{}/member/openid/{}".format(self.base_url, member["openid"])
+        print("Path:", url)
+        patch = {
+            "op": "add",
+            "data": {
+                'paidTime': datetime.now().strftime('%Y%m%d%H%M'), # '201803121929',
+                'payIndex': 'this_is_craaaazy_____',
+                'CNYAmount': 123.45,
+                'payType': 'DONATION'
+            }
+        }
+        response = requests.patch(url, json=patch)
+        self.assertEqual(200, response.status_code)
+        result = response.json()
+        self.print_JSON(result, title="test_add_payment:")
+        # fetch record again
+        member = Member(id=new_id)
+        print(member.transactions)
+        if not keep_member: self.delete_member(new_id)
 
     def delete_member(self, id):
-        # db = Database()
-        # db.execute_sql("DELETE from users where id=%s", (id, ))
         m = Member(id)
+        for t in m.transactions:
+            trec = Transaction(t['id'])
+            trec.delete()
         m.delete()
         print("deleted row", id)
 
