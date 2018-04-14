@@ -15,14 +15,18 @@ from os import path, system, getpid
 import argparse
 from collections import OrderedDict
 from datetime import datetime
+from time import sleep
 from bottle import Bottle, template, request, BaseTemplate, redirect, error, static_file
 from bottlesession import CookieSession, authenticator
-from member_db import Member
+from member import Member
 from member_api import Member_Api
 from make_qrcode import make_qrcode
-from transaction_db import Transaction
+from transaction import Transaction
+from rpi_gpio import Rpi_Gpio
+from glob import glob
+from markdown import markdown
 
-session_manager = CookieSession()    #  NOTE: you should specify a secret
+session_manager = CookieSession(cookie_expires=30 * 60, secret="huitchar")    #  NOTE: you should specify a secret
 valid_user = authenticator(session_manager)
 
 http_view = Bottle()
@@ -40,7 +44,7 @@ def need_login(callback):
         if session['valid'] and (('id' in kwargs and kwargs['id']==session['id']) or session['admin']):
             return callback(*args, **kwargs)
         else:
-            return '<h3>Sorry, you are not authorized to perform this action</h3>Try to login first'
+            return '<h3>Sorry, you are not authorized to perform this action</h3>Try to <a href="/Login">login</a> first'
     return wrapper
 
 def need_admin(callback):
@@ -50,7 +54,7 @@ def need_admin(callback):
         if session['valid'] and session['admin']:
             return callback(*args, **kwargs)
         else:
-            return '<h3>Sorry, you are not authorized to perform this action</h3>Try to login first'
+            return '<h3>Sorry, you are not authorized to perform this action</h3>Try to <a href="/Login">login</a> first'
     return wrapper
 
 @http_view.route('/')
@@ -94,7 +98,7 @@ def log(page=0):
 @need_admin
 def list_members(page=0):
     """List the members and provide link to add new ones"""
-    sql, req_query = list_sql("users", "status", page)
+    sql, req_query = list_sql("users", "status", page=page)
     rows = http_view.controller.db.fetch(sql, one_only=False)
     return template("members", rows=rows, current_page=page, req_query=req_query, session=session_manager.get_session())
 
@@ -105,13 +109,13 @@ def get_member(id):
     """Display the form in R/O mode for a member"""
     member = Member(id)
     qr_file = "images/XCJ_{}.png".format(id)
-    if member.data['status']=="OK":
+    if member['status'] == "OK":
         qrcode_text = member.encode_qrcode()
         img = make_qrcode(qrcode_text)
         img.save(qr_file)
     else:
         member.qrcode_is_valid = False
-        copy2("images/emoji-not-happy.jpg", qr_file)
+        copy2("images/emoji-not-happy.jpg", qr_file) # overwrite any previous QR code .png
     return template("member", member=member, read_only=True, session=session_manager.get_session())
 
 @http_view.get('/member/edit/<id:int>')
@@ -128,7 +132,7 @@ def upd_member(id):
     if str(id) not in request.forms['id']:
         return "<h1>Error - The form's id is not the same as the id on the link</h1>"
     CANT_UPD_FIELDS = ('submit', 'id', 'openid', 'passwdchk')
-    member = Member(member_id=id)  # get current db record or an empty member if id==0
+    member = Member(id)  # get current db record or an empty member if id==0
     # force username to lower case and ensure its unicity:
     try:
         request.forms['username'] = request.forms['username'].lower()
@@ -140,8 +144,8 @@ def upd_member(id):
     # if the user has changed the value of a legit fioeld then add it to the list of updates
     need_upd = {}
     for field in [f for f in request.forms if f not in CANT_UPD_FIELDS]:
-        # print(field)
-        if id==0 or (request.forms[field] != str(member.data[field])):
+        # print(field, ",", request.forms[field], ",", str(member[field] or ''))
+        if id==0 or (request.forms[field] != str(member.data[field] or '')):
             need_upd[field] = request.forms[field]
     if need_upd:
         if id:
@@ -191,9 +195,10 @@ def get_transaction(member_id, id=0):
 @need_admin
 def add_transaction():
     transaction = Transaction()
-    if request.forms['id'] == 'None':
+    if request.forms['id'] == '':
+        member_id = int(request.forms['member_id'])
         id = transaction.insert('transactions',
-                                member_id = int(request.forms['member_id']),
+                                member_id = member_id,
                                 type = request.forms['type'],
                                 description = request.forms['description'],
                                 amount = float(request.forms['amount']),
@@ -202,8 +207,28 @@ def add_transaction():
                                 valid_until = request.forms['valid_until'],
                                 created_on = datetime.now()
                               )
-        redirect("/transaction/{}/{}".format(request.forms['member_id'], id))
+        transaction.update_member_status(member_id)
+        redirect("/transaction/{}/{}".format(member_id, id))
     return template("transaction", transaction=transaction, read_only=True, session=session_manager.get_session())
+
+
+#
+####  *.md documents posted in the 'views' folder
+#
+@http_view.route('/docs')
+@http_view.route('/docs/<doc_name>')
+@need_admin
+def docs(doc_name=""):
+    if doc_name:
+        with open(path.join('views', doc_name), "rt") as doc:
+            http_rendered = markdown("".join(doc.readlines()))
+        return template("docs", text=http_rendered, session=session_manager.get_session())
+    else:
+        text = "<h1>List of Documents</h1>"
+        for file_ in glob("views/*.md"):
+            text += "<a href='/docs/{f}'>{f}</a><br />".format(f=path.basename(file_))
+        return template("docs", text=text, session=session_manager.get_session())
+
 
 #
 ### Login/Logout form & process
@@ -272,29 +297,47 @@ def img(filepath):
 ###  APIs
 @http_view.get('/api/v1.0/member/openid/<openid>')
 def get_member(openid):
+    """Return a Member JSON object based on a member db record and its last transaction"""
     member = Member_Api(openid=openid)
     return member.to_json()
 
 @http_view.patch('/api/v1.0/member/openid/<openid>')
 def upd_member(openid):
+    """
+    If operation is "update": Update a member record designated by the provided 'openid'
+    If operation is "add": Add a new transaction to the designated member
+    """
     member = Member_Api(openid=openid)
-    operations = request.json
-    if operations['op'] == "update": # update a member's profile
-        upd_fields = {'id': openid}
-        for field in [f for f in operations['data'] if f in Member_Api.API_MAPPING_TO_DB]:
-            upd_fields[Member_Api.API_MAPPING_TO_DB[field]] = operations['data'][field]
-        if upd_fields:
-            print("Update", openid, "with", upd_fields)
-            member.update(**upd_fields)
-    elif operations['op'] == "add": # add a new payment record
-        member.add_payment(operations['data'])
-    return member.to_json()  # <-- to do proper return  { JSON }
+    if member.id:
+        operations = request.json
+        if operations['op'] == "update": # update a member's profile
+            upd_fields = {'id': member.id}
+            for field in [f for f in operations['data'] if f in Member_Api.API_MAPPING_TO_DB]:
+                upd_fields[Member_Api.API_MAPPING_TO_DB[field]] = operations['data'][field]
+            if upd_fields:
+                print("Update", openid, "with", upd_fields)
+                result = member.update(**upd_fields)
+        elif operations['op'] == "add": # add a new payment record
+            result = member.add_payment(operations['data'])
+    else:
+        result = member.to_json()  # generates the 1999 message
+    return result
 
 @http_view.post('/api/v1.0/member/new')
 def add_member():
-    member = Member_Api(member_id=0) # empty new member
+    member = Member_Api() # empty new member
     result = member.from_json(request.json)
     return result
+
+@http_view.get('/api/v1.0/open/seconds/<sec:int>')
+def open_door(sec):
+    if 0 < sec < 99999:
+        rpi = Rpi_Gpio()
+        rpi.relay.ON()
+        sleep(sec)
+        rpi.relay.OFF()
+        return "Door is now closed"
+
 
 if __name__ == "__main__":
     from model_db import Database

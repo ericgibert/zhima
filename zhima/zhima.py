@@ -23,12 +23,11 @@ __email__ =  "ericgibert@yahoo.fr"
 __license__ = "MIT"
 import sys, os
 import signal
-import threading
 import argparse
 from time import sleep
 from camera import Camera
 from rpi_gpio import Rpi_Gpio, _simulation as rpi_simulation
-from member_db import Member
+from member import Member
 from tokydoor import TokyDoor
 from model_db import Database
 from send_email import send_email
@@ -36,10 +35,11 @@ from send_email import send_email
 
 
 class Controller(object):
-    def __init__(self, bottle_ip='127.0.0.1', port=8080):
+    def __init__(self, bottle_ip='127.0.0.1', port=8080, debug=False):
         self.bottle_ip, self.port = bottle_ip, port
         self.gpio = Rpi_Gpio()
         self.db = Database()
+        self.debug = debug
         if rpi_simulation:
             print("PGIO simulation active")
         self.member = None
@@ -109,7 +109,7 @@ class Controller(object):
         self.gpio.green1.ON()
         self.gpio.green2.flash("SET", on_duration=0.5, off_duration=0.5)
         self.gpio.red.OFF()
-        self.qr_codes = self.camera.get_QRcode()
+        self.qr_codes = self.camera.get_QRcode(debug=self.debug)
         if self.qr_codes is None:  # webcam is not working: panic mode: all LED flashing!
             return 99
         next_state = 3 if self.qr_codes else 1  # qr_codes is a list, might be an empty one...
@@ -173,21 +173,22 @@ class Controller(object):
         self.gpio.green1.OFF()
         self.gpio.green2.ON()
         self.gpio.red.ON()
-        print("Email to", self.member.name)
-        send_email(
-            "Sorry, XCJ doorman cannot open the door for you",
-            from_=self.member.mailbox["username"],
-            to_=(self.member.data["email"],),
-            message_HTML = """
-                <P>Your status in the XCJ database is set to: {}</P>
-                <p>You membership expiration date is {}</p>
-                <p></p>
-                """.format(self.member.data["status"], self.member.validity),
-            images=[r"images/emoji-not-happy.jpg"],
-            server=self.member.mailbox["server"], port=self.member.mailbox["port"],
-            login=self.member.mailbox["username"], passwd=self.member.mailbox["password"]
-        )
-        sleep(3)
+        if self.member.data["email"]:
+            print("Email to", self.member.name)
+            send_email(
+                "Sorry, XCJ doorman cannot open the door for you",
+                from_=self.member.mailbox["username"],
+                to_=(self.member.data["email"],),
+                message_HTML = """
+                    <P>Your status in the XCJ database is set to: {}</P>
+                    <p>You membership expiration date is {}</p>
+                    <p></p>
+                    """.format(self.member.data["status"], self.member.validity),
+                images=[r"images/emoji-not-happy.jpg"],
+                server=self.member.mailbox["server"], port=self.member.mailbox["port"],
+                login=self.member.mailbox["username"], passwd=self.member.mailbox["password"]
+            )
+            sleep(3)
         return 1
 
     def unknown_qr_code(self):
@@ -214,7 +215,8 @@ if __name__ == "__main__":
     parser.add_argument("-b", "--bottle", dest="bottle_ip", help="Optional: Raspberry Pi IP address to allow remote connections", required=False,  default="127.0.0.1")
     parser.add_argument("-p", "--port", dest="port", help="Optional: port for HTTP (8080: test / 80: PROD)", required=False,  default=8080, type=int)
     parser.add_argument('-v', '--version', action='version', version=__version__)
+    parser.add_argument('-d', '--debug', dest='debug', help='debug mode - kep photos', action='store_true', default=False)
     # parser.add_argument('config_file', nargs='?', default='')
     args, unk = parser.parse_known_args()
-    ctrl = Controller(bottle_ip=args.bottle_ip, port=args.port)
+    ctrl = Controller(bottle_ip=args.bottle_ip, port=args.port, debug=args.debug)
     ctrl.run()

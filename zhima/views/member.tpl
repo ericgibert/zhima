@@ -16,6 +16,8 @@
     <img src="/images/emoji-not-happy.jpg"/>
     % end
 % else:
+<link rel="stylesheet" type="text/css" href="/images/datepicker.css" />
+<script type="text/javascript" src="/images/datepicker.js"></script>
 <script>
     function check_pass() {
     document.getElementById('submit').disabled =
@@ -52,10 +54,34 @@
     % for k,v in member.data.items():
     <tr><td style="text-align:right; border: 0px;">{{k.replace('_', ' ').capitalize()}}</td>
         <td style="border: 0px;">
-            <input type={{!'"password"' if k.startswith('passwd') else '"text"'}} size="40" value="{{v}}" name="{{k}}" id="{{k}}"
-                   {{"readonly" if read_only or k in ALWAYS_RO else ""}}
-                   {{!"onchange='check_pass();'" if k.startswith('passwd') else ""}}
-            />
+            % if k == 'gender':
+                <select id="gender" name="gender" {{"disabled" if read_only else ""}}>
+                <option value="0" {{"selected" if v==0 else ""}}>Unassigned</option>
+                <option value="1" {{"selected" if v==1 else ""}}>Male</option>
+                <option value="2" {{"selected" if v==2 else ""}}>Female</option>
+                <option value="5" {{"selected" if v==5 else ""}}>Event</option>
+                </select>
+            % elif k == 'status':
+                <select id="status" name="status" {{"disabled" if read_only else ""}}>
+                <option value="OK" {{"selected" if v=="OK" else ""}}>OK</option>
+                <option value="NOT_OK" {{"selected" if v=="NOT_OK" else ""}}>Not OK</option>
+                <option value="INVALID" {{"selected" if v=="INVALID" else ""}}>Invalid</option>
+                </select>
+            % elif k == 'role':
+                <select id="role" name="role" {{"disabled" if read_only else ""}}>
+                % for kr,vr in member.ROLE.items():
+                <option value="{{vr}}" {{"selected" if v==vr else ""}}>{{kr.capitalize()}}</option>
+                % end
+                </select>
+            % else:
+                <input type={{!'"password"' if k.startswith('passwd') else '"text"'}} size="40" value="{{v}}" name="{{k}}" id="{{k}}"
+                       {{"readonly" if read_only or k in ALWAYS_RO else ""}}
+                       {{!"onchange='check_pass();'" if k.startswith('passwd') else ""}}
+                % if k in ("birthdate", ):
+                class='datepicker' title='YYYY-MM-DD'
+                % end
+                />
+            %end
         </td></tr>
     % end
     % if session['admin']:

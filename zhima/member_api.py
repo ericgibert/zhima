@@ -51,10 +51,11 @@ __version__ = "1.0.20170113"
 __email__ =  "ericgibert@yahoo.fr"
 __license__ = "MIT"
 from datetime import datetime, date, timedelta
+from time import time
 import pymysql
 from json import dumps
-from member_db import Member
-from transaction_db import Transaction
+from member import Member
+from transaction import Transaction
 
 
 class Member_Api(Member):
@@ -68,12 +69,52 @@ class Member_Api(Member):
         "gender": "gender",
         "language": "language",
         "province": "province",
+        "tags": "role",
     }
-    def __int__(self, *args, **kwargs):
+
+    def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.openid = kwargs.get("openid")
+
+    def update(self, **kwargs):
+        last_row_id = super().update(**kwargs)
+        if last_row_id:
+            result = {'errno': '1000', 'errmsg': "Success", 'data': {'upd_fields:': list(kwargs.keys())} }
+        else:
+            result = {'errno': '1004', 'errmsg': "Update user record error", 'data': {'upd_fields:': list(kwargs.items())} }
+        return dumps(result)
+
+    def _add_payment(self, data):
+        """Insert a transaction record based on the data received from API"""
+        payment = Transaction(member_id=self.id)
+        data = {
+            'member_id': self.id,
+            'type': data.get('payType') or '1M MEMBERSHIP',
+            'description': data['payIndex'],
+            'amount': data['CNYAmount'], 'currency':'CNY',
+            'valid_from': datetime.strptime(data['paidTime'], '%Y%m%d%H%M'),
+            'valid_until': date.today()+timedelta(days=31),
+            'created_on': datetime.now()
+        }
+        result = payment.insert('transactions', **data)
+        if result: payment.update_member_status(self.id)
+        return result
+
+
+    def add_payment(self, data):
+        last_row_id = self._add_payment(data)
+        if last_row_id:
+            result = {'errno': '1000', 'errmsg': "Success", 'data': {'add_payment:': list(data.keys())} }
+        else:
+            result = {'errno': '1005', 'errmsg': "Add transaction record error", 'data': {'add_payment:': list(data.items())} }
+        return dumps(result)
 
     def from_json(self, data):
         """Fill the user's field from a JSON object and INSERT in database"""
+        try:
+            role = self.ROLE[data['memberInfo']['tags'].upper()]
+        except KeyError:
+            role = 1
         try:
             d = {
                 # mandatory fields
@@ -89,25 +130,16 @@ class Member_Api(Member):
                 # set by this function
                 'birthdate': '1970-01-01',
                 'passwd': "*A0F874BC7F54EE086FCE60A37CE7887D8B31086B",  # password123
-                'status': 'OK',
-                'role': 1,
+                'status': 'NOT_OK',
+                'role': role,
                 'create_time': datetime.now(),
                 'last_update': datetime.now(),
             }
             new_id = self.insert(table='users', **d)
             # do we have a payment record to insert?
             if 'paymentInfo' in data:
-                payment = Transaction(member_id=new_id)
-                data = {
-                    'member_id': new_id,
-                    'type':'1M MEMBERSHIP',
-                    'description': data['paymentInfo']['payIndex'],
-                    'amount': data['paymentInfo']['CNYAmount'], 'currency':'CNY',
-                    'valid_from': datetime.strptime(data['paymentInfo']['paidTime'], '%Y%m%d%H%M'),
-                    'valid_until': date.today()+timedelta(days=31),
-                    'created_on': datetime.now()
-                }
-                payment.insert('transactions', **data)
+                self.id = new_id
+                self._add_payment(data['paymentInfo'])
         except (ValueError, TypeError, KeyError) as err:
                 dico = {
                     'errno': '1002',  #// no error with 1000, error numbers for others
@@ -124,13 +156,22 @@ class Member_Api(Member):
             dico = {
                 'errno': '1000',  #// no error with 1000, error numbers for others
                 'errmsg': "Success",
-                'data': {'new_id': new_id}   # // you may put data at here,in json format.
+                'data': {
+                    'new_id': new_id,
+                    'qrcode_url': "/images/XCJ_{}.png?{}".format(new_id, time())
+                }   # // you may put data at here,in json format.
             }
         return dumps(dico)
 
 
     def to_json(self):
         """return the JSON representation of the member object"""
+        if self.id is None:
+            return {
+                'errno': '1999',  #// no error with 1000, error numbers for others
+                'errmsg': "No member record found",
+                'data': { "id": self.openid}   # // you may put data at here,in json format.
+            }
         try:
             for k, v in Member.ROLE.items():
                 if v==self.data['role']:
@@ -168,7 +209,7 @@ class Member_Api(Member):
                     },
                 'paymentInfo':
                     {
-                        'paidTime': last_payment['created_on'].strftime('%Y%m%d%H%M'),  #'201803121929',     // last payment date and time
+                        'paidTime': last_payment['created_on'].strftime('%Y%m%d%H%M') if last_payment['created_on'] else "200001010000",  #'201803121929',     // last payment date and time
                         'payIndex': last_payment['description'],   #''9cu293820xxjfiuewfdsfdse32',   // the lastest payment index number, this is a unique random codes generated by wechat pay and alipay system and our system.
                         'CNYAmount': last_payment['amount']        #''3200',            // how much is the last payment.
                     }

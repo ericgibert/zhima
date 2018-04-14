@@ -43,6 +43,7 @@ class Database():
             my_IP = check_output(['hostname', '-I']).decode("utf-8").strip()
             ip_3 = '.'.join(my_IP.split('.')[:3])
             # print("My IP:", my_IP, "ip_3:", ip_3, "\nThis access:",self.access[ip_3])
+            # print(self.access)
             try:
                 Database.dbname = self.access[ip_3]["dbname"]
                 Database.login = self.access[ip_3]["login"]
@@ -56,7 +57,6 @@ class Database():
         self.key = Database.key
         self.mailbox = Database.mailbox
 
-
     def fetch(self, sql, params = (), one_only=True):
         """execute a SELECT statement with the parameters and fetch row/rows"""
         try:
@@ -67,7 +67,7 @@ class Database():
             print(err)
             print(sql)
             print(params)
-            return None
+            return {}
         else:
             return data
 
@@ -133,6 +133,11 @@ class Database():
         else:
             return None
 
+    def delete(self):
+        """Remove the current record from its table - no parameter as the object must be instantiated properly"""
+        self.execute_sql("DELETE from {} where id=%s".format(self.table), (self.id, ))
+        self.data, self.id = None, None
+
     def log(self, log_type, code, message, debug=False):
         """
         :param log_type: ENTRY when a user gets in or INFO/WARNING/ERROR for technical issue
@@ -143,7 +148,7 @@ class Database():
         if debug:
             print(datetime.now(), log_type, code, message)
         log_id = self.insert('tb_log', type=log_type, code=code, message=message)
-        if code>0:
+        if int(code)>0:
             self.update('users', id=code, last_active_type="[{}] {}".format(log_type, message),
                         last_active_time=datetime.now())
         return log_id
@@ -157,10 +162,15 @@ class Database():
 if __name__ == "__main__":
     db = Database()
     # print(db.access)
-    result = db.fetch("select count(*) from users", ())
-    print(result)
+    result = db.fetch("select count(*) as nb_users from users", ())
+    print(result['nb_users'],"records in the 'users' table")
     row_id = db.log('INFO', 1, "Testing log INSERT", debug=True)
-    print(row_id)
+    print("New log entry:", row_id)
     db.update('tb_log', id=row_id, code=2)
     row = db.select('tb_log', id=row_id)
-    print(row)
+    print("Updated 'code' from 1 to 2:", row)
+    # db.delete()
+    # print("row deleted")
+    # row = db.select('tb_log', id=row_id)
+    # print(row)
+
