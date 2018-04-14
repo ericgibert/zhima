@@ -30,6 +30,8 @@ class Member(Database):
     ROLE={
         'VISITOR': 0,
         'MEMBER': 1,
+        'MASTER': 2,
+        'GROUP': 4,
         'STAFF': 5,
         'ADMIN': 10
     }

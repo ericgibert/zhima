@@ -67,7 +67,7 @@ class Database():
             print(err)
             print(sql)
             print(params)
-            return None
+            return {}
         else:
             return data
 
@@ -133,6 +133,11 @@ class Database():
         else:
             return None
 
+    def delete(self):
+        """Remove the current record from its table - no parameter as the object must be instantiated properly"""
+        self.execute_sql("DELETE from {} where id=%s".format(self.table), (self.id, ))
+        self.data, self.id = None, None
+
     def log(self, log_type, code, message, debug=False):
         """
         :param log_type: ENTRY when a user gets in or INFO/WARNING/ERROR for technical issue
@@ -157,10 +162,15 @@ class Database():
 if __name__ == "__main__":
     db = Database()
     # print(db.access)
-    result = db.fetch("select count(*) from users", ())
-    print(result)
+    result = db.fetch("select count(*) as nb_users from users", ())
+    print(result['nb_users'],"records in the 'users' table")
     row_id = db.log('INFO', 1, "Testing log INSERT", debug=True)
-    print(row_id)
+    print("New log entry:", row_id)
     db.update('tb_log', id=row_id, code=2)
     row = db.select('tb_log', id=row_id)
-    print(row)
+    print("Updated 'code' from 1 to 2:", row)
+    # db.delete()
+    # print("row deleted")
+    # row = db.select('tb_log', id=row_id)
+    # print(row)
+

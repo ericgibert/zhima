@@ -69,12 +69,9 @@
                 </select>
             % elif k == 'role':
                 <select id="role" name="role" {{"disabled" if read_only else ""}}>
-                <option value="0" {{"selected" if v==0 else ""}}>Visitor</option>
-                <option value="1" {{"selected" if v==1 else ""}}>Member</option>
-                <option value="2" {{"selected" if v==2 else ""}}>Master</option>
-                <option value="4" {{"selected" if v==4 else ""}}>Group</option>
-                <option value="5" {{"selected" if v==5 else ""}}>Staff</option>
-                <option value="10" {{"selected" if v==10 else ""}}>Admin</option>
+                % for kr,vr in member.ROLE.items():
+                <option value="{{vr}}" {{"selected" if v==vr else ""}}>{{kr.capitalize()}}</option>
+                % end
                 </select>
             % else:
                 <input type={{!'"password"' if k.startswith('passwd') else '"text"'}} size="40" value="{{v}}" name="{{k}}" id="{{k}}"

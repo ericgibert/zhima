@@ -156,8 +156,10 @@ class TestApi(unittest.TestCase):
 
 
     def delete_member(self, id):
-        db = Database()
-        db.execute_sql("DELETE from users where id=%s", (id, ))
+        # db = Database()
+        # db.execute_sql("DELETE from users where id=%s", (id, ))
+        m = Member(id)
+        m.delete()
         print("deleted row", id)
 
 if __name__ == '__main__':
