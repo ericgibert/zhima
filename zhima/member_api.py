@@ -51,6 +51,7 @@ __version__ = "1.0.20170113"
 __email__ =  "ericgibert@yahoo.fr"
 __license__ = "MIT"
 from datetime import datetime, date, timedelta
+from time import time
 import pymysql
 from json import dumps
 from member import Member
@@ -69,8 +70,11 @@ class Member_Api(Member):
         "language": "language",
         "province": "province",
     }
-    def __int__(self, *args, **kwargs):
+
+    def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.openid = kwargs.get("openid")
+
 
     def from_json(self, data):
         """Fill the user's field from a JSON object and INSERT in database"""
@@ -124,7 +128,10 @@ class Member_Api(Member):
             dico = {
                 'errno': '1000',  #// no error with 1000, error numbers for others
                 'errmsg': "Success",
-                'data': {'new_id': new_id}   # // you may put data at here,in json format.
+                'data': {
+                    'new_id': new_id,
+                    'qrcode_url': "/images/XCJ_{}.png?{}".format(new_id, time())
+                }   # // you may put data at here,in json format.
             }
         return dumps(dico)
 
@@ -135,7 +142,7 @@ class Member_Api(Member):
             return {
                 'errno': '1999',  #// no error with 1000, error numbers for others
                 'errmsg': "No member record found",
-                'data': {}   # // you may put data at here,in json format.
+                'data': { "id": self.openid}   # // you may put data at here,in json format.
             }
         try:
             for k, v in Member.ROLE.items():

@@ -23,6 +23,8 @@ from member_api import Member_Api
 from make_qrcode import make_qrcode
 from transaction import Transaction
 from rpi_gpio import Rpi_Gpio
+from glob import glob
+from markdown import markdown
 
 session_manager = CookieSession(cookie_expires=30 * 60, secret="huitchar")    #  NOTE: you should specify a secret
 valid_user = authenticator(session_manager)
@@ -208,6 +210,25 @@ def add_transaction():
         transaction.update_member_status(member_id)
         redirect("/transaction/{}/{}".format(member_id, id))
     return template("transaction", transaction=transaction, read_only=True, session=session_manager.get_session())
+
+
+#
+####  *.md documents posted in the 'views' folder
+#
+@http_view.route('/docs')
+@http_view.route('/docs/<doc_name>')
+@need_admin
+def docs(doc_name=""):
+    if doc_name:
+        with open(path.join('views', doc_name), "rt") as doc:
+            http_rendered = markdown("".join(doc.readlines()))
+        return template("docs", text=http_rendered, session=session_manager.get_session())
+    else:
+        text = "<h1>List of Documents</h1>"
+        for file_ in glob("views/*.md"):
+            text += "<a href='/docs/{f}'>{f}</a><br />".format(f=path.basename(file_))
+        return template("docs", text=text, session=session_manager.get_session())
+
 
 #
 ### Login/Logout form & process
