@@ -2,15 +2,17 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Zhima - Member</title>
+    <title>Zhima - {{"Group" if member['role'] == 4 else "Member"}}</title>
 </head>
 <body>
 % include('header.html')
-<h1>Zhima - Member {{member.data['username']}} ({{member.data['id']}})</h1>
+<h1>Zhima - {{"Group" if member['role'] == 4 else "Member"}} {{member['username']}} ({{member['id']}})</h1>
 
 % if read_only:
 % from time import time
-    % if member.qrcode_is_valid:
+    % if member['role'] == 4:
+    <img src="/images/emoji-group-event.jpg"/>
+    % elif member.qrcode_is_valid:
     <img src="/images/XCJ_{{member.data['id']}}.png?{{time()}}"/>
     % else:
     <img src="/images/emoji-not-happy.jpg"/>
