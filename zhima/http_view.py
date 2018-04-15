@@ -211,6 +211,22 @@ def add_transaction():
         redirect("/transaction/{}/{}".format(member_id, id))
     return template("transaction", transaction=transaction, read_only=True, session=session_manager.get_session())
 
+@http_view.get('/transaction/qrcode/<id:int>')
+def make_event_qrcode(id):
+    """Generate the QR Code of an Event"""
+    trans = Transaction(id)
+    event_member = Member(id=trans["member_id"])
+    if event_member["status"] == "OK" and event_member["gender"] == 5:
+        # use the event_member to set all necessary information to generate a QR Code Version 3
+        event_member.birthdate = trans["valid_from"]
+        event_member.validity = trans["valid_until"]
+        qrcode = event_member.encode_qrcode(version=3)
+        img_qrcode = make_qrcode(qrcode)
+        qr_file = "images/XCJevent_{}.png".format(id)
+        img_qrcode.save(qr_file)
+        return "<img src='/{}' />".format(qr_file)
+    else:
+        return "<h2>This event has not a valid status or gender.</h2>"
 
 #
 ####  *.md documents posted in the 'views' folder

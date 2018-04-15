@@ -27,7 +27,7 @@ class Member(Database):
     - Database is super class to connect to the db itself and perform all SQL queries
     - Member (db.users) is master table to Transactions (db.transactions)
     """
-    ROLE={
+    ROLE = {
         'VISITOR': 0,
         'MEMBER': 1,
         'MASTER': 2,
@@ -35,6 +35,13 @@ class Member(Database):
         'STAFF': 5,
         'ADMIN': 10
     }
+
+    STATUS = {
+        "OK": "OK",
+        "NOT_OK": "Not OK",
+        "INVALID": "Invalid"
+    }
+
     def __init__(self, id=None, qrcode=None, *args, **kwargs):
         """
         Select a record from the database based on a member table id or the id found in a QR code
@@ -57,10 +64,6 @@ class Member(Database):
                 self.id = result['id']
             except TypeError:
                 self.data = {}
-
-    def __getitem__(self, field):
-        """Allow member["field"] to get an 'users' table field"""
-        return self.data.get(field)
 
     def get_max_valid_until(self):
         """
@@ -131,9 +134,8 @@ class Member(Database):
         # Validation of the decoded QR Code
         #
         if member_id and self.get_from_db(member_id):
-            self.id = member_id
             self.qrcode_is_valid = True  # benefice of doubt...
-            if self.qrcode_version >= '2' and self.birthdate:
+            if self.qrcode_version == '2' and self.birthdate:
                 crc = self.birthdate.year ^ (self.birthdate.day*100 + self.birthdate.month)
                 if int(self.clear_qrcode[2]) != crc:
                     print("Incorrect CRC based on birthdate", crc)
@@ -143,6 +145,18 @@ class Member(Database):
                 if datetime.now() > validity:
                     print("QR Code has expired.")
                     self.qrcode_is_valid = False
+            elif self.qrcode_version == '3':
+                from_date, to_date = self.clear_qrcode[2], self.clear_qrcode[3]  #  'yyyy-mm-dd' strings
+                today = '{0:%Y-%m-%d}'.format(date.today())
+                self.qrcode_is_valid = ( from_date <= today <= to_date )
+
+    def encrypt_qrcode(self, qrcode):
+        """turn qrcode string into bytes and pad to multiple of 8 bytes"""
+        des = DES.new(self.key, DES.MODE_ECB)
+        qrcode = qrcode.encode("utf-8")
+        qrcode += ((((len(qrcode)+7) // 8) * 8) - len(qrcode)) * b' '
+        encrypted_qrcode = hexlify(des.encrypt(qrcode))
+        return encrypted_qrcode
 
     def encode_qrcode(self, version=2):
         """Encode this member's data into a QR Code string/payload
@@ -151,16 +165,17 @@ class Member(Database):
         if version==1:
             return "XCJ{}#{}#{}".format(version, self.id, self.name)
         elif version==2:
+            # XCJ2#123456#2015#2018-07-17
             crc = self.birthdate.year ^ (self.birthdate.day*100 + self.birthdate.month)
             self.get_max_valid_until()
-            qrcode = "XCJ{}#{}#{}#{}".format(version, self.id, crc, self.validity)               # XCJ2#123456#2015#2018-07-17
-            des = DES.new(self.key, DES.MODE_ECB)
-            # turn qrcode into bytes and pad to multiple of 8 bytes
-            qrcode = qrcode.encode("utf-8")
-            qrcode += ((((len(qrcode)+7) // 8) * 8) - len(qrcode)) * b' '
-            encrypted_qrcode = hexlify(des.encrypt(qrcode))
-            # print(qrcode, encrypted_qrcode)
-            return encrypted_qrcode
+            qrcode = "XCJ{}#{}#{}#{}".format(version, self.id, crc, self.validity)
+            return self.encrypt_qrcode(qrcode)
+        elif version==3:
+            #  XCJ3#123456#YYYYMMDD#YYYYMMDD    --> From/To dates of validity
+            from_date = '{0:%Y-%m-%d}'.format(self.birthdate)
+            to_date = self.validity if isinstance(self.validity, str) else '{0:%Y-%m-%d}'.format(self.validity)
+            qrcode = "XCJ{}#{}#{}#{}".format(version, self.id, from_date, to_date)
+            return self.encrypt_qrcode(qrcode)
         else:
             return "Unknown Encoding Version {}".format(version)
 
@@ -186,8 +201,8 @@ if __name__ == "__main__":
     assert(str(m) == str(o))
     print("m==o:", str(m) == str(o))
 
-    # failure expected --> None (None)
     print('-' * 20)
+    print("# failure expected --> None (None)")
     not_good=Member(qrcode="ahahah")
     print("Fail 1", not_good)
     not_good=Member(id=-1)
@@ -199,11 +214,23 @@ if __name__ == "__main__":
     not_good=Member(qrcode=qr_v2)
     print("Fail 4", not_good)
 
-    # test the validity duration
     print('-' * 20)
+    print("# test the validity duration")
     m = Member(id=123459)  # no membership transaction record
     print("Found in db:", m.name, m.birthdate, m.status)
     print("Make QR Code:", m.encode_qrcode())
     n = Member(qrcode=m.encode_qrcode())
     assert(str(m) == str(n))
     print("m==n:", str(m) == str(n))
+
+    print('-' * 20)
+    print("test QR code Version 3")
+    m = Member(id=123457)
+    print(m.transactions)
+    m.validity = date.today()
+    print(m.birthdate, m.validity)
+    qr_code3 = m.encode_qrcode(version=3)
+    print(qr_code3)
+    m = Member(qrcode=qr_code3)
+    print(m["username"], m["gender"], m.qrcode_is_valid)
+    assert(m["gender"] == 5)

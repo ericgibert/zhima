@@ -63,9 +63,9 @@
                 </select>
             % elif k == 'status':
                 <select id="status" name="status" {{"disabled" if read_only else ""}}>
-                <option value="OK" {{"selected" if v=="OK" else ""}}>OK</option>
-                <option value="NOT_OK" {{"selected" if v=="NOT_OK" else ""}}>Not OK</option>
-                <option value="INVALID" {{"selected" if v=="INVALID" else ""}}>Invalid</option>
+                % for ks,vs in member.STATUS.items():
+                <option value="{{ks}}" {{"selected" if v==ks else ""}}>{{vs}}</option>
+                % end
                 </select>
             % elif k == 'role':
                 <select id="role" name="role" {{"disabled" if read_only else ""}}>
@@ -121,6 +121,9 @@
         </tr><tr>
             % for v in row.values():
             <td>{{v}}</td>
+            % end
+            % if member["status"] == "OK" and member["gender"] == 5:
+            <td><a href="/transaction/qrcode/{{row['id']}}"><img src="/images/qr-code-icon.jpg" style="width:20px;height:20px;border:0;"></a></td>
             % end
         </tr>
         % end
