@@ -85,6 +85,11 @@ class Database():
             if order_by: sql += " ORDER BY " + order_by
         return self.fetch(sql, params, one_only)
 
+    def __getitem__(self, field):
+        """Allow sub_class["field"] to get a table field's value or None"""
+        return self.data.get(field)
+
+
     def execute_sql(self, sql, params):
         """Generic SQL statement execution"""
         try:

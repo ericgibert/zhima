@@ -2,15 +2,17 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Zhima - Member</title>
+    <title>Zhima - {{"Group" if member['role'] == 4 else "Member"}}</title>
 </head>
 <body>
 % include('header.html')
-<h1>Zhima - Member {{member.data['username']}} ({{member.data['id']}})</h1>
+<h1>Zhima - {{"Group" if member['role'] == 4 else "Member"}} {{member['username']}} ({{member['id']}})</h1>
 
 % if read_only:
 % from time import time
-    % if member.qrcode_is_valid:
+    % if member['role'] == 4:
+    <img src="/images/emoji-group-event.jpg"/>
+    % elif member.qrcode_is_valid:
     <img src="/images/XCJ_{{member.data['id']}}.png?{{time()}}"/>
     % else:
     <img src="/images/emoji-not-happy.jpg"/>
@@ -63,9 +65,9 @@
                 </select>
             % elif k == 'status':
                 <select id="status" name="status" {{"disabled" if read_only else ""}}>
-                <option value="OK" {{"selected" if v=="OK" else ""}}>OK</option>
-                <option value="NOT_OK" {{"selected" if v=="NOT_OK" else ""}}>Not OK</option>
-                <option value="INVALID" {{"selected" if v=="INVALID" else ""}}>Invalid</option>
+                % for ks,vs in member.STATUS.items():
+                <option value="{{ks}}" {{"selected" if v==ks else ""}}>{{vs}}</option>
+                % end
                 </select>
             % elif k == 'role':
                 <select id="role" name="role" {{"disabled" if read_only else ""}}>
@@ -121,6 +123,9 @@
         </tr><tr>
             % for v in row.values():
             <td>{{v}}</td>
+            % end
+            % if member["status"] == "OK" and member["gender"] == 5:
+            <td><a href="/transaction/qrcode/{{row['id']}}"><img src="/images/qr-code-icon.jpg" style="width:20px;height:20px;border:0;"></a></td>
             % end
         </tr>
         % end

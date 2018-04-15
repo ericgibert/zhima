@@ -18,9 +18,10 @@ Gr1 Gr2 Red
 
 """
 __author__ = "Eric Gibert"
-__version__ = "1.0.20180204"
+__version__ = "1.0.20180415 Hyderabad"
 __email__ =  "ericgibert@yahoo.fr"
 __license__ = "MIT"
+
 import sys, os
 import signal
 import argparse
