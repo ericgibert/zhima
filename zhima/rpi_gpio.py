@@ -65,18 +65,18 @@ class Led(object):
         self.state = self.rpi.write(self.pin, 0)
         return self.state
 
-    def flash(self, action, on_duration=0.5, off_duration=0.5):
+    def flash(self, action, on_duration=0.5, off_duration=0):
         """
         Set/Stop the flashing effect of a LED
         :param action: SET/STOP
         :param on_duration: float for sleep
-        :param off_duration: float for sleep
+        :param off_duration: float for sleep ; if 'off_duration' is 0 then do not submit the timer again i.e. one time ON only
         :return: current state
         """
         if action=="SET":
             self.on_duration, self.off_duration = on_duration, off_duration
             state = self.ON()
-            self._timer = threading.Timer(off_duration, self._ontimer)
+            self._timer = threading.Timer(on_duration, self._ontimer)
             self._timer.start()
             return state
         elif action=="STOP":
@@ -90,13 +90,15 @@ class Led(object):
             print("Unknown action:", action)
 
     def _ontimer(self):
-        if self.state==1: # ON
+        if self.state==1: # from ON to OFF  --- if off_duration > 0
             self.OFF()
-            self._timer = threading.Timer(self.off_duration, self._ontimer)
+            if self.off_duration > 0:
+                self._timer = threading.Timer(self.off_duration, self._ontimer)
+                self._timer.start()
         else:
             self.ON()
             self._timer = threading.Timer(self.on_duration, self._ontimer)
-        self._timer.start()
+            self._timer.start()
 
     def cancel_timer(self):
         if self._timer:

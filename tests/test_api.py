@@ -222,6 +222,21 @@ class TestApi(unittest.TestCase):
         print(member.transactions)
         if not keep_member: self.delete_member(new_id)
 
+    def test_door_opening(self):
+        """opens the door for 3 seconds"""
+        url = "{}/open/seconds".format(self.base_url)
+        print("Path:", url)
+        msg = { 'seconds': 2 }
+        response = requests.post(url, json=msg)
+        self.assertEqual(200, response.status_code)
+        result = response.json()
+        self.print_JSON(result, title="test_door_opening:")
+        msg = { 'seconds': "not good!" }
+        response = requests.post(url, json=msg)
+        self.assertEqual(200, response.status_code)
+        result = response.json()
+        self.print_JSON(result, title="test_door_opening:")
+
     def delete_member(self, id):
         m = Member(id)
         for t in m.transactions:

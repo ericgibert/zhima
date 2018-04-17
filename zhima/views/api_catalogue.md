@@ -12,6 +12,7 @@ Table of Content
 1. Add a New Member with Payment
 1. Update an Exisiting Member
 1. Add a Payment (Transaction) to an Existing Member
+1. Extra API
 
 
 1. Introduction
@@ -82,6 +83,8 @@ Any error number _errno_ > 1000 indicates an error. Refer to the _errmsg_ for mo
 - 1003: Member cannot be instered in database: database integrity/duplicate key on insert (like nickname duplicate)
 - 1004: Failure to update a member record
 - 1005: Failure to insert a transaction record
+
+- 1998: Incorrect number of seconds (must be an integer)
 - 1999: Member not found (_GET_ or _PATCH_)
 
 
@@ -227,5 +230,41 @@ In case of success:
             'new_id': 123574,
             'qrcode_url': '/images/XCJ_123574.png?1523680364.6269844'
         }
+    }
+
+
+9. Extra API
+------------
+
+
+### Path:
+POST _http://127.0.0.1:8080/api/v1.0/open/seconds_
+
+### Body:
+Opens the door the for given number of seconds:
+
+
+    { 'seconds': 3 }
+
+### Response:
+In case of success:
+
+    {
+         'errno': '1000'
+         'errmsg': 'Door is now closed'
+         'data':
+         {
+         }
+    }
+
+
+In case of error:
+
+    {
+         'errno': '1998'
+         'errmsg': 'Incorrect call to open the door:not good!'
+         'data':
+         {
+         }
     }
 

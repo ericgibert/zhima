@@ -34,7 +34,6 @@ from model_db import Database
 from send_email import send_email
 # from http_view import http_view, stop as bottle_stop
 
-
 class Controller(object):
     def __init__(self, bottle_ip='127.0.0.1', port=8080, debug=False):
         self.bottle_ip, self.port = bottle_ip, port
@@ -48,7 +47,7 @@ class Controller(object):
             1: self.wait_for_proximity,
             2: self.capture_qrcode,
             3: self.check_member,
-            4: self.open_the_door,
+            4: self.open_the_door_BOTH,   # coose the function to call: _RELAY, _BLE, _BOTH
             5: self.bad_member_status,
             6: self.unknown_qr_code,
            99: self.panic_mode,
@@ -137,9 +136,10 @@ class Controller(object):
             self.insert_log("ERROR", -1000, "Non XCJ QR Code or No member found for: {}".format(self.qr_codes[0].decode("utf-8")))
             return 6
 
-    def open_the_door(self):
-        """State 4: Proceed to open the door"""
-        # Open the door using the electric relay
+    def open_the_door_RELAY(self):
+        """State 4: Proceed to open the door
+            Open the door using the electric relay
+        """
         self.gpio.relay.ON()  
         # Happy flashing
         val = 0
@@ -152,8 +152,9 @@ class Controller(object):
         return 1          
           
     def open_the_door_BLE(self):
-        """State 4: Proceed to open the door"""
+        """State 4: Proceed to open the door
         # Open the door using Bluetooth - all BLE parameters are defaulted for the TOKYDOOR BLE @ XCJ
+        """
         tokydoor = TokyDoor(database=self.db)
         try:
             tokydoor.open()
@@ -167,6 +168,28 @@ class Controller(object):
             val = int(not val)
             self.gpio.green2.set(val)
             sleep(0.3)  # 0.3 x 10 = 3 seconds == ONCE BLE command duration
+        return 1
+
+    def open_the_door_BOTH(self):
+        """State 4: Proceed to open the door
+        Open the door using both Bluetooth - all BLE parameters are defaulted for the TOKYDOOR BLE @ XCJ
+        and the electric relay
+        """
+        self.gpio.relay.ON()
+        tokydoor = TokyDoor(database=self.db)
+        try:
+            tokydoor.open()
+        except ValueError as err:
+            self.insert_log("ERROR", -1001, "Cannot connect to TOKYDOOR: {}".format(err))
+            return 99 # cannot reach the BLE!!! Panic Mode!!
+        # Happy flashing
+        val = 0
+        for i in range(10):
+            self.gpio.green1.set(val)
+            val = int(not val)
+            self.gpio.green2.set(val)
+            sleep(0.3)  # 0.3 x 10 = 3 seconds == ONCE BLE command duration
+        self.gpio.relay.OFF()
         return 1
 
     def bad_member_status(self):

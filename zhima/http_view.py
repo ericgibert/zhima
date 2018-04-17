@@ -12,6 +12,7 @@ __license__ = "MIT"
 import sys
 from shutil import copy2
 from os import path, system, getpid
+from json import dumps
 import argparse
 from collections import OrderedDict
 from datetime import datetime
@@ -37,6 +38,15 @@ PAGE_LENGTH = 25  # rows per page
 def error404(error):
     return '404 error:<h2>%s</h2>' % error
 
+def whitelisted(callback):
+    """decorator to check that the API is called by a whitelisted server"""
+    def wrapper(*args, **kwargs):
+        if request.urlparts.hostname in http_view.controller.db.access['whitelist']:
+            return callback(*args, **kwargs)
+        else:
+            return '<h3>Sorry, you are not authorized to perform this action</h3>WL: ' + request.urlparts.hostname
+    return wrapper
+
 def need_login(callback):
     """decorator to ensure a function is only callable when the user is logged in"""
     def wrapper(*args, **kwargs):
@@ -48,7 +58,7 @@ def need_login(callback):
     return wrapper
 
 def need_admin(callback):
-    """decorator to ensure a function is only callable when the user is logged as administrator"""
+    """decorator to ensure a function is only callable when the user is logged with a role >= STAFF"""
     def wrapper(*args, **kwargs):
         session = session_manager.get_session()
         if session['valid'] and session['admin']:
@@ -77,6 +87,7 @@ def list_sql(table, filter_col, order_by="", page=0, select_cols="*"):
 @http_view.get('/entries/<page:int>')
 @need_admin
 def list_entries(page=0):
+    """List all the entries (door opening) recorded in the LOG table"""
     sql = """SELECT code, message, created_on from tb_log 
              WHERE (type='OPEN' or type='NOT_OK') and datediff(CURDATE(), created_on) < 32 
              ORDER BY created_on desc LIMIT {}, {}""".format(page * PAGE_LENGTH, PAGE_LENGTH)
@@ -87,7 +98,7 @@ def list_entries(page=0):
 @http_view.get('/log/<page:int>')
 @need_admin
 def log(page=0):
-    """Log dump - can be filterer with filter=<log_type>"""
+    """Log dump - can be filterer with ?filter=<log_type>"""
     sql, req_query = list_sql("tb_log", "type", "created_on DESC", page)
     rows = http_view.controller.db.fetch(sql, one_only=False)
     return template("log", rows=rows, current_page=page, req_query=req_query, session=session_manager.get_session())
@@ -97,7 +108,7 @@ def log(page=0):
 @http_view.get('/members/<page:int>')
 @need_admin
 def list_members(page=0):
-    """List the members and provide link to add new ones"""
+    """List the members and provide link to add new one or edit existing ones"""
     sql, req_query = list_sql("users", "status", page=page)
     rows = http_view.controller.db.fetch(sql, one_only=False)
     return template("members", rows=rows, current_page=page, req_query=req_query, session=session_manager.get_session())
@@ -121,14 +132,14 @@ def get_member(id):
 @http_view.get('/member/edit/<id:int>')
 @need_admin
 def upd_form_member(id):
-    """update a member database record"""
+    """update a member database record - Display current data for input modification"""
     member = Member(id)
     return template("member", member=member, read_only=False, session=session_manager.get_session())
 
 @http_view.post('/member/edit/<id:int>')
 @need_admin
 def upd_member(id):
-    """update a member database record"""
+    """update a member database record - Post the modified data from the form above"""
     if str(id) not in request.forms['id']:
         return "<h1>Error - The form's id is not the same as the id on the link</h1>"
     CANT_UPD_FIELDS = ('submit', 'id', 'openid', 'passwdchk')
@@ -312,12 +323,14 @@ def img(filepath):
 
 ###  APIs
 @http_view.get('/api/v1.0/member/openid/<openid>')
+@whitelisted
 def get_member(openid):
     """Return a Member JSON object based on a member db record and its last transaction"""
     member = Member_Api(openid=openid)
     return member.to_json()
 
 @http_view.patch('/api/v1.0/member/openid/<openid>')
+@whitelisted
 def upd_member(openid):
     """
     If operation is "update": Update a member record designated by the provided 'openid'
@@ -340,19 +353,26 @@ def upd_member(openid):
     return result
 
 @http_view.post('/api/v1.0/member/new')
+@whitelisted
 def add_member():
     member = Member_Api() # empty new member
     result = member.from_json(request.json)
     return result
 
-@http_view.get('/api/v1.0/open/seconds/<sec:int>')
-def open_door(sec):
+@http_view.post('/api/v1.0/open/seconds')
+@whitelisted
+def open_door():
+    """get the number of seconds from the API body"""
+    try:
+        sec = int(request.json.get('seconds'))
+    except (KeyError, TypeError, ValueError):
+        sec = -1
     if 0 < sec < 99999:
         rpi = Rpi_Gpio()
-        rpi.relay.ON()
-        sleep(sec)
-        rpi.relay.OFF()
-        return "Door is now closed"
+        rpi.relay.flash("SET", sec)
+        return dumps({ "errno": 1000, 'errmsg': "Door is now opened", 'data': {} })
+    else:
+        return dumps({ "errno": 1998, 'errmsg': "Incorrect call to open the door:" + str(request.json.get('seconds')), 'data': {} })
 
 
 if __name__ == "__main__":
