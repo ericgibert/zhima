@@ -117,7 +117,7 @@ class TokyDoor():
         """Opens the door..."""
         ble_com_limit = Timer(3, self.send_command_to_BLE)
         ble_com_limit.start()
-        sleep(4)
+        # sleep(4)
         if ble_com_limit.is_alive():
             msg = "BLE communiction takes too long: kill the com"
             if  self.db:
