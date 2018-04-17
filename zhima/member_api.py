@@ -59,7 +59,7 @@ from transaction import Transaction
 
 
 class Member_Api(Member):
-    """Surclass Member to add JSON facilities to interact with John's WeCHap app"""
+    """Surclass Member to add JSON facilities to interact with John's WeChat app"""
     API_MAPPING_TO_DB = {
         "openid": "openid",
         "avatarUrl": "avatar_url",
