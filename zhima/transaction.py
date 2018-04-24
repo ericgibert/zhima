@@ -47,6 +47,7 @@ __version__ = "1.0.20170113"
 __email__ =  "ericgibert@yahoo.fr"
 __license__ = "MIT"
 from datetime import datetime, timedelta, date
+from collections import OrderedDict
 from model_db import Database
 from member import Member
 
@@ -63,14 +64,13 @@ class Transaction(Database):
         if transac_id:
             self.get_from_db(transac_id)
         elif member_id:
-            self.data = {
-                'id': None, 'member_id': member_id, 'type':'1M MEMBERSHIP',
-                'description': "", 'amount': 100.0, 'currency':'CNY',
-                'valid_from': date.today(), 'valid_until': date.today()+timedelta(days=31),
-                'created_on': datetime.now()
-            }
+            self.data = OrderedDict([  #  ('id', None),
+                ('member_id', member_id), ('type','1M MEMBERSHIP'),
+                ('description', ""), ('amount', 100.0), ('currency', 'CNY'),
+                ('valid_from', date.today()), ('valid_until', date.today()+timedelta(days=31)),
+                ('created_on', datetime.now()) ])
         else:
-            self.data = {}
+            self.data = OrderedDict()
 
     def get_from_db(self, transac_id):
         """Connects to the database to fetch a transaction table record or simulation"""

@@ -45,9 +45,9 @@
         return d && (d.getMonth() + 1)==mm && d.getDate()==dd && d.getFullYear()==yyyy;
     }
 </script>
-<form method="POST" id="form" action="/member/edit/{{member.data['id']}}" onsubmit="return validate_me()">
+<form method="POST" id="form" action="/member/edit/{{member.data.get('id', 0)}}" onsubmit="return validate_me()">
 % end
-% if session['id']!=member.data['id']:
+% if session['id']!=member.data.get('id', 0):
 <p>You are logged as {{session['name']}} ({{session['id']}})</p>
 % end
 
@@ -92,7 +92,7 @@
             % if read_only:
             <button type="button" onclick="location.href='/member/edit/{{member.data['id']}}'">Edit</button>
             % else:
-            <input type="submit" value="Submit" name="submit" id="submit" {{ "disabled" if member.data['id']==0 else ''}}/>
+            <input type="submit" value="Submit" name="submit" id="submit" {{ "disabled" if member.data.get(id', 0)==0 else ''}}/>
             % end
         </td></tr>
     % end

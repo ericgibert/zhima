@@ -140,7 +140,7 @@ def upd_form_member(id):
 @need_admin
 def upd_member(id):
     """update a member database record - Post the modified data from the form above"""
-    if str(id) not in request.forms['id']:
+    if str(id) not in request.forms.get('id', '0'):
         return "<h1>Error - The form's id is not the same as the id on the link</h1>"
     CANT_UPD_FIELDS = ('submit', 'id', 'openid', 'passwdchk')
     member = Member(id)  # get current db record or an empty member if id==0
@@ -175,9 +175,8 @@ def upd_member(id):
 def new_form_member():
     """add a new member database record"""
     member = Member()
-    member.data = OrderedDict()
-    for k,v in (
-        ('id', 0),
+    member.data = OrderedDict([
+        # ('id', 0),
         ('username', '<New>'),
         ('passwd', ''),
         ('passwdchk', ''),
@@ -186,8 +185,7 @@ def new_form_member():
         ('status', 'OK'),
         ('role', 1),
         ('create_time', datetime.now()),
-        ('last_update', datetime.now()),
-    ): member.data[k] = v
+        ('last_update', datetime.now()) ])
     return template("member", member=member, read_only=False, session=session_manager.get_session())
 
 @http_view.get('/transaction/<member_id:int>')
@@ -206,7 +204,7 @@ def get_transaction(member_id, id=0):
 @need_admin
 def add_transaction():
     transaction = Transaction()
-    if request.forms['id'] == '':
+    if request.forms.get('id', '') == '':
         member_id = int(request.forms['member_id'])
         id = transaction.insert('transactions',
                                 member_id = member_id,
