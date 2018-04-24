@@ -2,6 +2,9 @@
 # to be executed in the same durectory as zhima.py i.e. the executable part of the project
 CWD=$(dirname $(readlink -f $BASH_SOURCE))
 _IP=$(hostname -I | awk '{print $1}')
+if [ -n $_IP ]; then
+_IP=10.0.10.148
+fi
 rc=0
 PID=$(cat $CWD/zhima.pid)
 HTTP_PID=$(cat $CWD/http_view.pid)
