@@ -67,6 +67,7 @@ class Camera():
             sleep(0.1)
             if has_picamera:
                 with picamera.array.PiRGBArray(self.camera) as stream:
+                    self.camera.color_effects = (128,128) # turn camera to black and white
                     self.camera.capture(stream, format='bgr')
                     # At this point the image is available as stream.array
                     self.cv2_img = stream.array
