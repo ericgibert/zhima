@@ -23,6 +23,7 @@ __email__ =  "ericgibert@yahoo.fr"
 __license__ = "MIT"
 
 import sys, os
+from datetime import datetime
 import signal
 import argparse
 from time import sleep
@@ -113,8 +114,8 @@ class Controller(object):
         self.gpio.proximity.reset()
         points, max_pts = 1, 10
         while not self.gpio.check_proximity():
-            print("Waiting for proximity", '.' * points, " " * max_pts, end="\r")
-            sleep(1)
+            if self.debug: print("Waiting for proximity", '.' * points, " " * max_pts, end="\r")
+            sleep(0.2)
             points = 1 if points==max_pts else points+1
         return 2
 
@@ -129,6 +130,29 @@ class Controller(object):
         next_state = 3 if self.qr_codes else 1  # qr_codes is a list, might be an empty one...
         return next_state
 
+
+    def double_sandwich(self):
+        """Check if we need to give 6 months registration"""
+        try:
+            m1, m2, m3, m4 = [m for t,m in self.last_entries[:4]]
+        except ValueError:
+            return False
+        if m1.id==m3.id==m4.id and m1.id!=m2.id and m1.is_staff():
+            return (datetime.now() - self.last_entries[3][0]).seconds <= 20
+        else:
+            return False
+
+    def single_sandwich(self):
+        """Check if we need to give 6 months registration"""
+        try:
+            m1, m2, m3 = [m for t,m in self.last_entries[:3]]
+        except ValueError:
+            return False
+        if m1.id==m3.id and m1.id!=m2.id and m1.is_staff():
+            return (datetime.now() - self.last_entries[2][0]).seconds <= 15
+        else:
+            return False
+
     def check_member(self):
         """State 3: a QR Code is found: check it against the member database"""
         self.gpio.green1.ON()
@@ -138,7 +162,13 @@ class Controller(object):
         # try finding a member from the database based on the first QR code found on the image
         self.member = Member(qrcode=self.qr_codes[0])
         if self.member.id:
-            self.last_entries.add(self.member)
+            self.last_entries.add( (datetime.now(), self.member))
+            if self.double_sandwich():
+                print("double sandwich")
+            elif self.single_sandwich():
+                print("single sandwich")
+            else:
+                print("no sandwich")
             if self.member.qrcode_is_valid:
                 if self.member.status.upper() in ("OK", "ACTIVE", "ENROLLED"):
                     self.insert_log("OPEN", self.member.id, "Welcome {} - QR V{}".format(self.member.name, self.member.qrcode_version))

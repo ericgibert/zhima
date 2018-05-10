@@ -105,6 +105,9 @@ class Member(Database):
             self.id, self.name, self.birthdate, self.status = (None, None, None, None)
         return self.id
 
+    def is_staff(self):
+        return self.data['role'] >= self.ROLE['STAFF']
+
     def decode_qrcode(self, qrcode):
         """Decode a QR code in its component based on its version number"""
         if isinstance(qrcode, bytes) or isinstance(qrcode, bytearray):
