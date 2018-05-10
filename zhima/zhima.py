@@ -34,6 +34,19 @@ from model_db import Database
 from send_email import send_email
 # from http_view import http_view, stop as bottle_stop
 
+class myQ(list):
+    """Simple queue implementation to keep track of the member's entries"""
+    def __init__(self, size=4):
+        super().__init__()
+        self.size = size
+
+    def add(self, o):
+        self.insert(0, o)
+        try:
+            del self[self.size]
+        except IndexError:
+            pass
+
 class Controller(object):
     def __init__(self, bottle_ip='127.0.0.1', port=8080, debug=False):
         self.bottle_ip, self.port = bottle_ip, port
@@ -53,6 +66,7 @@ class Controller(object):
            99: self.panic_mode,
         }
         self.camera = Camera(self.db)
+        self.last_entries = myQ()
 
     def insert_log(self, log_type, code, msg, member_id=-1, qrcode_version='?'):
         """
@@ -123,15 +137,17 @@ class Controller(object):
         # print("QR code:", self.qr_codes, type(self.qr_codes[0]))
         # try finding a member from the database based on the first QR code found on the image
         self.member = Member(qrcode=self.qr_codes[0])
-        if self.member.id and self.member.qrcode_is_valid:
-            if self.member.status.upper() in ("OK", "ACTIVE", "ENROLLED"):
-                self.insert_log("OPEN", self.member.id, "Welcome {} - QR V{}".format(self.member.name, self.member.qrcode_version))
-                print()
-                return 4
-            else:
-                self.insert_log("NOT_OK", self.member.id,
-                                "{}, please fix your status: {} - QR V{}".format(self.member.name, self.member.status,self.member.qrcode_version))
-                return 5
+        if self.member.id:
+            self.last_entries.add(self.member)
+            if self.member.qrcode_is_valid:
+                if self.member.status.upper() in ("OK", "ACTIVE", "ENROLLED"):
+                    self.insert_log("OPEN", self.member.id, "Welcome {} - QR V{}".format(self.member.name, self.member.qrcode_version))
+                    print()
+                    return 4
+                else:
+                    self.insert_log("NOT_OK", self.member.id,
+                                    "{}, please fix your status: {} - QR V{}".format(self.member.name, self.member.status,self.member.qrcode_version))
+                    return 5
         else:
             self.insert_log("ERROR", -1000, "Non XCJ QR Code or No member found for: {}".format(self.qr_codes[0].decode("utf-8")))
             return 6
