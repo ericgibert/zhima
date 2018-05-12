@@ -79,6 +79,10 @@ class Controller(object):
         """
         self.db.log(log_type, code, msg, debug=True)
 
+    def stop(self):
+        """Clean up before stopping"""
+        pass
+
     def run(self):
         """
         Main loop to move from one state to the next
@@ -112,11 +116,12 @@ class Controller(object):
         self.gpio.red.OFF()
         self.gpio.relay.OFF()
         self.gpio.proximity.reset()
+        # display the waiting message
         points, max_pts = 1, 10
         while not self.gpio.check_proximity():
             if self.debug: print("Waiting for proximity", '.' * points, " " * max_pts, end="\r")
             sleep(0.2)
-            points = 1 if points==max_pts else points+1
+            points = (points + 1) % max_pts
         return 2
 
     def capture_qrcode(self):
@@ -127,9 +132,7 @@ class Controller(object):
         self.qr_codes = self.camera.get_QRcode(debug=self.debug)
         if self.qr_codes is None:  # webcam is not working: panic mode: all LED flashing!
             return 99
-        next_state = 3 if self.qr_codes else 1  # qr_codes is a list, might be an empty one...
-        return next_state
-
+        return 3 if self.qr_codes else 1  # qr_codes is a list --> 3, might be an empty one --> back to 1
 
     def double_sandwich(self):
         """Check if we need to give 6 months registration"""
@@ -162,7 +165,7 @@ class Controller(object):
         # try finding a member from the database based on the first QR code found on the image
         self.member = Member(qrcode=self.qr_codes[0])
         if self.member.id:
-            self.last_entries.add( (datetime.now(), self.member))
+            self.last_entries.add( (datetime.now(), self.member) )
             if self.double_sandwich():
                 print("double sandwich")
             elif self.single_sandwich():
@@ -170,33 +173,36 @@ class Controller(object):
             else:
                 print("no sandwich")
             if self.member.qrcode_is_valid:
-                if self.member.status.upper() in ("OK", "ACTIVE", "ENROLLED"):
-                    self.insert_log("OPEN", self.member.id, "Welcome {} - QR V{}".format(self.member.name, self.member.qrcode_version))
-                    print()
+                if self.member['status'].upper() in ("OK", "ACTIVE", "ENROLLED"):
+                    self.insert_log("OPEN", self.member.id,
+                                    "Welcome {} - QR V{}".format(self.member['username'], self.member.qrcode_version))
                     return 4
                 else:
                     self.insert_log("NOT_OK", self.member.id,
-                                    "{}, please fix your status: {} - QR V{}".format(self.member.name, self.member.status,self.member.qrcode_version))
+                                    "{}, please fix your status: {} - QR V{}".format(self.member['username'], self.member['status'], self.member.qrcode_version))
                     return 5
         else:
             self.insert_log("ERROR", -1000, "Non XCJ QR Code or No member found for: {}".format(self.qr_codes[0].decode("utf-8")))
             return 6
 
+    def happy_flashing(self, duration):
+        """Flash alternatively the green lights for 'duration' seconds"""
+        on_off = 0
+        for i in range(duration * 4):
+            self.gpio.green1.set(on_off)
+            on_off = int(not on_off)
+            self.gpio.green2.set(on_off)
+            sleep(0.25)
+
     def open_the_door_RELAY(self):
         """State 4: Proceed to open the door
             Open the door using the electric relay
         """
-        self.gpio.relay.ON()  
-        # Happy flashing
-        val = 0
-        for i in range(10):
-            self.gpio.green1.set(val)
-            val = int(not val)
-            self.gpio.green2.set(val)
-            sleep(0.3)  # 0.3 x 10 = 3 seconds == ONCE BLE command duration
+        self.gpio.relay.ON()
+        self.happy_flashing(3)
         self.gpio.relay.OFF()
-        return 1          
-          
+        return 1
+
     def open_the_door_BLE(self):
         """State 4: Proceed to open the door
         # Open the door using Bluetooth - all BLE parameters are defaulted for the TOKYDOOR BLE @ XCJ
@@ -207,13 +213,7 @@ class Controller(object):
         except ValueError as err:
             self.insert_log("ERROR", -1001, "Cannot connect to TOKYDOOR: {}".format(err))
             return 99 # cannot reach the BLE!!! Panic Mode!! 
-        # Happy flashing
-        val = 0
-        for i in range(10):
-            self.gpio.green1.set(val)
-            val = int(not val)
-            self.gpio.green2.set(val)
-            sleep(0.3)  # 0.3 x 10 = 3 seconds == ONCE BLE command duration
+        self.happy_flashing(3)
         return 1
 
     def open_the_door_BOTH(self):
@@ -228,13 +228,7 @@ class Controller(object):
         except ValueError as err:
             self.insert_log("ERROR", -1001, "Cannot connect to TOKYDOOR: {}".format(err))
             return 99 # cannot reach the BLE!!! Panic Mode!!
-        # Happy flashing
-        val = 0
-        for i in range(10):
-            self.gpio.green1.set(val)
-            val = int(not val)
-            self.gpio.green2.set(val)
-            sleep(0.3)  # 0.3 x 10 = 3 seconds == ONCE BLE command duration
+        self.happy_flashing(3)
         self.gpio.relay.OFF()
         return 1
 
@@ -243,21 +237,23 @@ class Controller(object):
         self.gpio.green1.OFF()
         self.gpio.green2.ON()
         self.gpio.red.ON()
-        if self.member.data["email"]:
-            print("Email to", self.member.name)
+        if self.member["email"]:
+            print("Email to", self.member['username'])
             send_email(
                 "Sorry, XCJ doorman cannot open the door for you",
                 from_=self.member.mailbox["username"],
-                to_=(self.member.data["email"],),
+                to_=(self.member["email"],),
                 message_HTML = """
                     <P>Your status in the XCJ database is set to: {}</P>
                     <p>You membership expiration date is {}</p>
                     <p></p>
-                    """.format(self.member.data["status"], self.member.validity),
+                    """.format(self.member["status"], self.member.validity),
                 images=[r"images/emoji-not-happy.jpg"],
                 server=self.member.mailbox["server"], port=self.member.mailbox["port"],
                 login=self.member.mailbox["username"], passwd=self.member.mailbox["password"]
             )
+            sleep(1)  # let's say it takes 2 seconds to send the email already
+        else:
             sleep(3)
         return 1
 

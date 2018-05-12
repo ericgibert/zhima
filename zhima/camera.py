@@ -61,7 +61,7 @@ class Camera():
         """take max_photos until a QR code is found else returns []"""
         # self.camera = picamera.PiCamera() if has_picamera else cv2.VideoCapture(0)
         self.qr_codes = []  # reset any previous QR code found
-        self.image = None
+        self.image, self.cv2_img = None, None
         for i in range(max_photos):
             if debug: print("Taking photo", i, end="\r")
             sleep(0.1)
@@ -101,12 +101,9 @@ class Camera():
             else:
                 if debug: print("NO QR code found on", self.save_photo(), "[", i, "]")
                 print("\n")
-
-
-        else:
-            # if debug:self.image.show()
-            print("\n")
-            return []
+        # if debug:self.image.show()
+        print("\n")
+        return []
         
 
 
