@@ -189,7 +189,7 @@ if __name__ == "__main__":
     my_pig = Rpi_Gpio()
     my_pig.green1.ON()
     my_pig.red.ON()
- 
+    my_pig.green2.flash("SET")
 
     # dfrobot = Dfrobot_Pir_v1_0(my_pig, 17)
     # while True:
@@ -219,5 +219,7 @@ if __name__ == "__main__":
     #        print("Proximity:", my_pig.check_proximity())
     #        sleep(1)
     finally:
-        my_pig.green2.flash("STOP")
+        my_pig.red.OFF()
+        my_pig.green1.OFF()
+        my_pig.green2.OFF()
         my_pig.relay.OFF()
