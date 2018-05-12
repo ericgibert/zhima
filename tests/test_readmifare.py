@@ -28,10 +28,10 @@ import zPN532 as PN532
 # It is recommended to use a software SPI connection with 4 digital GPIO pins.
 
 # Configuration for a Raspberry Pi:
-CS   = 18
-MOSI = 23
-MISO = 24
-SCLK = 25
+CS   = 5    #18
+MOSI = 10   #23
+MISO = 9    #24
+SCLK = 11   #25
 
 # Configuration for a BeagleBone Black:
 # CS   = 'P8_7'
@@ -42,7 +42,7 @@ SCLK = 25
 # Create an instance of the PN532 class.
 # pn532 = PN532.PN532(cs=CS, sclk=SCLK, mosi=MOSI, miso=MISO)
 my_pig = pigpio.pi()
-pn532 = PN532.PN532(my_pig)
+pn532 = PN532.PN532(cs=CS, sclk=SCLK, mosi=MOSI, miso=MISO, gpio=my_pig)
 # Call begin to initialize communication with the PN532.  Must be done before
 # any other calls to the PN532!
 pn532.begin()

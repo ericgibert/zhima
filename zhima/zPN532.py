@@ -27,6 +27,12 @@ import time
 # import Adafruit_GPIO as GPIO
 # import Adafruit_GPIO.SPI as SPI
 
+INPUT = 0
+OUTPUT = 1
+GPIO_HIGH = 1
+GPIO_LOW = 0
+
+
 
 PN532_PREAMBLE                      = 0x00
 PN532_STARTCODE1                    = 0x00
@@ -144,60 +150,246 @@ PN532_FRAME_START                   = bytearray([0x01, 0x00, 0x00, 0xFF])
 
 logger = logging.getLogger(__name__)
 
+MSBFIRST = 0
+LSBFIRST = 1
+
+class BitBang(object):
+    """Software-based implementation of the SPI protocol over GPIO pins."""
+
+    def __init__(self, gpio, sclk, mosi=None, miso=None, ss=None):
+        """Initialize bit bang (or software) based SPI.  Must provide a BaseGPIO
+        class, the SPI clock, and optionally MOSI, MISO, and SS (slave select)
+        pin numbers. If MOSI is set to None then writes will be disabled and fail
+        with an error, likewise for MISO reads will be disabled.  If SS is set to
+        None then SS will not be asserted high/low by the library when
+        transfering data.
+        """
+        self.pig = gpio
+        self._sclk = sclk
+        self._mosi = mosi
+        self._miso = miso
+        self._ss = ss
+
+        self.pig.set_high = lambda pin: self.pig.write(pin, 1)
+        self.pig.set_low = lambda pin: self.pig.write(pin, 0)
+
+        # Set pins as outputs/inputs.
+        gpio.set_mode(sclk, OUTPUT)
+        # gpio.setup(sclk, GPIO.OUT)
+        if mosi is not None:
+            gpio.set_mode(mosi, OUTPUT)
+            # gpio.setup(mosi, GPIO.OUT)
+        if miso is not None:
+            gpio.set_mode(miso, INPUT)
+            # gpio.setup(miso, GPIO.IN)
+        if ss is not None:
+            gpio.set_mode(ss, OUTPUT)
+            # gpio.setup(ss, GPIO.OUT)
+            # Assert SS high to start with device communication off.
+            gpio.set_high(ss)
+        # Assume mode 0.
+        self.set_mode(0)
+        # Assume most significant bit first order.
+        self.set_bit_order(MSBFIRST)
+
+    def set_clock_hz(self, hz):
+        """Set the speed of the SPI clock.  This is unsupported with the bit
+        bang SPI class and will be ignored.
+        """
+        pass
+
+    def set_mode(self, mode):
+        """Set SPI mode which controls clock polarity and phase.  Should be a
+        numeric value 0, 1, 2, or 3.  See wikipedia page for details on meaning:
+        http://en.wikipedia.org/wiki/Serial_Peripheral_Interface_Bus
+        """
+        if mode < 0 or mode > 3:
+            raise ValueError('Mode must be a value 0, 1, 2, or 3.')
+        if mode & 0x02:
+            # Clock is normally high in mode 2 and 3.
+            self._clock_base = GPIO_HIGH
+        else:
+            # Clock is normally low in mode 0 and 1.
+            self._clock_base = GPIO_LOW
+        if mode & 0x01:
+            # Read on trailing edge in mode 1 and 3.
+            self._read_leading = False
+        else:
+            # Read on leading edge in mode 0 and 2.
+            self._read_leading = True
+        # Put clock into its base state.
+        self.pig.output(self._sclk, self._clock_base)
+
+    def set_bit_order(self, order):
+        """Set order of bits to be read/written over serial lines.  Should be
+        either MSBFIRST for most-significant first, or LSBFIRST for
+        least-signifcant first.
+        """
+        # Set self._mask to the bitmask which points at the appropriate bit to
+        # read or write, and appropriate left/right shift operator function for
+        # reading/writing.
+        if order == MSBFIRST:
+            self._mask = 0x80
+            self._write_shift = operator.lshift
+            self._read_shift = operator.rshift
+        elif order == LSBFIRST:
+            self._mask = 0x01
+            self._write_shift = operator.rshift
+            self._read_shift = operator.lshift
+        else:
+            raise ValueError('Order must be MSBFIRST or LSBFIRST.')
+
+    def close(self):
+        """Close the SPI connection.  Unused in the bit bang implementation."""
+        pass
+
+    def write(self, data, assert_ss=True, deassert_ss=True):
+        """Half-duplex SPI write.  If assert_ss is True, the SS line will be
+        asserted low, the specified bytes will be clocked out the MOSI line, and
+        if deassert_ss is True the SS line be put back high.
+        """
+        # Fail MOSI is not specified.
+        if self._mosi is None:
+            raise RuntimeError('Write attempted with no MOSI pin specified.')
+        if assert_ss and self._ss is not None:
+            self.pig.set_low(self._ss)
+        for byte in data:
+            for i in range(8):
+                # Write bit to MOSI.
+                if self._write_shift(byte, i) & self._mask:
+                    self.pig.set_high(self._mosi)
+                else:
+                    self.pig.set_low(self._mosi)
+                # Flip clock off base.
+                self.pig.output(self._sclk, not self._clock_base)
+                # Return clock to base.
+                self.pig.output(self._sclk, self._clock_base)
+        if deassert_ss and self._ss is not None:
+            self.pig.set_high(self._ss)
+
+    def read(self, length, assert_ss=True, deassert_ss=True):
+        """Half-duplex SPI read.  If assert_ss is true, the SS line will be
+        asserted low, the specified length of bytes will be clocked in the MISO
+        line, and if deassert_ss is true the SS line will be put back high.
+        Bytes which are read will be returned as a bytearray object.
+        """
+        if self._miso is None:
+            raise RuntimeError('Read attempted with no MISO pin specified.')
+        if assert_ss and self._ss is not None:
+            self.pig.set_low(self._ss)
+        result = bytearray(length)
+        for i in range(length):
+            for j in range(8):
+                # Flip clock off base.
+                self.pig.output(self._sclk, not self._clock_base)
+                # Handle read on leading edge of clock.
+                if self._read_leading:
+                    if self.pig.is_high(self._miso):
+                        # Set bit to 1 at appropriate location.
+                        result[i] |= self._read_shift(self._mask, j)
+                    else:
+                        # Set bit to 0 at appropriate location.
+                        result[i] &= ~self._read_shift(self._mask, j)
+                # Return clock to base.
+                self.pig.output(self._sclk, self._clock_base)
+                # Handle read on trailing edge of clock.
+                if not self._read_leading:
+                    if self.pig.is_high(self._miso):
+                        # Set bit to 1 at appropriate location.
+                        result[i] |= self._read_shift(self._mask, j)
+                    else:
+                        # Set bit to 0 at appropriate location.
+                        result[i] &= ~self._read_shift(self._mask, j)
+        if deassert_ss and self._ss is not None:
+            self.pig.set_high(self._ss)
+        return result
+
+    def transfer(self, data, assert_ss=True, deassert_ss=True):
+        """Full-duplex SPI read and write.  If assert_ss is true, the SS line
+        will be asserted low, the specified bytes will be clocked out the MOSI
+        line while bytes will also be read from the MISO line, and if
+        deassert_ss is true the SS line will be put back high.  Bytes which are
+        read will be returned as a bytearray object.
+        """
+        if self._mosi is None:
+            raise RuntimeError('Write attempted with no MOSI pin specified.')
+        if self._mosi is None:
+            raise RuntimeError('Read attempted with no MISO pin specified.')
+        if assert_ss and self._ss is not None:
+            self.pig.set_low(self._ss)
+        result = bytearray(len(data))
+        for i in range(len(data)):
+            for j in range(8):
+                # Write bit to MOSI.
+                if self._write_shift(data[i], j) & self._mask:
+                    self.pig.set_high(self._mosi)
+                else:
+                    self.pig.set_low(self._mosi)
+                # Flip clock off base.
+                self.pig.output(self._sclk, not self._clock_base)
+                # Handle read on leading edge of clock.
+                if self._read_leading:
+                    if self.pig.is_high(self._miso):
+                        # Set bit to 1 at appropriate location.
+                        result[i] |= self._read_shift(self._mask, j)
+                    else:
+                        # Set bit to 0 at appropriate location.
+                        result[i] &= ~self._read_shift(self._mask, j)
+                # Return clock to base.
+                self.pig.output(self._sclk, self._clock_base)
+                # Handle read on trailing edge of clock.
+                if not self._read_leading:
+                    if self.pig.is_high(self._miso):
+                        # Set bit to 1 at appropriate location.
+                        result[i] |= self._read_shift(self._mask, j)
+                    else:
+                        # Set bit to 0 at appropriate location.
+                        result[i] &= ~self._read_shift(self._mask, j)
+        if deassert_ss and self._ss is not None:
+            self.pig.set_high(self._ss)
+        return result
 
 class PN532(object):
     """PN532 breakout board representation.  Requires a SPI connection to the
     breakout board.  A software SPI connection is recommended as the hardware
     SPI on the Raspberry Pi has some issues with the LSB first mode used by the
     PN532 (see: http://www.raspberrypi.org/forums/viewtopic.php?f=32&t=98070&p=720659#p720659)
-
-
-    With pigpio:
-     - 3.3V               (17)
-     - GPIO10:  SPI0_MOSI (19)
-     - GPIO9:   SPI0_MISO (21)
-     - GPIO11:  SPI0_SCLK (23)     (24)  GPIO8: SPI0_CE0_N  --> cs=0
-     - GND                (25)     (26)  GPIO7: SPI0_CE1_N  --> cs=1
-
-
     """
 
-    def __init__(self, gpio, spi_channel=0, baud=1000000, spi_flags=0):
+    def __init__(self, cs, sclk=None, mosi=None, miso=None, gpio=None,
+                 spi=None):
         """Create an instance of the PN532 class using either software SPI (if
         the sclk, mosi, and miso pins are specified) or hardware SPI if a
         spi parameter is passed.  The cs pin must be a digital GPIO pin.
         Optionally specify a GPIO controller to override the default that uses
         the board's GPIO pins.
         """
-        # pigpio.pi() object
+        # Default to platform GPIO if not provided.
         self.pig = gpio
+        self.pig.set_high = lambda pin: self.pig.write(pin, 1)
+        self.pig.set_low = lambda pin: self.pig.write(pin, 0)
         # if self.pig is None:
         #     self.pig = GPIO.get_platform_gpio()
         # Initialize CS line.
-        # self._cs = cs
+        self._cs = cs
+        self.pig.set_mode(self._cs, OUTPUT)
         # self.pig.setup(self._cs, GPIO.OUT)
-        try:
-            self.spi_handle = self.pig.spi_open(spi_channel, baud, spi_flags)
-        except AttributeError as err:
-            print("Unable to open SPI\n", err)
-
-
-        # # self._gpio.set_high(self._cs)
-        # # Setup SPI provider.
-        # if spi is not None:
-        #     logger.debug('Using hardware SPI.')
-        #     # Handle using hardware SPI.
-        #     self._spi = spi
-        #     self._spi.set_clock_hz(1000000)
-        # else:
-        #     logger.debug('Using software SPI')
-        #     # Handle using software SPI.  Note that the CS/SS pin is not used
-        #     # as it will be manually controlled by this library for better
-        #     # timing.
-        #     self._spi = SPI.BitBang(self._gpio, sclk, mosi, miso)
-        # # Set SPI mode and LSB first bit order.
-        # self._spi.set_mode(0)
-        # self._spi.set_bit_order(SPI.LSBFIRST)
+        self.pig.set_high(self._cs)
+        # Setup SPI provider.
+        if spi is not None:
+            logger.debug('Using hardware SPI.')
+            # Handle using hardware SPI.
+            self._spi = spi
+            self._spi.set_clock_hz(1000000)
+        else:
+            logger.debug('Using software SPI')
+            # Handle using software SPI.  Note that the CS/SS pin is not used
+            # as it will be manually controlled by this library for better
+            # timing.
+            self._spi = BitBang(self.pig, sclk, mosi, miso)
+        # Set SPI mode and LSB first bit order.
+        self._spi.set_mode(0)
+        self._spi.set_bit_order(LSBFIRST)
 
     def _uint8_add(self, a, b):
         """Add add two values as unsigned 8-bit values."""
@@ -236,12 +428,10 @@ class PN532(object):
         frame[-1] = PN532_POSTAMBLE
         # Send frame.
         logger.debug('Write frame: 0x{0}'.format(binascii.hexlify(frame)))
-        self.pig.spi_write(self.spi_handle, frame)
-
-        # self._gpio.set_low(self._cs)
-        # self._busy_wait_ms(2)
-        # self._spi.write(frame)
-        # self._gpio.set_high(self._cs)
+        self.pig.set_low(self._cs)
+        self._busy_wait_ms(2)
+        self._spi.write(frame)
+        self.pig.set_high(self._cs)
 
     def _read_data(self, count):
         """Read a specified count of bytes from the PN532."""
@@ -249,11 +439,10 @@ class PN532(object):
         frame = bytearray(count)
         frame[0] = PN532_SPI_DATAREAD
         # Send the frame and return the response, ignoring the SPI header byte.
-        response = self.pig.spi_xfer(self.spi_handle, frame)
-        # self._gpio.set_low(self._cs)
-        # self._busy_wait_ms(2)
-        # response = self._spi.transfer(frame)
-        # self._gpio.set_high(self._cs)
+        self.pig.set_low(self._cs)
+        self._busy_wait_ms(2)
+        response = self._spi.transfer(frame)
+        self.pig.set_high(self._cs)
         return response
 
     def _read_frame(self, length):
@@ -299,11 +488,10 @@ class PN532(object):
         """
         start = time.time()
         # Send a SPI status read command and read response.
-        response = self.pig.spi_xfer(self.spi_handle, [PN532_SPI_STATREAD, 0x00])
-        # self._gpio.set_low(self._cs)
-        # self._busy_wait_ms(2)
-        # response = self._spi.transfer([PN532_SPI_STATREAD, 0x00])
-        # self._gpio.set_high(self._cs)
+        self.pig.set_low(self._cs)
+        self._busy_wait_ms(2)
+        response = self._spi.transfer([PN532_SPI_STATREAD, 0x00])
+        self.pig.set_high(self._cs)
         # Loop until a ready response is received.
         while response[1] != PN532_SPI_READY:
             # Check if the timeout has been exceeded.
@@ -311,14 +499,13 @@ class PN532(object):
                 return False
             # Wait a little while and try reading the status again.
             time.sleep(0.01)
-            response = self.pig.spi_xfer(self.spi_handle, [PN532_SPI_STATREAD, 0x00])
-            # self._gpio.set_low(self._cs)
-            # self._busy_wait_ms(2)
-            # response = self._spi.transfer([PN532_SPI_STATREAD, 0x00])
-            # self._gpio.set_high(self._cs)
+            self.pig.set_low(self._cs)
+            self._busy_wait_ms(2)
+            response = self._spi.transfer([PN532_SPI_STATREAD, 0x00])
+            self.pig.set_high(self._cs)
         return True
 
-    def call_function(self, command, response_length=0, params=(), timeout_sec=1):
+    def call_function(self, command, response_length=0, params=[], timeout_sec=1):
         """Send specified command to the PN532 and expect up to response_length
         bytes back in a response.  Note that less than the expected bytes might
         be returned!  Params can optionally specify an array of bytes to send as
@@ -330,7 +517,7 @@ class PN532(object):
         data = bytearray(2+len(params))
         data[0]  = PN532_HOSTTOPN532
         data[1]  = command & 0xFF
-        data[2:] = bytearray(params)
+        data[2:] = params
         # Send frame and wait for response.
         self._write_frame(data)
         if not self._wait_ready(timeout_sec):
@@ -354,12 +541,12 @@ class PN532(object):
         other calls are made against the PN532.
         """
         # Assert CS pin low for a second for PN532 to be ready.
-        # self._gpio.set_low(self._cs)
+        self.pig.set_low(self._cs)
         time.sleep(1.0)
         # Call GetFirmwareVersion to sync up with the PN532.  This might not be
         # required but is done in the Arduino library and kept for consistency.
         self.get_firmware_version()
-        # self._gpio.set_high(self._cs)
+        self.pig.set_high(self._cs)
 
     def get_firmware_version(self):
         """Call PN532 GetFirmwareVersion function and return a tuple with the IC,
