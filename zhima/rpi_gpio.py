@@ -20,6 +20,7 @@ except ImportError:
         def __init__(self):
             """create a representation in memory of the buffers"""
             self.buffer = {} # key: pin number --> value: [mode, pin value]
+            print("pigpio simulation")
 
         def set_mode(self,pin, mode):
             """
