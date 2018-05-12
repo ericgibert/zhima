@@ -220,7 +220,7 @@ class BitBang(object):
             # Read on leading edge in mode 0 and 2.
             self._read_leading = True
         # Put clock into its base state.
-        self.pig.output(self._sclk, self._clock_base)
+        self.pig.write(self._sclk, self._clock_base)
 
     def set_bit_order(self, order):
         """Set order of bits to be read/written over serial lines.  Should be
