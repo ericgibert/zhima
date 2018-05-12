@@ -21,20 +21,17 @@
 # SOFTWARE.
 import binascii
 from functools import reduce
-import logging
+import operator
+# import logging
 import time
 
-# import Adafruit_GPIO as GPIO
-# import Adafruit_GPIO.SPI as SPI
-
-import operator
+# import Adafruit_GPIO as GPIO  -->   this is now replaced by calls to pigpio http://abyz.me.uk/rpi/pigpio/python.html
+# import Adafruit_GPIO.SPI as SPI --> its class BitBang is imported here
 
 INPUT = 0
 OUTPUT = 1
 GPIO_HIGH = 1
 GPIO_LOW = 0
-
-
 
 PN532_PREAMBLE                      = 0x00
 PN532_STARTCODE1                    = 0x00
@@ -150,7 +147,7 @@ PN532_GPIO_P35                      = 5
 PN532_ACK                           = bytearray([0x01, 0x00, 0x00, 0xFF, 0x00, 0xFF, 0x00])
 PN532_FRAME_START                   = bytearray([0x01, 0x00, 0x00, 0xFF])
 
-logger = logging.getLogger(__name__)
+# logger = logging.getLogger(__name__)
 
 MSBFIRST = 0
 LSBFIRST = 1
@@ -376,12 +373,12 @@ class PN532(object):
         self.pig.set_high(self._cs)
         # Setup SPI provider.
         if spi is not None:
-            logger.debug('Using hardware SPI.')
+            # logger.debug('Using hardware SPI.')
             # Handle using hardware SPI.
             self._spi = spi
             self._spi.set_clock_hz(1000000)
         else:
-            logger.debug('Using software SPI')
+            # logger.debug('Using software SPI')
             # Handle using software SPI.  Note that the CS/SS pin is not used
             # as it will be manually controlled by this library for better
             # timing.
@@ -426,7 +423,7 @@ class PN532(object):
         frame[-2] = ~checksum & 0xFF
         frame[-1] = PN532_POSTAMBLE
         # Send frame.
-        logger.debug('Write frame: 0x{0}'.format(binascii.hexlify(frame)))
+        # logger.debug('Write frame: 0x{0}'.format(binascii.hexlify(frame)))
         self.pig.set_low(self._cs)
         self._busy_wait_ms(2)
         self._spi.write(frame)
@@ -452,7 +449,7 @@ class PN532(object):
         """
         # Read frame with expected length of data.
         response = self._read_data(length+8)
-        logger.debug('Read frame: 0x{0}'.format(binascii.hexlify(response)))
+        # logger.debug('Read frame: 0x{0}'.format(binascii.hexlify(response)))
         # Check frame starts with 0x01 and then has 0x00FF (preceeded by optional
         # zeros).
         if response[0] != 0x01:
@@ -504,7 +501,7 @@ class PN532(object):
             self.pig.set_high(self._cs)
         return True
 
-    def call_function(self, command, response_length=0, params=[], timeout_sec=1):
+    def call_function(self, command, response_length=0, params=(), timeout_sec=1):
         """Send specified command to the PN532 and expect up to response_length
         bytes back in a response.  Note that less than the expected bytes might
         be returned!  Params can optionally specify an array of bytes to send as

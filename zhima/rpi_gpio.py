@@ -158,13 +158,16 @@ class Rpi_Gpio(object):
         Need to execute 'sudo pigpiod' to get that daemon running if it is not automatically started at boot time
         """
         self.pig = pigpio.pi(pigpio_host, pigpio_port) if not _simulation else pigpio()
+
+                                                        # nothing on pin 2 --> leave it empty
                                                         # 5V            on pin 4
                                                         # GND           on pin 6
         self.green1 = Led(self, 14)                     # GREEN LED 1   on pin 8
         self.green2 = Led(self, 15)                     # GREEN LED 2   on pin 10
         self.red = Led(self, 18)                        # RED LED       on pin 12
+                                                        # GND (again)   on pin 14
         self.proximity = E18_D80nk(self, 23)            # PROXIMITY     on pin 16
-        self.relay = Led(self, 24)                      # relay         on pin 18
+        self.relay = Led(self, 24)                      # RELAY         on pin 18
 
         CS   = 22                                       #  pin 15
                                                         #  3.3V on pin 17
@@ -215,25 +218,8 @@ if __name__ == "__main__":
     ic, ver, rev, support = my_pig.pn532.get_firmware_version()
     print('Found PN532 with firmware version: {0}.{1}'.format(ver, rev))
 
-
-
-    # dfrobot = Dfrobot_Pir_v1_0(my_pig, 17)
-    # while True:
-    #     print("Reading:", dfrobot.state)
-    #     sleep(1)
-
-    # if _simulation:
-    #     print(my_pig.pig.buffer)
-
-##    ed = E18_D80nk(my_pig, 24)
-##    ed = Dfrobot_Pir_v1_0(my_pig, 17)
-##    while True:
-##        print(ed.state)
-##        sleep(0.3)
-
-    # flash testing
-
     def three_seconds():
+        """pause for 3 seconds while checking for RFID card"""
         start = time()
         while time() - start <= 3:
             # Check if a card is available to read.
@@ -242,8 +228,6 @@ if __name__ == "__main__":
             if uid:
                 print('Found card with UID: 0x{0}'.format(binascii.hexlify(uid)))
             sleep(0.2)
-
-    
     try:
         while True:
             print("ON")
