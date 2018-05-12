@@ -171,10 +171,6 @@ class BitBang(object):
         self._mosi = mosi
         self._miso = miso
         self._ss = ss
-
-        self.pig.set_high = lambda pin: self.pig.write(pin, 1)
-        self.pig.set_low = lambda pin: self.pig.write(pin, 0)
-
         # Set pins as outputs/inputs.
         gpio.set_mode(sclk, OUTPUT)
         # gpio.setup(sclk, GPIO.OUT)
@@ -368,8 +364,9 @@ class PN532(object):
         """
         # Default to platform GPIO if not provided.
         self.pig = gpio
-        self.pig.set_high = lambda pin: self.pig.write(pin, 1)
-        self.pig.set_low = lambda pin: self.pig.write(pin, 0)
+        self.pig.is_high = lambda pin: self.pig.read(pin) == GPIO_HIGH
+        self.pig.set_high = lambda pin: self.pig.write(pin, GPIO_HIGH)
+        self.pig.set_low = lambda pin: self.pig.write(pin, GPIO_LOW)
         # if self.pig is None:
         #     self.pig = GPIO.get_platform_gpio()
         # Initialize CS line.
