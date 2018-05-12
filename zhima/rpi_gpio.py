@@ -7,7 +7,7 @@ __email__ =  "ericgibert@yahoo.fr"
 __license__ = "MIT"
 import threading
 try:
-    import pigpio
+    import pigpio           # reference at  http://abyz.me.uk/rpi/pigpio/python.html
     _simulation = False
 except ImportError:
     _simulation = True

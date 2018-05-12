@@ -31,14 +31,20 @@ Global libraries
 
 - workon zhima
 - pip install requests
+- pip install pigpio
+
+and do not forget to run: `sudo pigpiod` before the first execution
 
 
 QR code libraries
 -----------------
 
+
 ````
-sudo dnf install zbar-devel
+    sudo dnf install zbar-devel   
 ````
+
+
 - pip install zbarlight  # to read a QR code from an image
 - pip install qrcode  # to create a QR code
 
