@@ -263,9 +263,9 @@ class BitBang(object):
                 else:
                     self.pig.set_low(self._mosi)
                 # Flip clock off base.
-                self.pig.output(self._sclk, not self._clock_base)
+                self.pig.write(self._sclk, not self._clock_base)
                 # Return clock to base.
-                self.pig.output(self._sclk, self._clock_base)
+                self.pig.write(self._sclk, self._clock_base)
         if deassert_ss and self._ss is not None:
             self.pig.set_high(self._ss)
 
@@ -283,7 +283,7 @@ class BitBang(object):
         for i in range(length):
             for j in range(8):
                 # Flip clock off base.
-                self.pig.output(self._sclk, not self._clock_base)
+                self.pig.write(self._sclk, not self._clock_base)
                 # Handle read on leading edge of clock.
                 if self._read_leading:
                     if self.pig.is_high(self._miso):
@@ -293,7 +293,7 @@ class BitBang(object):
                         # Set bit to 0 at appropriate location.
                         result[i] &= ~self._read_shift(self._mask, j)
                 # Return clock to base.
-                self.pig.output(self._sclk, self._clock_base)
+                self.pig.write(self._sclk, self._clock_base)
                 # Handle read on trailing edge of clock.
                 if not self._read_leading:
                     if self.pig.is_high(self._miso):
@@ -328,7 +328,7 @@ class BitBang(object):
                 else:
                     self.pig.set_low(self._mosi)
                 # Flip clock off base.
-                self.pig.output(self._sclk, not self._clock_base)
+                self.pig.write(self._sclk, not self._clock_base)
                 # Handle read on leading edge of clock.
                 if self._read_leading:
                     if self.pig.is_high(self._miso):
@@ -338,7 +338,7 @@ class BitBang(object):
                         # Set bit to 0 at appropriate location.
                         result[i] &= ~self._read_shift(self._mask, j)
                 # Return clock to base.
-                self.pig.output(self._sclk, self._clock_base)
+                self.pig.write(self._sclk, self._clock_base)
                 # Handle read on trailing edge of clock.
                 if not self._read_leading:
                     if self.pig.is_high(self._miso):
