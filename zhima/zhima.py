@@ -81,7 +81,9 @@ class Controller(object):
 
     def stop(self):
         """Clean up before stopping"""
-        pass
+        self.gpio.stop()
+        self.camera.close()
+        # bottle_stop()
 
     def run(self):
         """
@@ -105,9 +107,7 @@ class Controller(object):
                 task = self.TASKS[current_state]
                 current_state = task()
         finally:
-            # clean up before stop
-            self.camera.close()
-            # bottle_stop()
+            self.stop()
 
     def wait_for_proximity(self):
         """State 1: Use GPIO to wait for a person to present a mobile phone to the camera"""

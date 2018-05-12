@@ -41,6 +41,9 @@ except ImportError:
         def set_pull_up_down(self, pin, up_or_down):
             pass
 
+        def stop(self):
+            pass
+
 class Led(object):
     """
     Manage a LED for flashing

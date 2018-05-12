@@ -236,7 +236,7 @@ class PN532(object):
         frame[-1] = PN532_POSTAMBLE
         # Send frame.
         logger.debug('Write frame: 0x{0}'.format(binascii.hexlify(frame)))
-        self.pig.spi_read(self.spi_handle, frame)
+        self.pig.spi_write(self.spi_handle, frame)
 
         # self._gpio.set_low(self._cs)
         # self._busy_wait_ms(2)
@@ -318,7 +318,7 @@ class PN532(object):
             # self._gpio.set_high(self._cs)
         return True
 
-    def call_function(self, command, response_length=0, params=[], timeout_sec=1):
+    def call_function(self, command, response_length=0, params=(), timeout_sec=1):
         """Send specified command to the PN532 and expect up to response_length
         bytes back in a response.  Note that less than the expected bytes might
         be returned!  Params can optionally specify an array of bytes to send as
@@ -330,7 +330,7 @@ class PN532(object):
         data = bytearray(2+len(params))
         data[0]  = PN532_HOSTTOPN532
         data[1]  = command & 0xFF
-        data[2:] = params
+        data[2:] = bytearray(params)
         # Send frame and wait for response.
         self._write_frame(data)
         if not self._wait_ready(timeout_sec):
