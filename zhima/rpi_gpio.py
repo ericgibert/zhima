@@ -189,7 +189,7 @@ if __name__ == "__main__":
     my_pig = Rpi_Gpio()
     my_pig.green1.ON()
     my_pig.red.ON()
-    my_pig.green2.flash("SET")
+    my_pig.green2.flash("SET", on_duration=0.5, off_duration=0.5)
 
     # dfrobot = Dfrobot_Pir_v1_0(my_pig, 17)
     # while True:
