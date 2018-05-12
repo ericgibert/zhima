@@ -6,6 +6,7 @@ __version__ = "1.0.20170113"
 __email__ =  "ericgibert@yahoo.fr"
 __license__ = "MIT"
 import threading
+import binascii
 try:
     import pigpio           # reference at  http://abyz.me.uk/rpi/pigpio/python.html
     _simulation = False
@@ -43,6 +44,8 @@ except ImportError:
 
         def stop(self):
             pass
+
+from zPN532 import PN532
 
 class Led(object):
     """
@@ -155,13 +158,26 @@ class Rpi_Gpio(object):
         Need to execute 'sudo pigpiod' to get that daemon running if it is not automatically started at boot time
         """
         self.pig = pigpio.pi(pigpio_host, pigpio_port) if not _simulation else pigpio()
-        # self.proximity_pin = self.set_pin_as_input(17)
-        self.proximity = E18_D80nk(self, 23)          # PROXIMITY PIN
-        #self.proximity = Dfrobot_Pir_v1_0(self, 17)
-        self.green1 = Led(self, 14)                     # GREEN LED 1 on GPIO20
-        self.green2 = Led(self, 15)                     # GREEN LED 2 on GPIO21
-        self.red = Led(self, 18)                        # RED LED on GPIO16
-        self.relay = Led(self, 24)
+                                                        # 5V            on pin 4
+                                                        # GND           on pin 6
+        self.green1 = Led(self, 14)                     # GREEN LED 1   on pin 8
+        self.green2 = Led(self, 15)                     # GREEN LED 2   on pin 10
+        self.red = Led(self, 18)                        # RED LED       on pin 12
+        self.proximity = E18_D80nk(self, 23)            # PROXIMITY     on pin 16
+        self.relay = Led(self, 24)                      # relay         on pin 18
+
+        CS   = 22                                       #  pin 15
+                                                        #  3.3V on pin 17
+        MOSI = 10                                       #  pin 19
+        MISO = 9                                        #  pin 21
+        SCLK = 11                                       #  pin 23
+                                                        #  GND on pin 25
+        self.pn532 = PN532(cs=CS, sclk=SCLK, mosi=MOSI, miso=MISO, gpio=self.pig)
+        # Call begin to initialize communication with the PN532.  Must be done before
+        # any other calls to the PN532!
+        self.pn532.begin()
+        # Configure PN532 to communicate with MiFare cards.
+        self.pn532.SAM_configuration()
 
     def check_proximity(self):
         return 1 if _simulation else self.proximity.state
@@ -189,11 +205,17 @@ class Rpi_Gpio(object):
 
 
 if __name__ == "__main__":
-    from time import sleep
+    from time import sleep, time
     my_pig = Rpi_Gpio()
     my_pig.green1.ON()
     my_pig.red.ON()
     my_pig.green2.flash("SET", on_duration=0.5, off_duration=0.5)
+
+    # Get the firmware version from the chip and print(it out.)
+    ic, ver, rev, support = my_pig.pn532.get_firmware_version()
+    print('Found PN532 with firmware version: {0}.{1}'.format(ver, rev))
+
+
 
     # dfrobot = Dfrobot_Pir_v1_0(my_pig, 17)
     # while True:
@@ -211,15 +233,25 @@ if __name__ == "__main__":
 
     # flash testing
 
+    def three_seconds():
+        start = time()
+        while time() - start <= 3:
+            # Check if a card is available to read.
+            uid = my_pig.pn532.read_passive_target()
+            # Try again if no card is available.
+            if uid:
+                print('Found card with UID: 0x{0}'.format(binascii.hexlify(uid)))
+            sleep(0.2)
+
     
     try:
         while True:
             print("ON")
             my_pig.relay.ON()
-            sleep(3)
+            three_seconds()
             print("OFF")
             my_pig.relay.OFF()
-            sleep(3) 
+            three_seconds()
     #        print("Proximity:", my_pig.check_proximity())
     #        sleep(1)
     finally:

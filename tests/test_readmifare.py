@@ -28,7 +28,7 @@ import zPN532 as PN532
 # It is recommended to use a software SPI connection with 4 digital GPIO pins.
 
 # Configuration for a Raspberry Pi:
-CS   = 5    #18
+CS   = 22   #18
 MOSI = 10   #23
 MISO = 9    #24
 SCLK = 11   #25
