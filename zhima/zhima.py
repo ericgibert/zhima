@@ -66,7 +66,7 @@ class Controller(object):
             6: self.unknown_qr_code,
            99: self.panic_mode,
         }
-        self.camera = Camera(self.db)
+        self.camera = Camera(self.db) if self.db.access["has_camera"] else None
         self.last_entries = myQ()
 
     def insert_log(self, log_type, code, msg, member_id=-1, qrcode_version='?'):
@@ -82,7 +82,7 @@ class Controller(object):
     def stop(self):
         """Clean up before stopping"""
         self.gpio.stop()
-        self.camera.close()
+        if self.camera: self.camera.close()
         # bottle_stop()
 
     def run(self):
@@ -144,7 +144,7 @@ class Controller(object):
         self.gpio.green1.ON()
         self.gpio.green2.flash("SET", on_duration=0.5, off_duration=0.5)
         self.gpio.red.OFF()
-        self.qr_codes = self.camera.get_QRcode(debug=self.debug)
+        self.qr_codes = self.camera.get_QRcode(debug=self.debug) if self.camera else []
         if self.qr_codes is None:  # webcam is not working: panic mode: all LED flashing!
             return 99
         return 3 if self.qr_codes else 1  # qr_codes is a list --> 3, might be an empty one --> back to 1
