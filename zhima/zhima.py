@@ -196,7 +196,7 @@ class Controller(object):
             if self.double_sandwich():
                 print("double sandwich")
             elif self.single_sandwich():
-                print("single sandwich")
+                print("single sandwich", self.last_entries[1]['username'], self.last_entries[1].validity)
             else:
                 print("no sandwich")
             if self.uid or self.member.qrcode_is_valid:
