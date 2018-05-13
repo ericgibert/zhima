@@ -79,7 +79,7 @@ class Controller(object):
 
     def stop(self):
         """Clean up before stopping"""
-        self.gpio.stop()
+        self.gpio.pig.stop()
         if self.camera: self.camera.close()
         # bottle_stop()
 
@@ -196,7 +196,8 @@ class Controller(object):
             if self.double_sandwich():
                 print("double sandwich")
             elif self.single_sandwich():
-                print("single sandwich", self.last_entries[1]['username'], self.last_entries[1].validity)
+                timestamp, member_to_upd = self.last_entries[1]
+                print("single sandwich", member_to_upd['username'], member_to_upd.validity)
             else:
                 print("no sandwich")
             if self.uid or self.member.qrcode_is_valid:
