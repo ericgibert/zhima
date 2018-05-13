@@ -110,7 +110,9 @@ class Controller(object):
             self.stop()
 
     def wait_for_proximity(self):
-        """State 1: Use GPIO to wait for a person to present a mobile phone to the camera"""
+        """State 1: Use GPIO to wait for a person to present
+        - a mobile phone to the camera by checking the proximity detector
+        - a RFID card by attempting to read a UID"""
         self.gpio.green1.flash("SET", on_duration=0.25, off_duration=1)
         self.gpio.green2.OFF()
         self.gpio.red.OFF()
@@ -118,10 +120,23 @@ class Controller(object):
         self.gpio.proximity.reset()
         # display the waiting message
         points, max_pts = 1, 10
-        while not self.gpio.check_proximity():
+        next_state = 1
+        self.qr_codes, self.uid = [], None
+        while next_state == 1:
             if self.debug: print("Waiting for proximity", '.' * points, " " * max_pts, end="\r")
             sleep(0.2)
             points = (points + 1) % max_pts
+            if self.db.access["has_camera"] and self.gpio.check_proximity():
+                next_state = 2
+            # Check if a card is available to read.
+            if self.db.access["has_RFID"]:
+                self.uid = self.gpio.pn532.read_passive_target()
+                if self.uid: next_state = 3
+
+        # while not self.gpio.check_proximity():
+        #     if self.debug: print("Waiting for proximity", '.' * points, " " * max_pts, end="\r")
+        #     sleep(0.2)
+        #     points = (points + 1) % max_pts
         return 2
 
     def capture_qrcode(self):
@@ -161,11 +176,20 @@ class Controller(object):
         self.gpio.green1.ON()
         self.gpio.green2.ON()
         self.gpio.red.OFF()
-        # print("QR code:", self.qr_codes, type(self.qr_codes[0]))
-        # try finding a member from the database based on the first QR code found on the image
-        self.member = Member(qrcode=self.qr_codes[0])
+        if self.qr_codes:
+            # try finding a member from the database based on the first QR code found on the image
+            # print("QR code:", self.qr_codes, type(self.qr_codes[0]))
+            self.member = Member(qrcode=self.qr_codes[0])
+            if self.member.id is None:
+                self.insert_log("ERROR", -1000, "Non XCJ QR Code or No member found for: {}".format(self.qr_codes[0].decode("utf-8")))
+        else:
+            # try by RFID UID
+            self.member = Member(openid=self.uid)
+            if self.member.id is None:
+                self.insert_log("ERROR", -1010, "Non XCJ registered RFID card: {}".format(self.uid))
+        # if we have a member, let's check its status to open the door
         if self.member.id:
-            self.last_entries.add( (datetime.now(), self.member) )
+            self.last_entries.add( (datetime.now(), self.member) )  # stack for sandwich checking
             if self.double_sandwich():
                 print("double sandwich")
             elif self.single_sandwich():
@@ -181,9 +205,7 @@ class Controller(object):
                     self.insert_log("NOT_OK", self.member.id,
                                     "{}, please fix your status: {} - QR V{}".format(self.member['username'], self.member['status'], self.member.qrcode_version))
                     return 5
-        else:
-            self.insert_log("ERROR", -1000, "Non XCJ QR Code or No member found for: {}".format(self.qr_codes[0].decode("utf-8")))
-            return 6
+        return 6
 
     def happy_flashing(self, duration):
         """Flash alternatively the green lights for 'duration' seconds"""
@@ -258,7 +280,7 @@ class Controller(object):
         return 1
 
     def unknown_qr_code(self):
-        """State 6: A QR code was read but does not match our known pattern OR no member found"""
+        """State 6: A QR code or RFID UID was read but does not match our known pattern OR no member found"""
         self.gpio.green1.ON()
         self.gpio.green2.OFF()
         self.gpio.red.ON()
