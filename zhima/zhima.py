@@ -69,15 +69,13 @@ class Controller(object):
         self.camera = Camera(self.db) if self.db.access["has_camera"] else None
         self.last_entries = myQ()
 
-    def insert_log(self, log_type, code, msg, member_id=-1, qrcode_version='?'):
+    def insert_log(self, log_type, code, msg):
         """
         Insert a log record in the database for tracking and print a message on terminal
         :param log_type: OPEN / ERROR / NOT_OK
         :param msg: a free message
-        :param qrcode_version: if QR Code is found then record its version (tracking old QR Codes)
-        :param member_id: if the QR Code matches a Member Id
         """
-        self.db.log(log_type, code, msg, debug=True)
+        self.db.log(log_type, code, msg, debug=self.debug)
 
     def stop(self):
         """Clean up before stopping"""
@@ -97,15 +95,15 @@ class Controller(object):
             self.stop()
             sys.exit()
         signal.signal(signal.SIGUSR1, stop_handler)
-        current_state = 1  # initial state: waiting for proximity detection
+        self.current_state = 1  # initial state: waiting for proximity detection
         # http_view.controller = self
         #thread.start_new_thread(http_view.run, (, ))
         # t = threading.Thread(target=http_view.run, kwargs={'host':self.bottle_ip, 'port': self.port})
         # t.start()
         try:
-            while current_state:  # can be stopped by program by return a next state as 0
-                task = self.TASKS[current_state]
-                current_state = task()
+            while self.current_state:  # can be stopped by program by return a next state as 0
+                task = self.TASKS[self.current_state]
+                self.current_state = task()
         finally:
             self.stop()
 
@@ -113,6 +111,7 @@ class Controller(object):
         """State 1: Use GPIO to wait for a person to present
         - a mobile phone to the camera by checking the proximity detector
         - a RFID card by attempting to read a UID"""
+        if self.debug: print("Entering state", self.current_state, self.TASKS[self.current_state].__name__)
         self.gpio.green1.flash("SET", on_duration=0.25, off_duration=1)
         self.gpio.green2.OFF()
         self.gpio.red.OFF()
@@ -143,6 +142,7 @@ class Controller(object):
 
     def capture_qrcode(self):
         """State 2: take photos until a QR code is detected"""
+        if self.debug: print("Entering state", self.current_state, self.TASKS[self.current_state].__name__)
         self.gpio.green1.ON()
         self.gpio.green2.flash("SET", on_duration=0.5, off_duration=0.5)
         self.gpio.red.OFF()
@@ -175,6 +175,7 @@ class Controller(object):
 
     def check_member(self):
         """State 3: a QR Code is found: check it against the member database"""
+        if self.debug: print("Entering state", self.current_state, self.TASKS[self.current_state].__name__)
         self.gpio.green1.ON()
         self.gpio.green2.ON()
         self.gpio.red.OFF()
@@ -222,6 +223,7 @@ class Controller(object):
         """State 4: Proceed to open the door
             Open the door using the electric relay
         """
+        if self.debug: print("Entering state", self.current_state, self.TASKS[self.current_state].__name__)
         self.gpio.relay.ON()
         self.happy_flashing(3)
         self.gpio.relay.OFF()
@@ -231,6 +233,7 @@ class Controller(object):
         """State 4: Proceed to open the door
         # Open the door using Bluetooth - all BLE parameters are defaulted for the TOKYDOOR BLE @ XCJ
         """
+        if self.debug: print("Entering state", self.current_state, self.TASKS[self.current_state].__name__)
         tokydoor = TokyDoor(database=self.db)
         try:
             tokydoor.open()
@@ -245,6 +248,7 @@ class Controller(object):
         Open the door using both Bluetooth - all BLE parameters are defaulted for the TOKYDOOR BLE @ XCJ
         and the electric relay
         """
+        if self.debug: print("Entering state", self.current_state, self.TASKS[self.current_state].__name__)
         self.gpio.relay.ON()
         tokydoor = TokyDoor(database=self.db)
         try:
@@ -258,6 +262,7 @@ class Controller(object):
 
     def bad_member_status(self):
         """State 5: Member "bad status", email the member to warn about the status"""
+        if self.debug: print("Entering state", self.current_state, self.TASKS[self.current_state].__name__)
         self.gpio.green1.OFF()
         self.gpio.green2.ON()
         self.gpio.red.ON()
@@ -283,6 +288,7 @@ class Controller(object):
 
     def unknown_qr_code(self):
         """State 6: A QR code or RFID UID was read but does not match our known pattern OR no member found"""
+        if self.debug: print("Entering state", self.current_state, self.TASKS[self.current_state].__name__)
         self.gpio.green1.ON()
         self.gpio.green2.OFF()
         self.gpio.red.ON()
@@ -291,6 +297,7 @@ class Controller(object):
 
     def panic_mode(self):
         """State 99: major erro, flash the lights for 3 seconds"""
+        if self.debug: print("Entering state", self.current_state, self.TASKS[self.current_state].__name__)
         self.gpio.green1.flash("SET", on_duration=0.3, off_duration=0.3)
         self.gpio.green2.flash("SET", on_duration=0.3, off_duration=0.3)
         self.gpio.red.flash("SET", on_duration=0.3, off_duration=0.3)
