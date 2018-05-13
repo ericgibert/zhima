@@ -184,6 +184,7 @@ class Controller(object):
         timestamp0, staff_member = self.last_entries[0]
         new_validity = datetime.strptime(member_to_upd.validity, "%Y-%m-%d") + timedelta(days=181 if size == 2 else 31)
         msg += "{} until {:%Y-%m-%d} by staff {}".format(member_to_upd['username'], new_validity, staff_member['username'])
+        return msg
 
     def check_member(self):
         """State 3: a QR Code is found: check it against the member database"""
