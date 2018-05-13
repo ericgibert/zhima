@@ -50,9 +50,9 @@ class Database():
                 Database.passwd = self.access[ip_3]["passwd"]
                 Database.server_ip = "localhost" if my_IP==self.access[ip_3]["server_ip"] else self.access[ip_3]["server_ip"]
                 Database.key = self.access["key"].encode("utf-8")
-                Database.mailbox = self.access["mailbox"]
+                Database.mailbox = self.access.get("mailbox")
             except KeyError as err:
-                print("Cannot find entry {} in db_access.data".format(err))
+                print("model_db.py: Cannot find entry {} in db_access.data".format(err))
                 exit(1)
         self.key = Database.key
         self.mailbox = Database.mailbox
