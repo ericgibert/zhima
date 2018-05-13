@@ -24,6 +24,7 @@ __license__ = "MIT"
 
 import sys, os
 from datetime import datetime, timedelta
+import requests
 import signal
 import argparse
 from time import sleep
@@ -61,7 +62,7 @@ class Controller(object):
             1: self.wait_for_proximity,
             2: self.capture_qrcode,
             3: self.check_member,
-            4: self.open_the_door_BOTH,   # coose the function to call: _RELAY, _BLE, _BOTH
+            4: self.open_the_door_BOTH if Database.server_ip == "localhost" else self.open_the_door_API(),   # choose the function to call: _RELAY, _BLE, _BOTH
             5: self.bad_member_status,
             6: self.unknown_qr_code,
            99: self.panic_mode,
@@ -232,6 +233,25 @@ class Controller(object):
             on_off = int(not on_off)
             self.gpio.green2.set(on_off)
             sleep(0.25)
+
+
+    def open_the_door_API(self):
+        """Calls the Master Raspi to open the door by API"""
+        if self.debug: print("Entering state", self.current_state, self.TASKS[self.current_state].__name__)
+        url = "{}/api/v1.0/open/seconds".format(Database.server_ip)
+        msg = { 'seconds': 3 }
+        response = requests.post(url, json=msg)
+        if response.status_code == 200:
+            result = response.json()
+            if result["errno"] == 1000:
+                self.happy_flashing(3)
+                return 1
+            else:
+                self.insert_log("ERROR", -1002, "Cannot open door by API: {} {}".format(result["errno"], result["errmsg"]))
+        else:
+            self.insert_log("ERROR", -1003, "Cannot open door by API: response.status_code = {}".format(response.status_code))
+        return 6
+
 
     def open_the_door_RELAY(self):
         """State 4: Proceed to open the door

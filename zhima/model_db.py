@@ -12,12 +12,6 @@ __license__ = "MIT"
 from datetime import datetime
 import json
 from subprocess import check_output
-# try:
-#     import pymysql
-#     from pymysql.cursors import DictCursorMixin, Cursor
-#     _simulation = False
-# except ImportError:
-#     _simulation = True
 import pymysql
 from pymysql.cursors import DictCursorMixin, Cursor
 from collections import OrderedDict
@@ -34,7 +28,17 @@ class Database():
     mailbox = {}
 
     def __init__(self, table=None, *args, **kwargs):
-        """Load from Private file the various connection parameters the first time a DB object is instantiated"""
+        """Load from Private file the various connection parameters the first time a DB object is instantiated
+        - based on the netmask --> get the Master Server address
+        - based on "mailbox": get the SMTP parameters
+        - extra information:
+            * "has_camera": 0/1 for False/True --> allow Raspi with camera to read barcode
+            * "has_RFID": 0/1 for False/True --> allow Raspi to get RFDI card UID on contact (PN532 reader)
+            * "whitelist": list of servers authorized to call the APIs
+
+        Note: if Database.server_ip == "localhost" then this Raspi is the master (access database and door) else slave
+
+        """
         self.table = table
         if self.dbname is None:
             # MySQL database parameters

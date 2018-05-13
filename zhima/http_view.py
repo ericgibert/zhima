@@ -17,7 +17,7 @@ import argparse
 from collections import OrderedDict
 from datetime import datetime
 from time import sleep
-from bottle import Bottle, template, request, BaseTemplate, redirect, error, static_file
+from bottle import Bottle, template, request, BaseTemplate, redirect, error, static_file, HTTPResponse
 from bottlesession import CookieSession, authenticator
 from member import Member
 from member_api import Member_Api
@@ -44,7 +44,7 @@ def whitelisted(callback):
         if request.urlparts.hostname in http_view.controller.db.access['whitelist']:
             return callback(*args, **kwargs)
         else:
-            return '<h3>Sorry, you are not authorized to perform this action</h3>WL: ' + request.urlparts.hostname
+            return HTTPResponse(status=403, body='<h3>Sorry, you are not authorized to perform this action</h3>WL: ' + request.urlparts.hostname)
     return wrapper
 
 def need_login(callback):
@@ -64,7 +64,7 @@ def need_admin(callback):
         if session['valid'] and session['admin']:
             return callback(*args, **kwargs)
         else:
-            return '<h3>Sorry, you are not authorized to perform this action</h3>Try to <a href="/Login">login</a> first'
+            return HTTPResponse(status=403, body='<h3>Sorry, you are not authorized to perform this action</h3>Try to <a href="/Login">login</a> first')
     return wrapper
 
 @http_view.route('/')

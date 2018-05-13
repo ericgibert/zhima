@@ -152,7 +152,7 @@ class Dfrobot_Pir_v1_0(object):
 
 
 class Rpi_Gpio(object):
-    def __init__(self, has_PN532, pigpio_host="", pigpio_port=8888):
+    def __init__(self, has_PN532=False, pigpio_host="", pigpio_port=8888):
         """
         Either connects to the PGPIO daemon or simulte it
         Need to execute 'sudo pigpiod' to get that daemon running if it is not automatically started at boot time
