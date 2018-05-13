@@ -199,14 +199,15 @@ class Controller(object):
                 print("single sandwich")
             else:
                 print("no sandwich")
-            if self.member.qrcode_is_valid:
+            if self.uid or self.member.qrcode_is_valid:
                 if self.member['status'].upper() in ("OK", "ACTIVE", "ENROLLED"):
-                    self.insert_log("OPEN", self.member.id,
-                                    "Welcome {} - QR V{}".format(self.member['username'], self.member.qrcode_version))
+                    msg = "Welcome {} - {}".format(self.member['username'],
+                                                   "RFID {}".format(self.uid) if self.uid else "QR v{}".format(self.member.qrcode_version))
+                    self.insert_log("OPEN", self.member.id, msg)
                     return 4
                 else:
                     self.insert_log("NOT_OK", self.member.id,
-                                    "{}, please fix your status: {} - QR V{}".format(self.member['username'], self.member['status'], self.member.qrcode_version))
+                                    "{}, please fix your status: {}".format(self.member['username'], self.member['status']))
                     return 5
         return 6
 
