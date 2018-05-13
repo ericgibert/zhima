@@ -138,7 +138,7 @@ class Controller(object):
         #     if self.debug: print("Waiting for proximity", '.' * points, " " * max_pts, end="\r")
         #     sleep(0.2)
         #     points = (points + 1) % max_pts
-        return 2
+        return next_state
 
     def capture_qrcode(self):
         """State 2: take photos until a QR code is detected"""
