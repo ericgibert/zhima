@@ -563,7 +563,7 @@ class PN532(object):
         # check the command was executed as expected.
         self.call_function(PN532_COMMAND_SAMCONFIGURATION, params=[0x01, 0x14, 0x01])
 
-    def read_passive_target(self, card_baud=PN532_MIFARE_ISO14443A, timeout_sec=1):
+    def read_passive_target(self, card_baud=PN532_MIFARE_ISO14443A, timeout_sec=1, as_hex=False):
         """Wait for a MiFare card to be available and return its UID when found.
         Will wait up to timeout_sec seconds and return None if no card is found,
         otherwise a bytearray with the UID of the found card is returned.
@@ -581,8 +581,8 @@ class PN532(object):
         if response[5] > 7:
             raise RuntimeError('Found card with unexpectedly long UID!')
         # Return UID of card.
-        uid = response[6:6+response[5]]  #  this is a bytearray
-        return binascii.hexlify(uid)
+        uid = response[6:6+response[5]]
+        return binascii.hexlify(uid) if as_hex else uid
 
     def mifare_classic_authenticate_block(self, uid, block_number, key_number, key):
         """Authenticate specified block number for a MiFare classic card.  Uid
