@@ -62,7 +62,7 @@ class Controller(object):
             1: self.wait_for_proximity,
             2: self.capture_qrcode,
             3: self.check_member,
-            4: self.open_the_door_BOTH if Database.server_ip == "localhost" else self.open_the_door_API(),   # choose the function to call: _RELAY, _BLE, _BOTH
+            4: self.open_the_door_BOTH if Database.server_ip == "localhost" else self.open_the_door_API,   # choose the function to call: _RELAY, _BLE, _BOTH
             5: self.bad_member_status,
             6: self.unknown_qr_code,
            99: self.panic_mode,
