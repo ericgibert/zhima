@@ -51,8 +51,8 @@ class myQ(list):
 class Controller(object):
     def __init__(self, bottle_ip='127.0.0.1', port=8080, debug=False):
         self.bottle_ip, self.port = bottle_ip, port
-        self.gpio = Rpi_Gpio()
         self.db = Database()
+        self.gpio = Rpi_Gpio(has_PN532=self.db.access["has_RFID"])
         self.debug = debug
         if rpi_simulation:
             print("PGIO simulation active")
@@ -131,7 +131,9 @@ class Controller(object):
             # Check if a card is available to read.
             if self.db.access["has_RFID"]:
                 self.uid = self.gpio.pn532.read_passive_target()
-                if self.uid: next_state = 3
+                if self.uid:
+                    if self.debug: print("Read RFID UID", self.uid)
+                    next_state = 3
 
         # while not self.gpio.check_proximity():
         #     if self.debug: print("Waiting for proximity", '.' * points, " " * max_pts, end="\r")

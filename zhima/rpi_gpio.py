@@ -152,7 +152,7 @@ class Dfrobot_Pir_v1_0(object):
 
 
 class Rpi_Gpio(object):
-    def __init__(self, pigpio_host="", pigpio_port=8888):
+    def __init__(self, has_PN532, pigpio_host="", pigpio_port=8888):
         """
         Either connects to the PGPIO daemon or simulte it
         Need to execute 'sudo pigpiod' to get that daemon running if it is not automatically started at boot time
@@ -175,12 +175,18 @@ class Rpi_Gpio(object):
         MISO = 9                                        #  pin 21
         SCLK = 11                                       #  pin 23
                                                         #  GND on pin 25
-        self.pn532 = PN532(cs=CS, sclk=SCLK, mosi=MOSI, miso=MISO, gpio=self.pig)
-        # Call begin to initialize communication with the PN532.  Must be done before
-        # any other calls to the PN532!
-        self.pn532.begin()
-        # Configure PN532 to communicate with MiFare cards.
-        self.pn532.SAM_configuration()
+        if has_PN532:
+            self.pn532 = PN532(cs=CS, sclk=SCLK, mosi=MOSI, miso=MISO, gpio=self.pig)
+            # Call begin to initialize communication with the PN532.
+            self.pn532.begin()
+            # Get the firmware version from the chip and print(it out.)
+            ic, ver, rev, support = self.pn532.get_firmware_version()
+            print('Found PN532 with firmware version: {0}.{1}'.format(ver, rev))
+            # Configure PN532 to communicate with MiFare cards.
+            self.pn532.SAM_configuration()
+        else:
+            self.pn532 = None
+
 
     def check_proximity(self):
         return 1 if _simulation else self.proximity.state
