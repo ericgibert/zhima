@@ -23,7 +23,7 @@ __email__ =  "ericgibert@yahoo.fr"
 __license__ = "MIT"
 
 import sys, os
-from datetime import datetime
+from datetime import datetime, timedelta
 import signal
 import argparse
 from time import sleep
@@ -173,6 +173,18 @@ class Controller(object):
         else:
             return False
 
+    def eat_sandwich(self, size):
+        """Execute the posting of a payment transaction
+        - size = 1 (1 mth) or 2 (6 mths)  for single or double sandwich
+            +31 days for single
+            +181 days for double
+        """
+        msg = "** Double Sandwich ** " if size == 2 else "* Single Sandwich ** "
+        timestamp1, member_to_upd = self.last_entries[1]
+        timestamp0, staff_member = self.last_entries[0]
+        new_validity = datetime.strptime(member_to_upd.validity, "%Y-%m-%d") + timedelta(days=181 if size == 2 else 31)
+        msg += "{} until {:%Y-%m-%d} by staff {}".format(member_to_upd['username'], new_validity, staff_member['username'])
+
     def check_member(self):
         """State 3: a QR Code is found: check it against the member database"""
         if self.debug: print("Entering state", self.current_state, self.TASKS[self.current_state].__name__)
@@ -194,11 +206,10 @@ class Controller(object):
         if self.member.id:
             self.last_entries.add( (datetime.now(), self.member) )  # stack for sandwich checking
             if self.double_sandwich():
-                print("double sandwich")
+                self.insert_log("PAY", 102, self.eat_sandwich(size=2))
             elif self.single_sandwich():
-                timestamp, member_to_upd = self.last_entries[1]
-                print("single sandwich", member_to_upd['username'], member_to_upd.validity)
-            else:
+                self.insert_log("PAY", 101, self.eat_sandwich(size=1))
+            elif self.debug:
                 print("no sandwich")
             if self.uid or self.member.qrcode_is_valid:
                 if self.member['status'].upper() in ("OK", "ACTIVE", "ENROLLED"):
