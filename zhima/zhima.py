@@ -238,7 +238,7 @@ class Controller(object):
     def open_the_door_API(self):
         """Calls the Master Raspi to open the door by API"""
         if self.debug: print("Entering state", self.current_state, self.TASKS[self.current_state].__name__)
-        url = "{}/api/v1.0/open/seconds".format(Database.server_ip)
+        url = "http://{}/api/v1.0/open/seconds".format(Database.server_ip)
         msg = { 'seconds': 3 }
         response = requests.post(url, json=msg)
         if response.status_code == 200:
