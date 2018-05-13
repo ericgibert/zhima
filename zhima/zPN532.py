@@ -581,7 +581,8 @@ class PN532(object):
         if response[5] > 7:
             raise RuntimeError('Found card with unexpectedly long UID!')
         # Return UID of card.
-        return response[6:6+response[5]]
+        uid = response[6:6+response[5]]  #  this is a bytearray
+        return binascii.hexlify(uid)
 
     def mifare_classic_authenticate_block(self, uid, block_number, key_number, key):
         """Authenticate specified block number for a MiFare classic card.  Uid
