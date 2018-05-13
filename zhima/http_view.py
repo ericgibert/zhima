@@ -41,7 +41,7 @@ def error404(error):
 def whitelisted(callback):
     """decorator to check that the API is called by a whitelisted server"""
     def wrapper(*args, **kwargs):
-        if request.urlparts.hostname in http_view.controller.db.access['whitelist']:
+        if request.remote_addr in http_view.controller.db.access['whitelist']:
             return callback(*args, **kwargs)
         else:
             return HTTPResponse(status=403, body='<h3>Sorry, you are not authorized to perform this action</h3>WL: ' + request.urlparts.hostname)
