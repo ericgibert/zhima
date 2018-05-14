@@ -18,7 +18,7 @@ Gr1 Gr2 Red
 
 """
 __author__ = "Eric Gibert"
-__version__ = "1.0.20180415 Hyderabad"
+__version__ = "1.0.20180514 Hong Kong"
 __email__ =  "ericgibert@yahoo.fr"
 __license__ = "MIT"
 
@@ -29,8 +29,9 @@ import signal
 import argparse
 from time import sleep
 from camera import Camera
-from rpi_gpio import Rpi_Gpio, _simulation as rpi_simulation
-from member import Member
+from rpi_gpio import Rpi_Gpio
+# from member import Member
+from member_api import Member_Api
 from tokydoor import TokyDoor
 from model_db import Database
 from send_email import send_email
@@ -52,17 +53,23 @@ class myQ(list):
 class Controller(object):
     def __init__(self, bottle_ip='127.0.0.1', port=8080, debug=False):
         self.bottle_ip, self.port = bottle_ip, port
-        self.db = Database()
-        self.gpio = Rpi_Gpio(has_PN532=self.db.access["has_RFID"])
         self.debug = debug
-        if rpi_simulation:
-            print("PGIO simulation active")
+        # init local attributes
+        self.db = Database()
+        self.base_api_url = "http://{}:8080/api/v1.0".format(Database.server_ip)
+        self.gpio = Rpi_Gpio(has_PN532=self.db.access["has_RFID"])
         self.member = None
+        _OPEN_WITH = {
+            "BLE": self.open_the_door_BLE,
+            "RELAY": self.open_the_door_RELAY,
+            "BOTH": self.open_the_door_BOTH,
+            "API": self.open_the_door_API,
+        }
         self.TASKS = {
             1: self.wait_for_proximity,
             2: self.capture_qrcode,
             3: self.check_member,
-            4: self.open_the_door_BOTH if Database.server_ip == "localhost" else self.open_the_door_API,   # choose the function to call: _RELAY, _BLE, _BOTH
+            4: _OPEN_WITH[self.db.access["open_with"]],  # choose the function to call: _RELAY, _BLE, _BOTH, _API
             5: self.bad_member_status,
             6: self.unknown_qr_code,
            99: self.panic_mode,
@@ -70,13 +77,27 @@ class Controller(object):
         self.camera = Camera(self.db) if self.db.access["has_camera"] else None
         self.last_entries = myQ()
 
+
     def insert_log(self, log_type, code, msg):
         """
         Insert a log record in the database for tracking and print a message on terminal
         :param log_type: OPEN / ERROR / NOT_OK
         :param msg: a free message
         """
-        self.db.log(log_type, code, msg, debug=self.debug)
+        # self.db.log(log_type, code, msg, debug=self.debug)
+        url = "{}/log/add".format(self.base_api_url)
+        payload={
+            "log_type": log_type,
+            "code": code,
+            "msg": msg,
+            "debug": self.debug
+        }
+        response = requests.post(url, json=payload)
+        if response.status_code == 201:
+            if self.debug: print(response.text)
+        else:
+            print("Cannot create Log entry", response.status_code)
+
 
     def stop(self):
         """Clean up before stopping"""
@@ -134,11 +155,6 @@ class Controller(object):
                 if self.uid:
                     if self.debug: print("Read RFID UID", self.uid)
                     next_state = 3
-
-        # while not self.gpio.check_proximity():
-        #     if self.debug: print("Waiting for proximity", '.' * points, " " * max_pts, end="\r")
-        #     sleep(0.2)
-        #     points = (points + 1) % max_pts
         return next_state
 
     def capture_qrcode(self):
@@ -193,15 +209,24 @@ class Controller(object):
         self.gpio.green1.ON()
         self.gpio.green2.ON()
         self.gpio.red.OFF()
+        self.member = Member_Api()
         if self.qr_codes:
             # try finding a member from the database based on the first QR code found on the image
             # print("QR code:", self.qr_codes, type(self.qr_codes[0]))
-            self.member = Member(qrcode=self.qr_codes[0])
-            if self.member.id is None:
+            # self.member = Member(qrcode=self.qr_codes[0])
+            self.member.id = self.member.decode_qrcode(self.qr_codes[0])
+            if self.member.id:
+                url = "{}/member/{}".format(self.base_api_url, self.member.id)
+                j_data = requests.get(url).json()
+                self.member.from_json(j_data)
+            else:
                 self.insert_log("ERROR", -1000, "Non XCJ QR Code or No member found for: {}".format(self.qr_codes[0].decode("utf-8")))
-        else:
+        elif self.uid:
             # try by RFID UID
-            self.member = Member(openid=self.uid)
+            # self.member = Member(openid=self.uid)
+            url = "{}/member/openid/{}".format(self.base_api_url, self.uid)
+            j_data = requests.get(url).json()
+            self.member.from_json(j_data)
             if self.member.id is None:
                 self.insert_log("ERROR", -1010, "Non XCJ registered RFID card: {}".format(self.uid))
         # if we have a member, let's check its status to open the door
@@ -238,12 +263,12 @@ class Controller(object):
     def open_the_door_API(self):
         """Calls the Master Raspi to open the door by API"""
         if self.debug: print("Entering state", self.current_state, self.TASKS[self.current_state].__name__)
-        url = "http://{}:8080/api/v1.0/open/seconds".format(Database.server_ip)
-        msg = { 'seconds': 3 }
-        response = requests.post(url, json=msg)
+        url = "{}/open/seconds".format(self.base_api_url)
+        payload = { 'seconds': 3 }
+        response = requests.post(url, json=payload)
         if response.status_code == 200:
             result = response.json()
-            if result["errno"] == 1000:
+            if result["errno"] == 1000: # no error
                 self.happy_flashing(3)
                 return 1
             else:
@@ -304,7 +329,7 @@ class Controller(object):
             print("Email to", self.member['username'])
             send_email(
                 "Sorry, XCJ doorman cannot open the door for you",
-                from_=self.member.mailbox["username"],
+                from_=self.db.mailbox["username"],
                 to_=(self.member["email"],),
                 message_HTML = """
                     <P>Your status in the XCJ database is set to: {}</P>
@@ -312,8 +337,8 @@ class Controller(object):
                     <p></p>
                     """.format(self.member["status"], self.member.validity),
                 images=[r"images/emoji-not-happy.jpg"],
-                server=self.member.mailbox["server"], port=self.member.mailbox["port"],
-                login=self.member.mailbox["username"], passwd=self.member.mailbox["password"]
+                server=self.db.mailbox["server"], port=self.db.mailbox["port"],
+                login=self.db.mailbox["username"], passwd=self.db.mailbox["password"]
             )
             sleep(1)  # let's say it takes 2 seconds to send the email already
         else:

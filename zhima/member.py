@@ -64,7 +64,8 @@ class Member(Database):
         if id:
             self.get_from_db(id)
         elif qrcode:
-            self.decode_qrcode(qrcode)  # which calls get_from_db if the QR code is valid
+            id = self.decode_qrcode(qrcode)  # which calls get_from_db if the QR code is valid
+            self.get_from_db(id)
         elif 'openid' in kwargs:
             result = self.select(columns='id', openid=kwargs['openid'])
             try:
@@ -156,13 +157,13 @@ class Member(Database):
         #
         # Validation of the decoded QR Code
         #
-        if member_id and self.get_from_db(member_id):
+        if member_id:  #  NO MORE CALL -->   and self.get_from_db(member_id):
             self.qrcode_is_valid = True  # benefice of doubt...
-            if self.qrcode_version == 2 and self.birthdate:
-                crc = self.birthdate.year ^ (self.birthdate.day*100 + self.birthdate.month)
-                if int(self.clear_qrcode[2]) != crc:
-                    print("Incorrect CRC based on birthdate", crc)
-                    self.qrcode_is_valid = False
+            if self.qrcode_version == 2:  # and self.birthdate:
+                # crc = self.birthdate.year ^ (self.birthdate.day*100 + self.birthdate.month)
+                # if int(self.clear_qrcode[2]) != crc:
+                #     print("Incorrect CRC based on birthdate", crc)
+                #     self.qrcode_is_valid = False
                 validity = datetime.strptime(self.clear_qrcode[3], "%Y-%m-%d" if len(self.clear_qrcode[3]) == 10 else "%Y-%m-%d %H:%M:%S")
                 print("QR code valid until", validity)
                 if datetime.now() > validity:
@@ -172,6 +173,7 @@ class Member(Database):
                 from_date, to_date = self.clear_qrcode[2], self.clear_qrcode[3]  #  'yyyy-mm-dd' strings
                 today = '{0:%Y-%m-%d}'.format(date.today())
                 self.qrcode_is_valid = ( from_date <= today <= to_date )
+        return member_id if self.qrcode_is_valid else None
 
     def encrypt_qrcode(self, qrcode):
         """turn qrcode string into bytes and pad to multiple of 8 bytes"""

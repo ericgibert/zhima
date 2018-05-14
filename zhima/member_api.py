@@ -75,6 +75,7 @@ class Member_Api(Member):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.openid = kwargs.get("openid")
+        self.id = kwargs.get("id")
 
     def update(self, **kwargs):
         last_row_id = super().update(**kwargs)
@@ -109,8 +110,9 @@ class Member_Api(Member):
             result = {'errno': '1005', 'errmsg': "Add transaction record error", 'data': {'add_payment:': list(data.items())} }
         return dumps(result)
 
-    def from_json(self, data):
-        """Fill the user's field from a JSON object and INSERT in database"""
+    def create_from_json(self, data):
+        """Fill a empty member's field from a JSON object and INSERT in database 'users' table
+        - Add a payment if present"""
         try:
             role = self.ROLE[data['memberInfo']['tags'].upper()]
         except KeyError:
@@ -186,6 +188,7 @@ class Member_Api(Member):
                 'amount': 0.0 }
             # print('last_payment', last_payment)
             dico = {
+                'id': self.data['id'],
                 'openid': self.data['openid'],           #  "ozckH0TkSadGgyeAb5Bn390qQMa8",   // the only and unique ID of a member.
                 'avatarUrl': self.data['avatar_url'],      # "https://wx.qlogo.cn/mmopen/vi_32/GPm0HkJtcIsWkZmVNaxJP19ibl1g2YJTEibglP0UibOZstaRN1lbuMavu1a1Y795p6J1vHz0bM27icibCiat9ERricyng/0",    // member`s PICTURE
                 'basicInfo':
@@ -199,11 +202,13 @@ class Member_Api(Member):
                     },
                 'memberInfo':
                     {
+                        'status': self.data['status'],
+                        'email': self.data['email'],
                         'createTime': self.data['create_time'].strftime('%Y%m%d%H%M'), #'201505011522',        #// first time of member`s info creation in this system
                         'lastUpdate': self.data['last_update'].strftime('%Y%m%d%H%M'), #'201801011420',       #// last member information modification time
                         'lastActiveTime': self.data['last_active_time'].strftime('%Y%m%d%H%M') if self.data['last_active_time'] else "",  #"'201803021530',   #// last member active time (e.g: came to xinchejian and operate something)
                         'lastActiveType': 'tbd',  # ''Open the door/ paid for membership',    // lastest action type: opened the door or paid the membership or bought a drink from xcj
-                        'expireTime': '999912312359',       #// membership expire date and time
+                        'expireTime': self.validity,       #// membership expire date and time
                         'tags': tags,  # ['member', 'staff', 'manager', 'teacher', 'admin', 'cooperater', 'visiter'],       // member`s tag, to decide the priviledge of a member
                         'memo': ''         # for admin use: take extra notes, e.g:this member asked for refund.
                     },
@@ -221,3 +226,33 @@ class Member_Api(Member):
                 'data': {'missing key': str(err)}   # // you may put data at here,in json format.
             }
         return dumps(dico)
+
+    def from_json(self, json_data):
+        """Create a member from the information received by API"""
+        self.id = int(json_data['id'])
+        self.data = {
+            'id': self.id,
+            'openid': json_data['openid'],
+            'avatar_url': json_data['avatarUrl'],
+            # 'basicInfo:
+            'status': json_data['basicInfo']['status'],
+            'email': json_data['basicInfo']['email'],
+            'city': json_data['basicInfo']['city'],
+            'country': json_data['basicInfo']['country'],
+            'gender': json_data['basicInfo']['gender'],
+            'language': json_data['basicInfo']['language'],    # "zh_CN",
+            'username': json_data['basicInfo']['nickName'],
+            'province': json_data['basicInfo']['province'],
+            # 'memberInfo':
+            'create_time': datetime.strptime(json_data['memberInfo']['createTime'], '%Y%m%d%H%M'), #'201505011522',        #// first time of member`s info creation in this system
+            'last_update': datetime.strptime(json_data['memberInfo']['lastUpdate'], '%Y%m%d%H%M'), #'201801011420',       #// last member information modification time
+            'last_active_time': datetime.strptime(json_data['memberInfo']['lastActiveTime'], '%Y%m%d%H%M') if json_data['memberInfo']['lastActiveTime'] else "",
+            'role': self.ROLE[json_data['memberInfo']['tags'].upper()]
+            #'paymentInfo':
+            # {
+            #     'paidTime': '201803100956'
+            #     'payIndex': 'bla bla bla'
+            #     'CNYAmount': '100.00 CNY'
+            # }
+         }
+        self.validity = json_data['memberInfo']['expireTime']      #// membership expire date and time

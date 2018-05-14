@@ -10,13 +10,14 @@ import unittest
 import requests
 from datetime import datetime
 from member import Member
+from member_api import Member_Api
 from transaction import Transaction
 
 class TestApi(unittest.TestCase):
     """
     Perform various API calls to test their responses
     """
-    base_url = "http://127.0.0.1:8080/api/v1.0"
+    base_url = "http://10.0.0.120:8080/api/v1.0"
 
     def print_JSON(self, obj, tab_level=1, title=""):
         """Display a JSON object to allow easy reading"""
@@ -31,15 +32,39 @@ class TestApi(unittest.TestCase):
                 print('\t'*tab_level, "'{}': '{}'".format(k, v))
         if tab_level == 1: print('}\n')
 
+    def test_get_by_id_1(self):
+        """GET the Admin profile - id=1"""
+        url = "{}/member/{}".format(self.base_url, 1)
+        print("Path:", url)
+        response = requests.get(url)
+        self.assertEqual(200, response.status_code)
+        admin = response.json()
+        self.print_JSON(admin, title="test_get_by_id_1:")
+        self.assertEqual(admin['basicInfo']['nickName'], "admin")
+
     def test_get_by_openid_1(self):
         """GET the Admin profile - openid=1"""
-        url = "{}/member/openid/{}".format(self.base_url, 1)
+        url = "{}/member/openid/{}".format(self.base_url, "a3c56532")
         print("Path:", url)
         response = requests.get(url)
         self.assertEqual(200, response.status_code)
         admin = response.json()
         self.print_JSON(admin, title="test_get_by_openid_1:")
         self.assertEqual(admin['basicInfo']['nickName'], "admin")
+
+    def test_from_json_by_openid_1(self):
+        """GET the Admin profile - openid=1"""
+        url = "{}/member/openid/{}".format(self.base_url, "a3c56532")
+        print("Path:", url)
+        response = requests.get(url)
+        self.assertEqual(200, response.status_code)
+        admin = response.json()
+        self.print_JSON(admin, title="test_from_json_by_openid_1:")
+        self.assertEqual(admin['basicInfo']['nickName'], "admin")
+        m = Member_Api()
+        m.from_json(admin)
+        self.assertEqual(m.id, 1)
+        self.assertEqual(m['username'], "admin")
 
     def test_get_by_openid_unknown(self):
         """Negative Test: GET unknown Member to check the returned response object in error"""

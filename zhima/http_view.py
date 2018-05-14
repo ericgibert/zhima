@@ -6,7 +6,7 @@
 
 """
 __author__ = "Eric Gibert"
-__version__ = "1.0.20180415 Hyderabad"
+__version__ = "1.0.20180514 Hong Kong"
 __email__ =  "ericgibert@yahoo.fr"
 __license__ = "MIT"
 import sys
@@ -321,9 +321,16 @@ def img(filepath):
     return static_file(filepath, root="images")
 
 ###  APIs
+@http_view.get('/api/v1.0/member/<id>')
+@whitelisted
+def get_member_by_id(id):
+    """Return a Member JSON object based on a member db record and its last transaction"""
+    member = Member_Api(id=id)
+    return member.to_json()
+
 @http_view.get('/api/v1.0/member/openid/<openid>')
 @whitelisted
-def get_member(openid):
+def get_member_by_openid(openid):
     """Return a Member JSON object based on a member db record and its last transaction"""
     member = Member_Api(openid=openid)
     return member.to_json()
@@ -343,7 +350,7 @@ def upd_member(openid):
             for field in [f for f in operations['data'] if f in Member_Api.API_MAPPING_TO_DB]:
                 upd_fields[Member_Api.API_MAPPING_TO_DB[field]] = operations['data'][field]
             if upd_fields:
-                print("Update", openid, "with", upd_fields)
+                if http_view.controller.debug: print("Update", openid, "with", upd_fields)
                 result = member.update(**upd_fields)
         elif operations['op'] == "add": # add a new payment record
             result = member.add_payment(operations['data'])
@@ -355,7 +362,7 @@ def upd_member(openid):
 @whitelisted
 def add_member():
     member = Member_Api() # empty new member
-    result = member.from_json(request.json)
+    result = member.create_from_json(request.json)
     return result
 
 @http_view.post('/api/v1.0/open/seconds')
@@ -373,22 +380,36 @@ def open_door():
     else:
         return dumps({ "errno": 1998, 'errmsg': "Incorrect call to open the door:" + str(request.json.get('seconds')), 'data': {} })
 
+@http_view.post('/api/v1.0/log/add')
+@whitelisted
+def add_log():
+    """Add a log record to the table
+    Expects:
+    {
+        log_type, code, message, debug
+    }
+    """
+    log = request.json
+    log_id = http_view.controller.db.log(log["log_type"], log["code"], log["msg"], log.get("debug", http_view.controller.debug))
+    return HTTPResponse(status=201, body='log entry {} inserted'.format(log_id))
 
 if __name__ == "__main__":
     from model_db import Database
     class ctrl:
-        def __init__(self, db):
+        def __init__(self, db, debug):
             self.db = db
-    http_view.controller = ctrl(Database())
+            self.debug = debug
 
     parser = argparse.ArgumentParser()
     parser.add_argument("-b", "--bottle", dest="bottle_ip", help="Optional: Raspberry Pi IP address to allow remote connections", required=False,  default="127.0.0.1")
     parser.add_argument("-p", "--port", dest="port", help="Optional: port for HTTP (8080: test / 80: PROD)", required=False,  default=8080, type=int)
     parser.add_argument('-v', '--version', action='version', version=__version__)
+    parser.add_argument('-d', '--debug', dest='debug', help='debug mode - kep photos', action='store_true', default=False)
     # parser.add_argument('config_file', nargs='?', default='')
     args, unk = parser.parse_known_args()
 
     with open("http_view.pid", "wt") as fpid:
         print(getpid(), file=fpid)
 
+    http_view.controller = ctrl(Database(), args.debug)
     http_view.run(host=args.bottle_ip, port=args.port)
