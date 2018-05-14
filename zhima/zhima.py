@@ -94,7 +94,9 @@ class Controller(object):
         }
         response = requests.post(url, json=payload)
         if response.status_code == 201:
-            if self.debug: print(response.text)
+            if self.debug:
+                print(payload)
+                print(response.text)
         else:
             print("Cannot create Log entry", response.status_code)
 

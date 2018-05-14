@@ -390,7 +390,7 @@ def add_log():
     }
     """
     log = request.json
-    log_id = http_view.controller.db.log(log["log_type"], log["code"], log["msg"], log.get("debug", http_view.controller.debug))
+    log_id = http_view.controller.db.log(log["log_type"], log["code"], log["msg"], http_view.controller.debug)
     return HTTPResponse(status=201, body='log entry {} inserted'.format(log_id))
 
 if __name__ == "__main__":
