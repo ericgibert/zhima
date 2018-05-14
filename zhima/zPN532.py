@@ -472,7 +472,8 @@ class PN532(object):
         # Check frame checksum value matches bytes.
         checksum = reduce(self._uint8_add, response[offset+2:offset+2+frame_len+1], 0)
         if checksum != 0:
-            raise RuntimeError('Response checksum did not match expected value!')
+            # raise RuntimeError('Response checksum did not match expected value!')
+            print(('Response checksum did not match expected value!'))
         # Return frame data.
         return response[offset+2:offset+2+frame_len]
 

@@ -44,6 +44,7 @@ def whitelisted(callback):
         if request.remote_addr in http_view.controller.db.access['whitelist']:
             return callback(*args, **kwargs)
         else:
+            print("Unauthorized access from", request.remote_addr)
             return HTTPResponse(status=403, body='<h3>Sorry, you are not authorized to perform this action</h3>WL: ' + request.urlparts.hostname)
     return wrapper
 
