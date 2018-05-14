@@ -228,7 +228,8 @@ class Member_Api(Member):
 
     def from_json(self, json_data):
         """Create a member from the information received by API"""
-        self.id = int(json_data['id'])
+        self.id = json_data.get('id')
+        if self.id is None: return
         self.data = {
             'id': self.id,
             'openid': json_data['openid'],
