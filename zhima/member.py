@@ -260,3 +260,8 @@ if __name__ == "__main__":
     m = Member(qrcode=qr_code3)
     print(m["username"], m["gender"], m.qrcode_is_valid)
     assert(m["gender"] == 5)
+
+    print('-' * 20)
+    print("test by openid")
+    m = Member(openid="a3c56532")
+    print("Found in db:", m['username'], m.birthdate, m['status'])
