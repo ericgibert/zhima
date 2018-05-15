@@ -24,6 +24,7 @@ class Database():
     login = None
     passwd = None
     server_ip = None
+    db_server = None
     key = None
     mailbox = {}
 
@@ -52,7 +53,8 @@ class Database():
                 Database.dbname = self.access[ip_3]["dbname"]
                 Database.login = self.access[ip_3]["login"]
                 Database.passwd = self.access[ip_3]["passwd"]
-                Database.server_ip = "localhost" if my_IP==self.access[ip_3]["server_ip"] else self.access[ip_3]["server_ip"]
+                Database.db_server = "localhost" if my_IP==self.access[ip_3]["server_ip"] else self.access[ip_3]["server_ip"]
+                Database.server_ip = self.access[ip_3]["server_ip"]  # "localhost" if my_IP==self.access[ip_3]["server_ip"] else self.access[ip_3]["server_ip"]
                 Database.key = self.access["key"].encode("utf-8")
                 Database.mailbox = self.access.get("mailbox")
             except KeyError as err:
@@ -64,7 +66,7 @@ class Database():
     def fetch(self, sql, params = (), one_only=True):
         """execute a SELECT statement with the parameters and fetch row/rows"""
         try:
-            with pymysql.connect(Database.server_ip, Database.login, Database.passwd, Database.dbname).cursor(OrderedDictCursor) as cursor:
+            with pymysql.connect(Database.db_server, Database.login, Database.passwd, Database.dbname).cursor(OrderedDictCursor) as cursor:
                 cursor.execute(sql, params)
                 data = cursor.fetchone() if one_only else cursor.fetchall()
         except (pymysql.err.OperationalError, pymysql.err.ProgrammingError) as err:
@@ -97,7 +99,7 @@ class Database():
     def execute_sql(self, sql, params):
         """Generic SQL statement execution"""
         try:
-            with pymysql.connect(Database.server_ip, Database.login, Database.passwd, Database.dbname) as cursor:
+            with pymysql.connect(Database.db_server, Database.login, Database.passwd, Database.dbname) as cursor:
                 cursor.execute(sql, params)
                 return cursor.lastrowid
         except (TypeError, ValueError, pymysql.err.OperationalError) as err:
