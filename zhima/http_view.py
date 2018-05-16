@@ -122,7 +122,7 @@ def get_member(id):
     member = Member(id)
     qr_file = "images/XCJ_{}.png".format(id)
     if member['status'] == "OK":
-        qrcode_text = member.encode_qrcode()
+        qrcode_text = member.encode_qrcode(version=1)
         img = make_qrcode(qrcode_text)
         img.save(qr_file)
     else:
