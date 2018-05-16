@@ -171,7 +171,7 @@ class Controller(object):
         return 3 if self.qr_codes else 1  # qr_codes is a list --> 3, might be an empty one --> back to 1
 
     def double_sandwich(self):
-        """Check if we need to give 6 months registration"""
+        """Check if we need to give 6 months membership registration"""
         try:
             m1, m2, m3, m4 = [m for t,m in self.last_entries[:4]]
         except ValueError:
@@ -182,7 +182,7 @@ class Controller(object):
             return False
 
     def single_sandwich(self):
-        """Check if we need to give 6 months registration"""
+        """Check if we need to give 1 month membership registration"""
         try:
             m1, m2, m3 = [m for t,m in self.last_entries[:3]]
         except ValueError:
@@ -202,7 +202,11 @@ class Controller(object):
         timestamp1, member_to_upd = self.last_entries[1]
         timestamp0, staff_member = self.last_entries[0]
         new_validity = datetime.strptime(member_to_upd.validity, "%Y-%m-%d") + timedelta(days=181 if size == 2 else 31)
+        # Add Transaction by API
+        # Perform the confirmation flashing
+        # Log payment
         msg += "{} until {:%Y-%m-%d} by staff {}".format(member_to_upd['username'], new_validity, staff_member['username'])
+        self.insert_log("PAY", 100 + size, msg)
         return msg
 
     def check_member(self):
@@ -235,12 +239,10 @@ class Controller(object):
         if self.member.id:
             self.last_entries.add( (datetime.now(), self.member) )  # stack for sandwich checking
             if self.double_sandwich():
-                self.insert_log("PAY", 102, self.eat_sandwich(size=2))
+                self.eat_sandwich(size=2)
             elif self.single_sandwich():
-                self.insert_log("PAY", 101, self.eat_sandwich(size=1))
-            elif self.debug:
-                print("no sandwich")
-            if self.uid or self.member.qrcode_is_valid:
+                self.eat_sandwich(size=1)
+            elif self.uid or self.member.qrcode_is_valid:
                 if self.member['status'].upper() in ("OK", "ACTIVE", "ENROLLED"):
                     msg = "Welcome {} - {}".format(self.member['username'],
                                                    "RFID {}".format(self.uid) if self.uid else "QR v{}".format(self.member.qrcode_version))
@@ -363,9 +365,6 @@ class Controller(object):
         self.gpio.green2.flash("SET", on_duration=0.3, off_duration=0.3)
         self.gpio.red.flash("SET", on_duration=0.3, off_duration=0.3)
         sleep(3)
-        self.gpio.green1.OFF()
-        self.gpio.green1.OFF()
-        self.gpio.green1.OFF()
         return 1
 
 if __name__ == "__main__":
