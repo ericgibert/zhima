@@ -202,12 +202,33 @@ class Controller(object):
         timestamp1, member_to_upd = self.last_entries[1]
         timestamp0, staff_member = self.last_entries[0]
         new_validity = datetime.strptime(member_to_upd.validity, "%Y-%m-%d") + timedelta(days=181 if size == 2 else 31)
-        # Add Transaction by API
-        # Perform the confirmation flashing
-        # Log payment
         msg += "{} until {:%Y-%m-%d} by staff {}".format(member_to_upd['username'], new_validity, staff_member['username'])
-        self.insert_log("PAY", 100 + size, msg)
-        return msg
+        # Add Transaction by API
+        url = "{}/member/openid/{}".format(self.base_api_url, self.member["openid"])
+        print("Path:", url)
+        patch = {
+            "op": "add",
+            "data": {
+                'paidTime': datetime.now().strftime('%Y%m%d%H%M'), # '201803121929',
+                'payIndex': msg,
+                'CNYAmount': 200.00 if size==1 else 450.00,
+                'payType': '1M MEBERSHIP' if size == 1 else '6M MEBERSHIP'
+            }
+        }
+        response = requests.patch(url, json=patch)
+        if response.status_code == 200:
+            result = response.json()
+            if result.data['errno'] == 1000:
+                # Perform the confirmation flashing
+                self.gpio.green1.flash("SET", on_duration=1, off_duration=1)
+                self.gpio.green2.flash("SET", on_duration=1, off_duration=1)
+                self.gpio.red.flash("SET", on_duration=1, off_duration=1)
+                for i in range(size * 2):
+                        sleep(1)
+                # Log payment
+                self.insert_log("PAY", 100 + size, msg)
+                return 1
+        return 99 
 
     def check_member(self):
         """State 3: a QR Code is found: check it against the member database"""
@@ -239,9 +260,9 @@ class Controller(object):
         if self.member.id:
             self.last_entries.add( (datetime.now(), self.member) )  # stack for sandwich checking
             if self.double_sandwich():
-                self.eat_sandwich(size=2)
+                return self.eat_sandwich(size=2)
             elif self.single_sandwich():
-                self.eat_sandwich(size=1)
+                return self.eat_sandwich(size=1)
             elif self.uid or self.member.qrcode_is_valid:
                 if self.member['status'].upper() in ("OK", "ACTIVE", "ENROLLED"):
                     msg = "Welcome {} - {}".format(self.member['username'],
