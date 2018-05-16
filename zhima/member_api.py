@@ -86,6 +86,7 @@ class Member_Api(Member):
 
     def _add_payment(self, data, until_days):
         """Insert a transaction record based on the data received from API"""
+        self.set_validity()
         payment = Transaction(member_id=self.id)
         from_date = datetime.strptime(max(data['paidTime'], self.validity), '%Y%m%d%H%M')
         until_date = from_date + timedelta(days=until_days)
@@ -99,7 +100,8 @@ class Member_Api(Member):
             'created_on': datetime.now()
         }
         result = payment.insert('transactions', **data)
-        if result: payment.update_member_status(self.id)
+        if result:
+            payment.update_member_status(self.id)
         return result
 
 
