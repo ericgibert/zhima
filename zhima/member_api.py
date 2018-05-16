@@ -84,16 +84,18 @@ class Member_Api(Member):
             result = {'errno': '1004', 'errmsg': "Update user record error", 'data': {'upd_fields:': list(kwargs.items())} }
         return dumps(result)
 
-    def _add_payment(self, data):
+    def _add_payment(self, data, until_days):
         """Insert a transaction record based on the data received from API"""
         payment = Transaction(member_id=self.id)
+        from_date = max(datetime.strptime(data['paidTime'], '%Y%m%d%H%M'), self.validity)
+        until_date = from_date + timedelta(days=until_days)
         data = {
             'member_id': self.id,
             'type': data.get('payType') or '1M MEMBERSHIP',
             'description': data['payIndex'],
             'amount': data['CNYAmount'], 'currency':'CNY',
-            'valid_from': datetime.strptime(data['paidTime'], '%Y%m%d%H%M'),
-            'valid_until': date.today()+timedelta(days=31),
+            'valid_from': from_date,
+            'valid_until': until_date,
             'created_on': datetime.now()
         }
         result = payment.insert('transactions', **data)
@@ -102,9 +104,9 @@ class Member_Api(Member):
 
 
     def add_payment(self, data):
-        last_row_id = self._add_payment(data)
+        last_row_id = self._add_payment(data, date.get("until_days", 31))
         if last_row_id:
-            result = {'errno': '1000', 'errmsg': "Success", 'data': {'add_payment:': list(data.keys())} }
+            result = {'errno': '1000', 'errmsg': "Success", 'data': {'id': last_row_id, 'add_payment:': list(data.keys())} }
         else:
             result = {'errno': '1005', 'errmsg': "Add transaction record error", 'data': {'add_payment:': list(data.items())} }
         return dumps(result)

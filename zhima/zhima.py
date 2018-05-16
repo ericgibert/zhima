@@ -198,27 +198,28 @@ class Controller(object):
             +31 days for single
             +181 days for double
         """
-        msg = "** Double Sandwich ** " if size == 2 else "* Single Sandwich ** "
+        msg = "** Double Sandwich ** " if size == 2 else "* Single Sandwich * "
         timestamp1, member_to_upd = self.last_entries[1]
         timestamp0, staff_member = self.last_entries[0]
+        amount = 200.00 if size==1 else 450.00
         new_validity = datetime.strptime(member_to_upd.validity, "%Y-%m-%d") + timedelta(days=181 if size == 2 else 31)
-        msg += "{} until {:%Y-%m-%d} by staff {}".format(member_to_upd['username'], new_validity, staff_member['username'])
+        msg += "{}CNY from {} until {:%Y-%m-%d} by staff {}".format(amount, member_to_upd['username'], new_validity, staff_member['username'])
         # Add Transaction by API
-        url = "{}/member/openid/{}".format(self.base_api_url, self.member["openid"])
-        print("Path:", url)
+        url = "{}/member/openid/{}".format(self.base_api_url, member_to_upd["openid"])
         patch = {
             "op": "add",
             "data": {
                 'paidTime': datetime.now().strftime('%Y%m%d%H%M'), # '201803121929',
                 'payIndex': msg,
-                'CNYAmount': 200.00 if size==1 else 450.00,
+                'CNYAmount': amount,
                 'payType': '1M MEBERSHIP' if size == 1 else '6M MEBERSHIP'
             }
         }
         response = requests.patch(url, json=patch)
         if response.status_code == 200:
             result = response.json()
-            if result.data['errno'] == 1000:
+            print(result)
+            if int(result['errno']) == 1000:
                 # Perform the confirmation flashing
                 self.gpio.green1.flash("SET", on_duration=1, off_duration=1)
                 self.gpio.green2.flash("SET", on_duration=1, off_duration=1)
@@ -228,6 +229,10 @@ class Controller(object):
                 # Log payment
                 self.insert_log("PAY", 100 + size, msg)
                 return 1
+            else:
+                self.insert_log("PAY", -100 - size, "Failed record payment: {} ({})".format(msg, result['errmsg']))
+        else:
+            self.insert_log("PAY", -100 - size, "Failed record payment: {} ({})".format(msg, response.status_code))
         return 99 
 
     def check_member(self):
