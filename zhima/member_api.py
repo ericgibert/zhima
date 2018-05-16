@@ -104,7 +104,7 @@ class Member_Api(Member):
 
 
     def add_payment(self, data):
-        last_row_id = self._add_payment(data, date.get("until_days", 31))
+        last_row_id = self._add_payment(data, data.get("until_days", 31))
         if last_row_id:
             result = {'errno': '1000', 'errmsg': "Success", 'data': {'id': last_row_id, 'add_payment:': list(data.keys())} }
         else:

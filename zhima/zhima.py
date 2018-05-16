@@ -202,7 +202,8 @@ class Controller(object):
         timestamp1, member_to_upd = self.last_entries[1]
         timestamp0, staff_member = self.last_entries[0]
         amount = 200.00 if size==1 else 450.00
-        new_validity = datetime.strptime(member_to_upd.validity, "%Y-%m-%d") + timedelta(days=181 if size == 2 else 31)
+        until_days = 181 if size == 2 else 31
+        new_validity = datetime.strptime(member_to_upd.validity, "%Y-%m-%d") + timedelta(days=until_days)
         msg += "{}CNY from {} until {:%Y-%m-%d} by staff {}".format(amount, member_to_upd['username'], new_validity, staff_member['username'])
         # Add Transaction by API
         url = "{}/member/openid/{}".format(self.base_api_url, member_to_upd["openid"])
@@ -212,7 +213,8 @@ class Controller(object):
                 'paidTime': datetime.now().strftime('%Y%m%d%H%M'), # '201803121929',
                 'payIndex': msg,
                 'CNYAmount': amount,
-                'payType': '1M MEBERSHIP' if size == 1 else '6M MEBERSHIP'
+                'payType': '1M MEBERSHIP' if size == 1 else '6M MEBERSHIP',
+                'until_days': until_days
             }
         }
         response = requests.patch(url, json=patch)
