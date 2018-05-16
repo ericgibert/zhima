@@ -89,7 +89,7 @@ class Member_Api(Member):
         self.set_validity()
         payment = Transaction(member_id=self.id)
         print("paidTime", data['paidTime'], "validity:", self.validity, "max:", max(data['paidTime'], self.validity))
-        from_date = datetime.strptime(max(data['paidTime'], self.validity), '%Y%m%d%H%M')
+        from_date = datetime.strptime(max(data['paidTime'], self.validity.replace('-','')+"0000"), '%Y%m%d%H%M')
         until_date = from_date + timedelta(days=until_days)
         data = {
             'member_id': self.id,
