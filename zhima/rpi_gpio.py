@@ -219,17 +219,21 @@ if __name__ == "__main__":
     my_pig.green1.ON()
     my_pig.red.ON()
     my_pig.green2.flash("SET", on_duration=0.5, off_duration=0.5)
+    my_pig.relay.ON()
 
     # Get the firmware version from the chip and print(it out.)
-    ic, ver, rev, support = my_pig.pn532.get_firmware_version()
-    print('Found PN532 with firmware version: {0}.{1}'.format(ver, rev))
+    if my_pig.pn532:
+        ic, ver, rev, support = my_pig.pn532.get_firmware_version()
+        print('Found PN532 with firmware version: {0}.{1}'.format(ver, rev))
+    else:
+        print("No PN532")
 
     def three_seconds():
         """pause for 3 seconds while checking for RFID card"""
         start = time()
         while time() - start <= 3:
             # Check if a card is available to read.
-            uid = my_pig.pn532.read_passive_target()
+            uid = my_pig.pn532.read_passive_target() if my_pig.pn532 else None
             # Try again if no card is available.
             if uid:
                 print('Found card with UID: 0x{0}'.format(binascii.hexlify(uid)))
