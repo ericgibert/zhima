@@ -354,8 +354,6 @@ def get_member_by_id(id):
 def get_member_by_openid(openid):
     """Return a Member JSON object based on a member db record and its last transaction"""
     member = Member_Api(openid=openid)
-    print("validity --->", member['validity'])
-    print(member.to_json())
     return member.to_json()
 
 @http_view.patch('/api/v1.0/member/openid/<openid>')
