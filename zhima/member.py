@@ -37,6 +37,15 @@ class Member(Database):
     - Database is super class to connect to the db itself and perform all SQL queries
     - Member (db.users) is master table to Transactions (db.transactions)
     """
+    MEMBERSHIP = [
+        ("1M MEMBERSHIP", "1 Month Membership", 200.00, 31),
+        ("6M MEMBERSHIP", "6 Months Membership", 900.00, 181),
+        ("DONATION", "Donation", 0.00, -1),
+        ("EVENT", "Event", 0.00, 1),
+        ("TOOL", "Tool Usage", 50.00, 181),
+        ("CROWD FUNDING", "Crowd Funding", 0.00, -1),
+    ]
+
     ROLE = {
         'VISITOR': 0,
         'MEMBER': 1,

@@ -61,13 +61,21 @@ class Transaction(Database):
         :param transac_id: int for transaction table key
         """
         super().__init__(table="transactions", *args, **kwargs)
+        self.MEMBERSHIP = Member.MEMBERSHIP
         if transac_id:
             self.get_from_db(transac_id)
         elif member_id:
+            member = Member(id=member_id)
+            default_membership = self.MEMBERSHIP[0]
+            valid_from = max(date.today(), member['validity'])
             self.data = OrderedDict([  #  ('id', None),
-                ('member_id', member_id), ('type','1M MEMBERSHIP'),
-                ('description', ""), ('amount', 100.0), ('currency', 'CNY'),
-                ('valid_from', date.today()), ('valid_until', date.today()+timedelta(days=31)),
+                ('member_id', member_id),
+                ('type', default_membership[0]),
+                ('description', ""),
+                ('amount', default_membership[2]),
+                ('currency', 'CNY'),
+                ('valid_from', valid_from),
+                ('valid_until', valid_from+timedelta(days=default_membership[3])),
                 ('created_on', datetime.now()) ])
         else:
             self.data = OrderedDict()

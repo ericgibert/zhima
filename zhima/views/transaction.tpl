@@ -17,12 +17,9 @@
     <tr><td style="text-align:right">{{k.replace('_', ' ').capitalize()}}</td>
         % if k == 'type':
         <td><select id="type" name="type" {{" readonly" if read_only or k in ro_fields else ""}} onchange="onChangeType(this)">
-            <option value="1M MEMBERSHIP">1 month membership</option>
-            <option value="6M MEMBERSHIP">6 months membership</option>
-            <option value="DONATION">Donation</option>
-            <option value="EVENT">Event</option>
-            <option value="TOOL">Tool Usage</option>
-            <option value="CROWD FUNDING">Crowd Funding</option>
+            % for m in transaction.MEMBERSHIP:
+                <option value="{{m[0]}}">{{m[1]}}</option>
+            %end
         </select></td>
         % else:
         <td><input type="text" size="40" value="{{v}}" name="{{k}}" id="{{k}}"{{" readonly" if read_only or k in ro_fields else ""}}
@@ -44,7 +41,7 @@
 % end
 <script type="text/javascript" language="javascript">
 window.addEventListener("load",function(){
-    document.getElementById("type").value = "{{transaction.data["type"] if "type" in transaction.data else ""}}";
+    document.getElementById("type").value = "{{transaction.data.get("type", "")}}";
 },false);
 
 function onChangeType(selectType)

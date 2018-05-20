@@ -18,7 +18,7 @@ Gr1 Gr2 Red
 
 """
 __author__ = "Eric Gibert"
-__version__ = "1.0.20180514 Hong Kong"
+__version__ = "1.0.20180520 Dong Bei"
 __email__ =  "ericgibert@yahoo.fr"
 __license__ = "MIT"
 
@@ -30,12 +30,10 @@ import argparse
 from time import sleep
 from camera import Camera
 from rpi_gpio import Rpi_Gpio
-# from member import Member
 from member_api import Member_Api
 from tokydoor import TokyDoor
 from model_db import Database
 from send_email import send_email
-# from http_view import http_view, stop as bottle_stop
 
 class myQ(list):
     """Simple queue implementation to keep track of the member's entries"""
@@ -201,10 +199,11 @@ class Controller(object):
         msg = "** Double Sandwich ** " if size == 2 else "* Single Sandwich * "
         timestamp1, member_to_upd = self.last_entries[1]
         timestamp0, staff_member = self.last_entries[0]
-        amount = 200.00 if size == 1 else 450.00
-        until_days = 181 if size == 2 else 31
+        membership = Member_Api.MEMBERSHIP[size - 1]  #  list starts at 0
+        amount = membership[2]
+        until_days = membership[3]
         new_validity = member_to_upd['validity'] + timedelta(days=until_days)
-        msg += "{}CNY from {} until {:%Y-%m-%d} by staff {}".format(amount, member_to_upd['username'], new_validity, staff_member['username'])
+        msg += "{}CNY received from {} until {:%Y-%m-%d} (staff {})".format(amount, member_to_upd['username'], new_validity, staff_member['username'])
         # Add Transaction by API
         url = "{}/member/openid/{}".format(self.base_api_url, member_to_upd["openid"])
         patch = {
@@ -213,7 +212,7 @@ class Controller(object):
                 'paidTime': datetime.now().strftime('%Y%m%d%H%M'), # '201803121929',
                 'payIndex': msg,
                 'CNYAmount': amount,
-                'payType': '1M MEBERSHIP' if size == 1 else '6M MEBERSHIP',
+                'payType': membership[0],
                 'until_days': until_days
             }
         }
