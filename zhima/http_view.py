@@ -16,9 +16,8 @@ from json import dumps
 import argparse
 from collections import OrderedDict
 from datetime import datetime
-from time import sleep
 from bottle import Bottle, template, request, BaseTemplate, redirect, error, static_file, HTTPResponse
-from bottlesession import CookieSession, authenticator
+from bottlesession import authenticator, PickleSession
 from member import Member
 from member_api import Member_Api
 from make_qrcode import make_qrcode
@@ -27,7 +26,13 @@ from rpi_gpio import Rpi_Gpio
 from glob import glob
 from markdown import markdown
 
-session_manager = CookieSession(cookie_expires=30 * 60, secret="huitchar")    #  NOTE: you should specify a secret
+
+session_manager = PickleSession(session_dir=r"../Private/sessions", cookie_expires=12 * 3600)
+#  NOTE: must amend the bottlesession.py script to declare files as binary as follow:
+#
+#  line 116:        with open(filename, 'rb') as fp:
+#  line 124:        with open(tmpName, 'wb') as fp:
+
 valid_user = authenticator(session_manager)
 
 http_view = Bottle()
@@ -122,7 +127,7 @@ def get_member(id):
     member = Member(id)
     qr_file = "images/XCJ_{}.png".format(id)
     if member['status'] == "OK":
-        qrcode_text = member.encode_qrcode(version=1)
+        qrcode_text = member.encode_qrcode()
         img = make_qrcode(qrcode_text)
         img.save(qr_file)
     else:
@@ -143,7 +148,7 @@ def upd_member(id):
     """update a member database record - Post the modified data from the form above"""
     if str(id) not in request.forms.get('id', '0'):
         return "<h1>Error - The form's id is not the same as the id on the link</h1>"
-    CANT_UPD_FIELDS = ('submit', 'id', 'passwdchk')
+    CANT_UPD_FIELDS = ('submit', 'id', 'passwdchk', 'validity')
     member = Member(id)  # get current db record or an empty member if id==0
     # force username to lower case and ensure its unicity:
     try:
@@ -201,12 +206,31 @@ def get_transaction(member_id, id=0):
         read_only = False
     return template("transaction", transaction=transaction, read_only=read_only, session=session_manager.get_session())
 
+@http_view.get('/transaction/update/<id:int>')
+@need_admin
+def upd_transaction(id=0):
+    if id:
+        transaction = Transaction(id)
+    return template("transaction", transaction=transaction, read_only=False, session=session_manager.get_session())
+
 @http_view.post('/transaction/add')
 @need_admin
 def add_transaction():
     transaction = Transaction()
-    if request.forms.get('id', '') == '':
-        member_id = int(request.forms['member_id'])
+    member_id = int(request.forms['member_id'])
+    id = request.forms.get('id')
+    if id:
+        transaction.update(
+            id = id,
+            type = request.forms['type'],
+            description = request.forms['description'],
+            amount = float(request.forms['amount']),
+            currency = request.forms['currency'],
+            valid_from = request.forms['valid_from'],
+            valid_until = request.forms['valid_until'],
+            created_on = datetime.now()
+        )
+    else:
         id = transaction.insert('transactions',
                                 member_id = member_id,
                                 type = request.forms['type'],
@@ -218,8 +242,7 @@ def add_transaction():
                                 created_on = datetime.now()
                               )
         transaction.update_member_status(member_id)
-        redirect("/transaction/{}/{}".format(member_id, id))
-    return template("transaction", transaction=transaction, read_only=True, session=session_manager.get_session())
+    redirect("/transaction/{}/{}".format(member_id, id))
 
 @http_view.get('/transaction/qrcode/<id:int>')
 def make_event_qrcode(id):
@@ -228,9 +251,7 @@ def make_event_qrcode(id):
     event_member = Member(id=trans["member_id"])
     if event_member["status"] == "OK" and event_member["gender"] == 5:
         # use the event_member to set all necessary information to generate a QR Code Version 3
-        event_member.birthdate = trans["valid_from"]
-        event_member.validity = trans["valid_until"]
-        qrcode = event_member.encode_qrcode(version=3)
+        qrcode = event_member.encode_qrcode(version=3, from_date=trans["valid_from"], until_date=trans["valid_until"])
         img_qrcode = make_qrcode(qrcode)
         qr_file = "images/XCJevent_{}.png".format(id)
         img_qrcode.save(qr_file)

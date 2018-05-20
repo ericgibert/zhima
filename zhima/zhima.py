@@ -165,7 +165,7 @@ class Controller(object):
         self.gpio.green1.ON()
         self.gpio.green2.flash("SET", on_duration=0.5, off_duration=0.5)
         self.gpio.red.OFF()
-        self.qr_codes = self.camera.get_QRcode(debug=self.debug) if self.camera else []
+        self.qr_codes = self.camera.get_QRcode(max_photos=2, debug=self.debug) if self.camera else []
         if self.qr_codes is None:  # webcam is not working: panic mode: all LED flashing!
             return 99
         return 3 if self.qr_codes else 1  # qr_codes is a list --> 3, might be an empty one --> back to 1
@@ -201,9 +201,9 @@ class Controller(object):
         msg = "** Double Sandwich ** " if size == 2 else "* Single Sandwich * "
         timestamp1, member_to_upd = self.last_entries[1]
         timestamp0, staff_member = self.last_entries[0]
-        amount = 200.00 if size==1 else 450.00
+        amount = 200.00 if size == 1 else 450.00
         until_days = 181 if size == 2 else 31
-        new_validity = datetime.strptime(member_to_upd.validity, "%Y-%m-%d") + timedelta(days=until_days)
+        new_validity = member_to_upd['validity'] + timedelta(days=until_days)
         msg += "{}CNY from {} until {:%Y-%m-%d} by staff {}".format(amount, member_to_upd['username'], new_validity, staff_member['username'])
         # Add Transaction by API
         url = "{}/member/openid/{}".format(self.base_api_url, member_to_upd["openid"])
@@ -251,16 +251,18 @@ class Controller(object):
             self.member.id = self.member.decode_qrcode(self.qr_codes[0])
             if self.member.id:
                 url = "{}/member/{}".format(self.base_api_url, self.member.id)
-                j_data = requests.get(url).json()
-                self.member.from_json(j_data)
+                response = requests.get(url)
+                if response.status_code == 200:
+                    self.member.from_json(response.json())
             else:
                 self.insert_log("ERROR", -1000, "Non XCJ QR Code or No member found for: {}".format(self.qr_codes[0].decode("utf-8")))
         elif self.uid:
             # try by RFID UID
             # self.member = Member(openid=self.uid)
             url = "{}/member/openid/{}".format(self.base_api_url, self.uid)
-            j_data = requests.get(url).json()
-            self.member.from_json(j_data)
+            response = requests.get(url)
+            if response.status_code == 200:
+                self.member.from_json(response.json())
             if self.member.id is None:
                 self.insert_log("ERROR", -1010, "Non XCJ registered RFID card: {}".format(self.uid))
         # if we have a member, let's check its status to open the door

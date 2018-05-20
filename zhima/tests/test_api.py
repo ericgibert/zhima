@@ -17,7 +17,7 @@ class TestApi(unittest.TestCase):
     """
     Perform various API calls to test their responses
     """
-    base_url = "http://10.0.0.120:8080/api/v1.0"
+    base_url = "http://127.0.0.1:8080/api/v1.0"
 
     def print_JSON(self, obj, tab_level=1, title=""):
         """Display a JSON object to allow easy reading"""
@@ -104,7 +104,7 @@ class TestApi(unittest.TestCase):
         self.print_JSON(result, title="test_add_new_member:")
         self.assertEqual('1000', result['errno'])
         new_id = result['data']['new_id']
-        member = Member(new_id)
+        member = Member(new_id, db_access="../../Private/db_access.data")
         print("Created as [role:", member['role'], "] with status:", member["status"])
         self.assertEqual('NOT_OK', member["status"])
         if not keep_member: self.delete_member(new_id)
@@ -122,8 +122,8 @@ class TestApi(unittest.TestCase):
                 'nickName': "test_" + openid,
             },
             'paymentInfo': {
-                'paidTime': '201803121929',
-                'payIndex': '9cu293820xxjfiuewfdsfdse32',
+                'paidTime': '{0:%Y%m%d%H%M}'.format(datetime.today()),
+                'payIndex': 'membership 1 month',
                 'CNYAmount': 3200.00,
             }
         }
@@ -133,7 +133,7 @@ class TestApi(unittest.TestCase):
         self.print_JSON(result, title="test_add_new_member_with_payment:")
         self.assertEqual('1000', result['errno'])
         new_id = result['data']['new_id']
-        member = Member(new_id)
+        member = Member(new_id, db_access="../../Private/db_access.data")
         print("Created as [role:", member['role'], "] with status:", member["status"])
         self.assertEqual('OK', member["status"])
         print("Transaction:", member.transactions)
@@ -223,9 +223,7 @@ class TestApi(unittest.TestCase):
         """Positive test: add a payment to a new Member"""
         # create a member
         new_id = self.test_add_new_member(keep_member=True)
-        member = Member(id=new_id)
-        current_avatarUrl = member["avatar_url"]
-        current_username = member["username"]
+        member = Member(id=new_id, db_access="../../Private/db_access.data")
         # call update API
         url = "{}/member/openid/{}".format(self.base_url, member["openid"])
         print("Path:", url)
@@ -243,7 +241,7 @@ class TestApi(unittest.TestCase):
         result = response.json()
         self.print_JSON(result, title="test_add_payment:")
         # fetch record again
-        member = Member(id=new_id)
+        member = Member(id=new_id, db_access="../../Private/db_access.data")
         print(member.transactions)
         if not keep_member: self.delete_member(new_id)
 

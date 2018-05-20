@@ -43,7 +43,8 @@ class Database():
         self.table = table
         if self.dbname is None:
             # MySQL database parameters
-            with open("../Private/db_access.data") as json_file:
+            file_path = kwargs.get("db_access") or "../Private/db_access.data"
+            with open(file_path) as json_file:
                 self.access = json.load(json_file)
             my_IP = check_output(['hostname', '-I']).decode("utf-8").strip()
             ip_3 = '.'.join(my_IP.split('.')[:3])

@@ -108,7 +108,7 @@
 
 % if read_only:
     % if member.transactions:
-    <p>Membership valid until {{member.validity}}</p>
+    <p>Membership valid until {{member["validity"]}}</p>
     <style>
     table, td {
     border: 1px solid black;
@@ -121,9 +121,14 @@
         % end
         % for row in member.transactions:
         </tr><tr>
-            % for v in row.values():
-            <td>{{v}}</td>
+            % for k, v in row.items():
+                %if k=='id' and session['admin']:
+                <td><a href="/transaction/update/{{v}}">{{v}}</a></td>
+                %else:
+                <td>{{v}}</td>
+                %end
             % end
+
             % if member["status"] == "OK" and member["gender"] == 5:
             <td><a href="/transaction/qrcode/{{row['id']}}"><img src="/images/qr-code-icon.jpg" style="width:20px;height:20px;border:0;"></a></td>
             % end

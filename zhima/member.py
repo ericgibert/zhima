@@ -28,6 +28,7 @@ from datetime import datetime, timedelta, date
 from binascii import hexlify, unhexlify, Error as binascii_error
 from Crypto.Cipher import DES
 from model_db import Database
+import base64
 
 
 class Member(Database):
@@ -60,52 +61,28 @@ class Member(Database):
         super().__init__(table="users", *args, **kwargs)
         self.id, self.data, self.transactions = None, {}, []
         self.qrcode_version, self.qrcode_is_valid = '?', False
-        # try fetching a datanase record based on given parameters
+        # try fetching a database record based on given parameters
         if id:
             self.get_from_db(id)
         elif qrcode:
-            id = self.decode_qrcode(qrcode)  # which calls get_from_db if the QR code is valid
+            id = self.decode_qrcode(qrcode)
             self.get_from_db(id)
         elif 'openid' in kwargs:
-            result = self.select(columns='id', openid=kwargs['openid'])
-            try:
-                self.get_from_db(result['id'])
-            except TypeError:
-                self.data = {}
+            self.get_from_db(openid=kwargs['openid'])
 
-    def set_validity(self):
-        """
-        Check among the member's transactions if any transaction ends with 'MEMBERSHIP'.
-        Set 'self.validity' to the max(valid_until) of these memberships' transactions or yesterday
-        """
-        try:
-            row = self.fetch("""SELECT max(valid_until) as max_valid from transactions 
-                                where member_id=%s and RIGHT(type, 10)='MEMBERSHIP'""", (self.id,))
-            # print("- Valid until", row['max_valid'])
-            self.validity = '{0:%Y-%m-%d}'.format(row['max_valid'])
-        except (AttributeError, TypeError):
-            # if no membership found then validity==yesterday!
-            self.validity = '{0:%Y-%m-%d}'.format(datetime.today() - timedelta(days=1))
-
-    def get_from_db(self, member_id):
+    def get_from_db(self, id=None, **where):
         """Connects to the database to fetch a member table record or simulation
-
             - expects 'users.id' as parameter only
             - fetch matching record in 'users' table into the self.data dictionary
             - some other attributes are set for convenience:
                 - self.id == self.data['id'] == self['id']
-                - self.birthdate: datetime (not string)
                 - self.transactions --> fetch all records (0..N) from slave table 'transactions' (list)
-                - self.validity --> calculated: max(transaction.valid until) or yesterday (string YYYY-MM-DD)
+                - self.validity --> calculated: max(transaction.valid until) or yesterday (date)
         """
-        self.data = self.select(id=member_id)
+        self.data = self.select(id=id) if id else self.select(**where)
         try:
             self.id = self.data['id']
-            if isinstance(self.data['birthdate'], (datetime, date)):
-                self.birthdate = self.data['birthdate']
-            else:
-                self.birthdate = datetime.strptime(self.data['birthdate'], "%Y-%m-%d")
-            # fetch this member's transactions
+            # fetch all its transactions
             self.transactions = self.select('transactions',
                                                columns="""id, type, description, 
                                                        CONCAT(FORMAT(amount, 2), ' ', currency) as amount,
@@ -113,9 +90,11 @@ class Member(Database):
                                                one_only=False,
                                                order_by="created_on DESC",
                                                member_id=self.id)
-            self.set_validity()
-            if self.validity >= '{0:%Y-%m-%d}'.format(datetime.today()):
-                self.qrcode_is_valid = True
+            # calculate the validity
+            row = self.fetch("""SELECT max(valid_until) as max_valid from transactions 
+                                    where member_id=%s and RIGHT(type, 10)='MEMBERSHIP'""", (self.id,))
+            self.data['validity'] = row['max_valid'] or (date.today() - timedelta(days=1)) # if no membership found then validity==yesterday!
+            self.qrcode_is_valid = self['validity'] >= date.today()
         except (TypeError, KeyError):
             print("error assigning member information")
             self.id, self.data = None, {}
@@ -130,48 +109,47 @@ class Member(Database):
             qrcode = qrcode.decode("utf-8")
         print("Read QR code:", qrcode)
         self.qrcode_is_valid, member_id = False, None
-        #
         #   QR Code Version 1  -  no encryption
-        #
         #       XCJ1#123456#username
-        #       version #  member Id  #  member's username
-        #
         if qrcode.startswith("XCJ1"):
             try:
-                self.clear_qrcode = qrcode.split('#')  #     10
-                member_id = self.clear_qrcode[1]
-                self.qrcode_version = 1
-                print("Decoded QR Code V{}: {}".format(self.qrcode_version, self.clear_qrcode))
+                self.clear_qrcode = qrcode.split('#')
+                self.qrcode_version = int(self.clear_qrcode[0][3:])
+                member_id = int(self.clear_qrcode[1])
             except ValueError:
-                return None
-        else: #  QR Code Version > 1
+                member_id = None
+            print("Decoded QR Code V{}: {}".format(self.qrcode_version, self.clear_qrcode))
+        else:
+            #
+            #  QR Code Version > 1 ; encrypted
+            #
             des = DES.new(self.key, DES.MODE_ECB)
             try:
-                self.clear_qrcode = des.decrypt(unhexlify(qrcode)).decode("utf-8").strip().split('#') # XCJ2#123456#2015#2018-07-17
-                self.qrcode_version = int(self.clear_qrcode[0][3:])
-                print("Decoded QR Code V{}: {}".format(self.qrcode_version, self.clear_qrcode))
+                # self.clear_qrcode = des.decrypt(unhexlify(qrcode)).decode("utf-8").strip().split('#')
+                bcode = base64.decodebytes(qrcode.encode('utf-8'))
+                self.clear_qrcode = des.decrypt(bcode).decode('utf-8').strip().split('#')
             except (binascii_error, UnicodeDecodeError):
                 return None
-            else:
-                member_id = self.clear_qrcode[1]
+            try:
+                self.qrcode_version = int(self.clear_qrcode[0])
+                member_id = int(self.clear_qrcode[1])
+            except ValueError:
+                member_id = None
+            print("Decoded QR Code V{}: {}".format(self.qrcode_version, self.clear_qrcode))
         #
         # Validation of the decoded QR Code
         #
         if member_id:  #  NO MORE CALL -->   and self.get_from_db(member_id):
             self.qrcode_is_valid = True  # benefice of doubt...
-            if self.qrcode_version == 2:  # and self.birthdate:
-                # crc = self.birthdate.year ^ (self.birthdate.day*100 + self.birthdate.month)
-                # if int(self.clear_qrcode[2]) != crc:
-                #     print("Incorrect CRC based on birthdate", crc)
-                #     self.qrcode_is_valid = False
-                validity = datetime.strptime(self.clear_qrcode[3], "%Y-%m-%d" if len(self.clear_qrcode[3]) == 10 else "%Y-%m-%d %H:%M:%S")
+            if self.qrcode_version == 2:
+                validity = datetime.strptime(self.clear_qrcode[2], "%y%m%d")
                 print("QR code valid until", validity)
-                if datetime.now() > validity:
+                if datetime.today() > validity:
                     print("QR Code has expired.")
                     self.qrcode_is_valid = False
             elif self.qrcode_version == 3:
-                from_date, to_date = self.clear_qrcode[2], self.clear_qrcode[3]  #  'yyyy-mm-dd' strings
-                today = '{0:%Y-%m-%d}'.format(date.today())
+                from_date, to_date = self.clear_qrcode[2], self.clear_qrcode[3]  #  'YYMMDD' strings
+                today = '{0:%y%m%d}'.format(date.today())
                 self.qrcode_is_valid = ( from_date <= today <= to_date )
         return member_id if self.qrcode_is_valid else None
 
@@ -180,10 +158,14 @@ class Member(Database):
         des = DES.new(self.key, DES.MODE_ECB)
         qrcode = qrcode.encode("utf-8")                                 # str --> bytearray using UTF-8
         qrcode += ((((len(qrcode)+7) // 8) * 8) - len(qrcode)) * b' '   # pad with necessary number of b' '
-        encrypted_qrcode = hexlify(des.encrypt(qrcode))                 # crypto into a hexadecimal string
+        # print("to encrypt:", des.encrypt(qrcode))
+        # encrypted_qrcode = hexlify(des.encrypt(qrcode))                 # crypto into a hexadecimal string
+        # print("helexify", encrypted_qrcode)
+        encrypted_qrcode = base64.encodebytes(des.encrypt(qrcode))
+        # print("base64  ", encrypted_qrcode)
         return encrypted_qrcode
 
-    def encode_qrcode(self, version=2):
+    def encode_qrcode(self, version=2, from_date = None, until_date=None):
         """Encode this member's data into a QR Code string/payload
         :param version: defaulted to the latest version
         """
@@ -191,16 +173,14 @@ class Member(Database):
             #   XCJ1#123456#username
             return "XCJ{}#{}#{}".format(version, self.id, self['username'])
         elif version == 2:
-            #   XCJ2#123456#2015#2018-07-17
-            crc = self.birthdate.year ^ (self.birthdate.day*100 + self.birthdate.month)
-            self.set_validity()
-            qrcode = "XCJ{}#{}#{}#{}".format(version, self.id, crc, self.validity)
+            #   2#123456#YYMMDD
+            qrcode = "{}#{}#{}".format(version, self.id, '{0:%y%m%d}'.format(self["validity"]))
             return self.encrypt_qrcode(qrcode)
         elif version == 3:
-            #   XCJ3#123456#YYYYMMDD#YYYYMMDD    --> From/To dates of validity
-            from_date = '{0:%Y-%m-%d}'.format(self.birthdate)
-            to_date = self.validity
-            qrcode = "XCJ{}#{}#{}#{}".format(version, self.id, from_date, to_date)
+            #   3#123456#YYMMDD#YYMMDD    --> From/To dates of validity
+            from_date = '{0:%y%m%d}'.format(from_date or date.today())
+            to_date = '{0:%y%m%d}'.format(until_date or self["validity"])
+            qrcode = "{}#{}#{}#{}".format(version, self.id, from_date, to_date)
             return self.encrypt_qrcode(qrcode)
         else:
             return "Unknown Encoding Version {}".format(version)
@@ -211,7 +191,7 @@ class Member(Database):
 
 if __name__ == "__main__":
     m = Member(id=123456)
-    print("Found in db:", m['username'], m.birthdate, m['status'])
+    print("Found in db:", m['username'],  m['status'])  #m.birthdate,
     print("Make QR Code:", m.encode_qrcode())
     n = Member(qrcode=m.encode_qrcode(version=1))
     assert(str(m) == str(n))
@@ -224,6 +204,7 @@ if __name__ == "__main__":
     print('-' * 20)
     qr_v2 = m.encode_qrcode(version=2)
     o = Member(qrcode=qr_v2)
+    print(str(m) , str(o))
     assert(str(m) == str(o))
     print("m==o:", str(m) == str(o))
 
@@ -243,7 +224,7 @@ if __name__ == "__main__":
     print('-' * 20)
     print("# test the validity duration")
     m = Member(id=123459)  # no membership transaction record
-    print("Found in db:", m['username'], m.birthdate, m['status'])
+    print("Found in db:", m['username'],  m['status'])
     print("Make QR Code:", m.encode_qrcode())
     n = Member(qrcode=m.encode_qrcode())
     assert(str(m) == str(n))
@@ -253,15 +234,15 @@ if __name__ == "__main__":
     print("test QR code Version 3")
     m = Member(id=123457)
     print(m.transactions)
-    m.validity = date.today()
-    print(m.birthdate, m.validity)
+    # m.validity = date.today()
+    print("Validity:", m["validity"])  # m.birthdate,
     qr_code3 = m.encode_qrcode(version=3)
     print(qr_code3)
     m = Member(qrcode=qr_code3)
     print(m["username"], m["gender"], m.qrcode_is_valid)
-    assert(m["gender"] == 5)
+    # assert(m["gender"] == 5)
 
     print('-' * 20)
     print("test by openid")
     m = Member(openid="a3c56532")
-    print("Found in db:", m['username'], m.birthdate, m['status'])
+    print("Found in db:", m['username'], m['status'])

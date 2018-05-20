@@ -33,8 +33,10 @@
         % end
     % end
 </table>
-    % if "id" not in transaction.data or transaction.data['id'] is None:
-    <p>&nbsp;&nbsp;&nbsp;<input type="submit" value="Post" name="submit" /></p>
+    % if transaction.data.get('id') is None:
+    <p><input type="submit" value="Post" name="submit" /></p>
+    % elif not read_only:
+    <p><input type="submit" value="Update" name="submit" /></p>
     % end
 </form>
 % if "member_id" in transaction.data:
