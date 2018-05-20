@@ -215,7 +215,7 @@ class Member_Api(Member):
                         'lastUpdate': self.data['last_update'].strftime('%Y%m%d%H%M'), #'201801011420',       #// last member information modification time
                         'lastActiveTime': self.data['last_active_time'].strftime('%Y%m%d%H%M') if self.data['last_active_time'] else "",  #"'201803021530',   #// last member active time (e.g: came to xinchejian and operate something)
                         'lastActiveType': 'tbd',  # ''Open the door/ paid for membership',    // lastest action type: opened the door or paid the membership or bought a drink from xcj
-                        'expireTime': self['validity'].strftime('%Y%m%d%H%M'),       #// membership expire date and time
+                        'expireTime': self.data['validity'].strftime('%Y%m%d0000'),       #// membership expire date and time
                         'tags': tags,  # ['member', 'staff', 'manager', 'teacher', 'admin', 'cooperater', 'visiter'],       // member`s tag, to decide the priviledge of a member
                         'memo': ''         # for admin use: take extra notes, e.g:this member asked for refund.
                     },
@@ -238,6 +238,8 @@ class Member_Api(Member):
         """Create a member from the information received by API"""
         self.id = json_data.get('id')
         if self.id is None: return
+        expireTime = datetime.strptime(json_data['memberInfo']['expireTime'], '%Y%m%d%H%M')
+        # print("expireTime:", expireTime)
         self.data = {
             'id': self.id,
             'openid': json_data['openid'],
@@ -255,7 +257,8 @@ class Member_Api(Member):
             'create_time': datetime.strptime(json_data['memberInfo']['createTime'], '%Y%m%d%H%M'), #'201505011522',        #// first time of member`s info creation in this system
             'last_update': datetime.strptime(json_data['memberInfo']['lastUpdate'], '%Y%m%d%H%M'), #'201801011420',       #// last member information modification time
             'last_active_time': datetime.strptime(json_data['memberInfo']['lastActiveTime'], '%Y%m%d%H%M') if json_data['memberInfo']['lastActiveTime'] else "",
-            'role': self.ROLE[json_data['memberInfo']['tags'].upper()]
+            'role': self.ROLE[json_data['memberInfo']['tags'].upper()],
+            'validity': date(year=expireTime.year, month=expireTime.month, day=expireTime.day)
             #'paymentInfo':
             # {
             #     'paidTime': '201803100956'

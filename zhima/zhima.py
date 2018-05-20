@@ -254,6 +254,9 @@ class Controller(object):
                 response = requests.get(url)
                 if response.status_code == 200:
                     self.member.from_json(response.json())
+                    if self.debug: print(self.member)
+                else:
+                    self.insert_log("ERROR", -1399, "response: {} for {}".format(response.status_code, url))
             else:
                 self.insert_log("ERROR", -1000, "Non XCJ QR Code or No member found for: {}".format(self.qr_codes[0].decode("utf-8")))
         elif self.uid:
@@ -263,6 +266,9 @@ class Controller(object):
             response = requests.get(url)
             if response.status_code == 200:
                 self.member.from_json(response.json())
+                if self.debug: print(self.member)
+            else:
+                self.insert_log("ERROR", -1398, "response: {} for {}".format(response.status_code, url))
             if self.member.id is None:
                 self.insert_log("ERROR", -1010, "Non XCJ registered RFID card: {}".format(self.uid))
         # if we have a member, let's check its status to open the door

@@ -186,7 +186,7 @@ class Member(Database):
             return "Unknown Encoding Version {}".format(version)
 
     def __str__(self):
-        return "{} ({})".format(self['username'], self.id)
+        return "{} ({}) [{}]".format(self['username'], self.id, self['validity'])
 
 
 if __name__ == "__main__":
