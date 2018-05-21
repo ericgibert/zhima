@@ -31,10 +31,10 @@
         alert("Password cannot be be blank");
         return false;
       }
-      if (!isValidDate(document.forms["form"]["birthdate"].value)) {
-        alert(document.forms["form"]["birthdate"].value + " is not a valid birth date in the format YYYY-MM-DD");
-        return false;
-      }
+      //if (!isValidDate(document.forms["form"]["birthdate"].value)) {
+      //  alert(document.forms["form"]["birthdate"].value + " is not a valid birth date in the format YYYY-MM-DD");
+      //  return false;
+      //}
     }
     function isValidDate(date) {
         var temp = date.split('-');

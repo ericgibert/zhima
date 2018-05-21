@@ -104,8 +104,9 @@ class Member(Database):
                                     where member_id=%s and RIGHT(type, 10)='MEMBERSHIP'""", (self.id,))
             self.data['validity'] = row['max_valid'] or (date.today() - timedelta(days=1)) # if no membership found then validity==yesterday!
             self.qrcode_is_valid = self['validity'] >= date.today()
-        except (TypeError, KeyError):
+        except (TypeError, KeyError) as err:
             print("error assigning member information")
+            print(err)
             self.id, self.data = None, {}
         return self.id
 
@@ -137,7 +138,7 @@ class Member(Database):
                 # self.clear_qrcode = des.decrypt(unhexlify(qrcode)).decode("utf-8").strip().split('#')
                 bcode = base64.decodebytes(qrcode.encode('utf-8'))
                 self.clear_qrcode = des.decrypt(bcode).decode('utf-8').strip().split('#')
-            except (binascii_error, UnicodeDecodeError):
+            except (binascii_error, UnicodeDecodeError, ValueError):
                 return None
             try:
                 self.qrcode_version = int(self.clear_qrcode[0])

@@ -273,7 +273,7 @@ CREATE TABLE `users` (
   `passwd` varchar(50) NOT NULL,
   `avatar_url` varchar(256) DEFAULT NULL,
   `email` varchar(128) DEFAULT NULL,
-  `birthdate` date DEFAULT NULL,
+
   `status` varchar(20) DEFAULT NULL,
   `role` int(11) NOT NULL DEFAULT 0,
   `city` varchar(100) DEFAULT NULL,

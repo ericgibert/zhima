@@ -41,6 +41,7 @@ class Database():
 
         """
         self.table = table
+        self.debug = kwargs.get('debug', False)
         if self.dbname is None:
             # MySQL database parameters
             file_path = kwargs.get("db_access") or "../Private/db_access.data"
@@ -66,6 +67,8 @@ class Database():
 
     def fetch(self, sql, params = (), one_only=True):
         """execute a SELECT statement with the parameters and fetch row/rows"""
+        if self.debug:
+            print("Fetch:", sql, params)
         try:
             with pymysql.connect(Database.db_server, Database.login, Database.passwd, Database.dbname).cursor(OrderedDictCursor) as cursor:
                 cursor.execute(sql, params)
@@ -99,15 +102,19 @@ class Database():
 
     def execute_sql(self, sql, params):
         """Generic SQL statement execution"""
+        if self.debug:
+            print("Execute:", sql, params)
         try:
             with pymysql.connect(Database.db_server, Database.login, Database.passwd, Database.dbname) as cursor:
                 cursor.execute(sql, params)
-                return cursor.lastrowid
+                lastrow = cursor.lastrowid
         except (TypeError, ValueError, pymysql.err.OperationalError) as err:
             print('ERROR on sql execute:', err)
             print(sql)
             print(params)
-        return None
+            return None
+        else:
+            return lastrow
 
     def update(self, table=None, **kwargs):
         """

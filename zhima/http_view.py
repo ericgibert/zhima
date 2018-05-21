@@ -187,7 +187,7 @@ def new_form_member():
         ('passwd', ''),
         ('passwdchk', ''),
         ('email', ''),
-        ('birthdate', 'YYYY-MM-DD'),
+        # ('birthdate', 'YYYY-MM-DD'),
         ('status', 'OK'),
         ('role', 1),
         ('create_time', datetime.now()),
@@ -425,12 +425,12 @@ if __name__ == "__main__":
     parser.add_argument("-b", "--bottle", dest="bottle_ip", help="Optional: Raspberry Pi IP address to allow remote connections", required=False,  default="127.0.0.1")
     parser.add_argument("-p", "--port", dest="port", help="Optional: port for HTTP (8080: test / 80: PROD)", required=False,  default=8080, type=int)
     parser.add_argument('-v', '--version', action='version', version=__version__)
-    parser.add_argument('-d', '--debug', dest='debug', help='debug mode - kep photos', action='store_true', default=False)
+    parser.add_argument('-d', '--debug', dest='debug', help='debug mode - keep photos', action='store_true', default=False)
     # parser.add_argument('config_file', nargs='?', default='')
     args, unk = parser.parse_known_args()
 
     with open("http_view.pid", "wt") as fpid:
         print(getpid(), file=fpid)
 
-    http_view.controller = ctrl(Database(), args.debug)
+    http_view.controller = ctrl(Database(debug=args.debug), args.debug)
     http_view.run(host=args.bottle_ip, port=args.port)

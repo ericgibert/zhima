@@ -137,7 +137,7 @@ class Member_Api(Member):
                 'language': data['basicInfo'].get('language', ''),
                 'province': data['basicInfo'].get('province', ''),
                 # set by this function
-                'birthdate': '1970-01-01',
+                #'birthdate': '1970-01-01',
                 'passwd': "*A0F874BC7F54EE086FCE60A37CE7887D8B31086B",  # password123
                 'status': 'NOT_OK',
                 'role': role,
