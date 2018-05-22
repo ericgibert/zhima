@@ -30,16 +30,16 @@ for m in db.select(columns="id", one_only=False):
                 db.mailbox["username"],
                 (member['email'], ),
                 """
-Dear member,
+Dear {},
 
 This message to inform you that we noticed that your membership to Xin Che Jian hackerspace will expire on {}.
 
 Please approach one of our staff during your next visit to renew it.
 
 Looking forward seeing you @ XCJ!
-                """.format(member['validity']),
+                """.format(member['username'], member['validity']),
                 """
-<h3>Dear member,</h3>
+<h3>Dear {},</h3>
 <p>
 This message to inform you that we noticed that your membership to Xin Che Jian hackerspace will expire on <b>{}</b>.
 <br>
@@ -47,8 +47,8 @@ Please approach one of our staff during your next visit to renew it.
 <br>
 Looking forward seeing you @ XCJ!
 </p>
-    """.format(member['validity']),
-                [],
+    """.format(member['username'], member['validity']),
+                ["images/XCJ.png"],
                 db.mailbox["server"], db.mailbox['port'],
                 db.mailbox["username"], db.mailbox['password'],
                 debug=0
@@ -62,23 +62,23 @@ Looking forward seeing you @ XCJ!
                 db.mailbox["username"],
                 (member['email'], ),
                 """
-Dear member,
+Dear {},
 
 This message to inform you that your membership to Xin Che Jian hackerspace has expired today.
 
 Please approach one of our staff during your next visit to renew it.
 
-Looking forward seeing you @ XCJ!""",
+Looking forward seeing you @ XCJ!""".format(member['username']),
                 """
-<h3>Dear member,</h3>
+<h3>Dear {},</h3>
 <p>
 This message to inform you that your membership to Xin Che Jian hackerspace has expired today.
 <br>
 Please approach one of our staff during your next visit to renew it.
 <br>
 Looking forward seeing you @ XCJ!
-</p>""",
-                [],
+</p>""".format(member['username']),
+                ["images/XCJ.png"],
                 db.mailbox["server"], db.mailbox['port'],
                 db.mailbox["username"], db.mailbox['password'],
                 debug=0
