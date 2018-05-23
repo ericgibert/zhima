@@ -21,6 +21,7 @@ db = Member(debug=True)
 for m in db.select(columns="id", one_only=False):
     member = Member(id=m['id'])
     print(member, member['status'])
+    if member["role"] == member.ROLE["GROUP"]: continue
     if member['status'] != "OK": continue
     if (member['validity'] - date.today()).days == 7:
         print("7 days!")
