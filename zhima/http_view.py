@@ -6,7 +6,7 @@
 
 """
 __author__ = "Eric Gibert"
-__version__ = "1.0.20180520 Dong Bei"
+__version__ = "1.0.20180526 Dong Bei - Daypass"
 __email__ =  "ericgibert@yahoo.fr"
 __license__ = "MIT"
 import sys
@@ -15,7 +15,7 @@ from os import path, system, getpid
 from json import dumps
 import argparse
 from collections import OrderedDict
-from datetime import datetime
+from datetime import datetime, date
 from bottle import Bottle, template, request, BaseTemplate, redirect, error, static_file, HTTPResponse
 from bottlesession import authenticator, PickleSession
 from member import Member
@@ -289,12 +289,13 @@ def get_daypass():
         img_qrcode = make_qrcode(qr_code)
         qr_code = "images/XCJ_{}.png".format(from_date)
         img_qrcode.save(qr_code)
-        print("QR code:", qr_code)
-        if request.forms['email']:
+        # print("QR code:", qr_code)
+        if request.forms.get('email'):
             admin.email_qrcode(qr_code, "from {} until {}".format(from_date, until_date), request.forms['email'])
     else:
         qr_code = None
-    return template("daypass", qr_code=qr_code, session=session_manager.get_session())
+        from_date, until_date = date.today(), date.today()
+    return template("daypass", qr_code=qr_code, period=(from_date, until_date), session=session_manager.get_session())
 
 
 #

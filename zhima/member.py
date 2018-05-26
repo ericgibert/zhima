@@ -206,7 +206,7 @@ class Member(Database):
         """
         png = qr_code_png or "images/XCJ_{}.png".format(self.id)
         validity = validity_msg or "until {}".format(self["validity"])
-        msg = "Please find attached your XCJ QR code. It is valid {}".format(validity)
+        msg = "Please find attached your XCJ QR code. It is valid {}.".format(validity)
         send_email(
             "Your Xin Che Jian QR Code",
             from_=self.mailbox["username"],
@@ -215,7 +215,7 @@ class Member(Database):
             images=[png],
             server=Database.mailbox["server"], port=Database.mailbox["port"],
             login=Database.mailbox["username"], passwd=Database.mailbox["password"],
-            debug=3
+            debug=0
         )
 
     def __str__(self):

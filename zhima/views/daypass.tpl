@@ -8,7 +8,6 @@
 </head>
 <body>
 % include('header.html')
-% from datetime import date
 <h1>Zhima - Daypass</h1>
 % if session['admin']:
 <script>
@@ -43,12 +42,12 @@
 <form method="POST" id="form" action="/daypass" onsubmit="return validate_me()">
     <table style="border: 1px solid black;">
         <tr><td>From</td>
-            <td><input type="text" size="20" value="{{date.today()}}" name="from_date" id="from_date" class='datepicker'
+            <td><input type="text" size="20" value="{{period[0]}}" name="from_date" id="from_date" class='datepicker'
                        title='YYYY-MM-DD'
                        onchange='assign_until_date();'/></td>
         </tr>
         <tr><td>Until</td>
-            <td><input type="text" size="20" value="{{date.today()}}" name="until_date" id="until_date" class='datepicker' title='YYYY-MM-DD'/></td>
+            <td><input type="text" size="20" value="{{period[1]}}" name="until_date" id="until_date" class='datepicker' title='YYYY-MM-DD'/></td>
         </tr>
         % if qr_code:
         <tr><td>QR Code</td><td><img src="{{qr_code}}"></td></tr>
