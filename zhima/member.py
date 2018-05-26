@@ -210,7 +210,7 @@ class Member(Database):
             "Your Xin Che Jian QR Code",
             from_=self.mailbox["username"],
             to_=[self['email']],
-            message_txt=msg, message_HTML=msg,
+            message_txt=msg, message_HTML="<p>" + msg + "</p>",
             images=[png],
             server=Database.mailbox["server"], port=Database.mailbox["port"],
             login=Database.mailbox["username"], passwd=Database.mailbox["password"],

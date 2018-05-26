@@ -38,6 +38,7 @@ def send_email(subject, from_, to_,
         # guess the specific image type.
         with open(file, 'rb') as fp:
             img = MIMEImage(fp.read())
+            img.add_header('Content-Disposition', 'attachment')
         msg.attach(img)
 
     if debug >= 3:
