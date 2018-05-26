@@ -290,6 +290,8 @@ def get_daypass():
         qr_code = "images/XCJ_{}.png".format(from_date)
         img_qrcode.save(qr_code)
         print("QR code:", qr_code)
+        if request.forms['email']:
+            admin.email_qrcode(qr_code, "from {} until {}".format(from_date, until_date), request.forms['email'])
     else:
         qr_code = None
     return template("daypass", qr_code=qr_code, session=session_manager.get_session())

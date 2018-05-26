@@ -26,6 +26,11 @@
         return false;
       }
     }
+
+    function assign_until_date() {
+        document.forms["form"]["until_date"].value = document.forms["form"]["from_date"].value;
+    }
+
     function isValidDate(date) {
         var temp = date.split('-');
         var yyyy = Number(temp[0]);
@@ -38,14 +43,16 @@
 <form method="POST" id="form" action="/daypass" onsubmit="return validate_me()">
     <table style="border: 1px solid black;">
         <tr><td>From</td>
-            <td><input type="text" size="20" value="{{date.today()}}" name="from_date" id="from_date" class='datepicker' title='YYYY-MM-DD'/></td>
+            <td><input type="text" size="20" value="{{date.today()}}" name="from_date" id="from_date" class='datepicker'
+                       title='YYYY-MM-DD'
+                       onchange='assign_until_date();'/></td>
         </tr>
         <tr><td>Until</td>
             <td><input type="text" size="20" value="{{date.today()}}" name="until_date" id="until_date" class='datepicker' title='YYYY-MM-DD'/></td>
         </tr>
         % if qr_code:
-        <tr><td>QR Code</td><td><img src="{{qr_code}}"></td>
-        </tr>
+        <tr><td>QR Code</td><td><img src="{{qr_code}}"></td></tr>
+        <tr><td>Email it to:</td><td><input type="text" size="40" value="" name="email" id="email"/></td></tr>
         % end
     </table>
     <p><input type="submit" value="Submit" name="submit" /></p>

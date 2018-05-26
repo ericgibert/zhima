@@ -198,18 +198,19 @@ class Member(Database):
         else:
             return "Unknown Encoding Version {}".format(version)
 
-    def email_qrcode(self):
+    def email_qrcode(self, qr_code_png=None, validity_msg="", email_to=""):
         """
         Sends the QR by email to a member
         The PNG should be already generated
         :return:
         """
-        png = "images/XCJ_{}.png".format(self.id)
-        msg = "Please find attached your XCJ QR code. It is valid until {}".format(self["validity"])
+        png = qr_code_png or "images/XCJ_{}.png".format(self.id)
+        validity = validity_msg or "until {}".format(self["validity"])
+        msg = "Please find attached your XCJ QR code. It is valid {}".format(validity)
         send_email(
             "Your Xin Che Jian QR Code",
             from_=self.mailbox["username"],
-            to_=[self['email']],
+            to_ = (email_to or self['email']).split(";"),
             message_txt=msg, message_HTML="<p>" + msg + "</p>",
             images=[png],
             server=Database.mailbox["server"], port=Database.mailbox["port"],
