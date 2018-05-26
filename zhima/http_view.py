@@ -274,6 +274,27 @@ def make_event_qrcode(id):
     else:
         return "<h2>This event has not a valid status or gender.</h2>"
 
+
+@http_view.get('/daypass')
+@http_view.post('/daypass')
+@need_staff
+def get_daypass():
+    """Present a calendar to choose the daypass pariod (from/to) - default is today"""
+    if request.method == "POST":
+        from_date, until_date = request.forms['from_date'], request.forms['until_date']
+        admin = Member(id=1)
+        qr_code = admin.encode_qrcode(version=3,
+                from_date=datetime.strptime(from_date, "%Y-%m-%d"),
+                until_date=datetime.strptime(until_date, "%Y-%m-%d"))
+        img_qrcode = make_qrcode(qr_code)
+        qr_code = "images/XCJ_{}.png".format(from_date)
+        img_qrcode.save(qr_code)
+        print("QR code:", qr_code)
+    else:
+        qr_code = None
+    return template("daypass", qr_code=qr_code, session=session_manager.get_session())
+
+
 #
 ####  *.md documents posted in the 'views' folder
 #

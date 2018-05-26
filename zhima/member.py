@@ -138,7 +138,7 @@ class Member(Database):
             try:
                 # self.clear_qrcode = des.decrypt(unhexlify(qrcode)).decode("utf-8").strip().split('#')
                 bcode = base64.decodebytes(qrcode.encode('utf-8'))
-                self.clear_qrcode = des.decrypt(bcode).decode('utf-8').strip().split('#')
+                self.clear_qrcode = des.decrypt(bcode).decode('utf-8').strip(' ').split('#')
             except (binascii_error, UnicodeDecodeError, ValueError):
                 return None
             try:
@@ -179,6 +179,8 @@ class Member(Database):
     def encode_qrcode(self, version=2, from_date = None, until_date=None):
         """Encode this member's data into a QR Code string/payload
         :param version: defaulted to the latest version
+        :from_date: type datetime.date or compatible
+        :until_date: type datetime.date or compatible
         """
         if version == 1:
             #   XCJ1#123456#username
