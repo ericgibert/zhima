@@ -15,7 +15,7 @@
     % elif member.qrcode_is_valid:
     <img src="/images/XCJ_{{member.data['id']}}.png?{{time()}}"/>
         % if member['email']:
-            Email me my <a href="/member/email_qrcode/{{member['id']}}">QR code</a>
+            <a href="/member/email_qrcode/{{member['id']}}">Email the QR code</a>
         % end
     % else:
     <img src="/images/emoji-not-happy.jpg"/>
