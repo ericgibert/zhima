@@ -45,6 +45,7 @@ def send_email(subject, from_, to_,
         print(msg['To'])
         print(message_txt)
         print(message_HTML)
+        print(server)
         
     # Send the email via our own SMTP server.
     s = smtplib.SMTP_SSL(server, port)

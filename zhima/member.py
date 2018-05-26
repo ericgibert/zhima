@@ -29,6 +29,7 @@ from binascii import hexlify, unhexlify, Error as binascii_error
 from Crypto.Cipher import DES
 from model_db import Database
 import base64
+from send_email import send_email
 
 
 class Member(Database):
@@ -194,6 +195,25 @@ class Member(Database):
             return self.encrypt_qrcode(qrcode)
         else:
             return "Unknown Encoding Version {}".format(version)
+
+    def email_qrcode(self):
+        """
+        Sends the QR by email to a member
+        The PNG should be already generated
+        :return:
+        """
+        png = "images/XCJ_{}.png".format(self.id)
+        msg = "Please find attached your XCJ QR code. It is valid until {}".format(self["validity"])
+        send_email(
+            "Your Xin Che Jian QR Code",
+            from_=self.mailbox["username"],
+            to_=[self['email']],
+            message_txt=msg, message_HTML=msg,
+            images=[png],
+            server=Database.mailbox["server"], port=Database.mailbox["port"],
+            login=Database.mailbox["username"], passwd=Database.mailbox["password"],
+            debug=3
+        )
 
     def __str__(self):
         return "{} ({}) [{}]".format(self['username'], self.id, self['validity'])

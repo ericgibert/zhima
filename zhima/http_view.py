@@ -63,7 +63,7 @@ def need_login(callback):
             return '<h3>Sorry, you are not authorized to perform this action</h3>Try to <a href="/Login">login</a> first'
     return wrapper
 
-def need_admin(callback):
+def need_staff(callback):
     """decorator to ensure a function is only callable when the user is logged with a role >= STAFF"""
     def wrapper(*args, **kwargs):
         session = session_manager.get_session()
@@ -91,7 +91,7 @@ def list_sql(table, filter_col, order_by="", page=0, select_cols="*"):
 
 @http_view.get('/entries')
 @http_view.get('/entries/<page:int>')
-@need_admin
+@need_staff
 def list_entries(page=0):
     """List all the entries (door opening) recorded in the LOG table"""
     sql = """SELECT code, message, created_on from tb_log 
@@ -102,7 +102,7 @@ def list_entries(page=0):
 
 @http_view.get('/log')
 @http_view.get('/log/<page:int>')
-@need_admin
+@need_staff
 def log(page=0):
     """Log dump - can be filterer with ?filter=<log_type>"""
     sql, req_query = list_sql("tb_log", "type", "created_on DESC", page)
@@ -112,7 +112,7 @@ def log(page=0):
 
 @http_view.get('/members')
 @http_view.get('/members/<page:int>')
-@need_admin
+@need_staff
 def list_members(page=0):
     """List the members and provide link to add new one or edit existing ones"""
     sql, req_query = list_sql("users", "status", page=page)
@@ -136,14 +136,14 @@ def get_member(id):
     return template("member", member=member, read_only=True, session=session_manager.get_session())
 
 @http_view.get('/member/edit/<id:int>')
-@need_admin
+@need_staff
 def upd_form_member(id):
     """update a member database record - Display current data for input modification"""
     member = Member(id)
     return template("member", member=member, read_only=False, session=session_manager.get_session())
 
 @http_view.post('/member/edit/<id:int>')
-@need_admin
+@need_staff
 def upd_member(id):
     """update a member database record - Post the modified data from the form above"""
     if str(id) not in request.forms.get('id', '0'):
@@ -177,7 +177,7 @@ def upd_member(id):
     redirect('/member/{}'.format(id))
 
 @http_view.get('/members/new')
-@need_admin
+@need_staff
 def new_form_member():
     """add a new member database record"""
     member = Member()
@@ -194,9 +194,24 @@ def new_form_member():
         ('last_update', datetime.now()) ])
     return template("member", member=member, read_only=False, session=session_manager.get_session())
 
+@http_view.get('/member/email_qrcode/<id:int>')
+@need_staff
+def email_my_qrcode(id):
+    """Email a member its QR code"""
+    member = Member(id=id)
+    if member['email']:
+        try:
+            member.email_qrcode()
+        except ValueError as err:
+            redirect('/member/{}?msg=Error: No Email sent {}"'.format(id, err))
+        else:
+            redirect('/member/{}?msg=Email sent"'.format(id))
+    redirect('/member/{}?msg=Error: No Email address"'.format(id))
+
+
 @http_view.get('/transaction/<member_id:int>')
 @http_view.get('/transaction/<member_id:int>/<id:int>')
-@need_admin
+@need_staff
 def get_transaction(member_id, id=0):
     if id:
         transaction = Transaction(id)
@@ -207,14 +222,14 @@ def get_transaction(member_id, id=0):
     return template("transaction", transaction=transaction, read_only=read_only, session=session_manager.get_session())
 
 @http_view.get('/transaction/update/<id:int>')
-@need_admin
+@need_staff
 def upd_transaction(id=0):
     if id:
         transaction = Transaction(id)
     return template("transaction", transaction=transaction, read_only=False, session=session_manager.get_session())
 
 @http_view.post('/transaction/add')
-@need_admin
+@need_staff
 def add_transaction():
     transaction = Transaction()
     member_id = int(request.forms['member_id'])
@@ -264,7 +279,7 @@ def make_event_qrcode(id):
 #
 @http_view.route('/docs')
 @http_view.route('/docs/<doc_name>')
-@need_admin
+@need_staff
 def docs(doc_name=""):
     if doc_name:
         with open(path.join('views', doc_name), "rt") as doc:
@@ -320,7 +335,7 @@ def logout():
     redirect('/')
 
 @http_view.route('/restart')
-@need_admin
+@need_staff
 def restart():
     """Restarts the application"""
     session = session_manager.get_session()
@@ -329,7 +344,7 @@ def restart():
         redirect('/')
 
 @http_view.route('/stop')
-@need_admin
+@need_staff
 def stop():
     """Stops the application"""
     session = session_manager.get_session()
