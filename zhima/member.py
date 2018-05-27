@@ -165,9 +165,10 @@ class Member(Database):
                     self.qrcode_is_valid = False
             elif self.qrcode_version == 3:
                 from_date, to_date = self.clear_qrcode[2], self.clear_qrcode[3]  #  'YYMMDD' strings
+                print("QR code valid from {} until {}".format(from_date, to_date))
                 today = '{0:%y%m%d}'.format(date.today())
                 self.qrcode_is_valid = ( from_date <= today <= to_date )
-        return member_id if self.qrcode_is_valid else None
+        return member_id #  if self.qrcode_is_valid else None
 
     def encrypt_qrcode(self, qrcode):
         """turn qrcode string into bytes and pad to multiple of 8 bytes"""

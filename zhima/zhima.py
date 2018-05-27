@@ -251,13 +251,16 @@ class Controller(object):
             # self.member = Member(qrcode=self.qr_codes[0])
             self.member.id = self.member.decode_qrcode(self.qr_codes[0])
             if self.member.id:
-                url = "{}/member/{}".format(self.base_api_url, self.member.id)
-                response = requests.get(url)
-                if response.status_code == 200:
-                    self.member.from_json(response.json())
-                    if self.debug: print(self.member)
+                if self.member.qrcode_is_valid:
+                    url = "{}/member/{}".format(self.base_api_url, self.member.id)
+                    response = requests.get(url)
+                    if response.status_code == 200:
+                        self.member.from_json(response.json())
+                        if self.debug: print(self.member)
+                    else:
+                        self.insert_log("ERROR", -1399, "response: {} for {}".format(response.status_code, url))
                 else:
-                    self.insert_log("ERROR", -1399, "response: {} for {}".format(response.status_code, url))
+                    self.insert_log("ERROR", -1001, "Invalid XCJ QR code: {}".format(self.member.clear_qrcode))
             else:
                 self.insert_log("ERROR", -1000, "Non XCJ QR Code or No member found for: {}".format(self.qr_codes[0].decode("utf-8")))
         elif self.uid:

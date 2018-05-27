@@ -45,12 +45,12 @@ table, td {
 <ul class="menu">
   <li><a href="/"><IMG src="/images/XCJ.png" height="50px" width="50px"></a></li>
   <li><a href="/">Home</a></li>
-  % if session['user'] and session['user'].is_staff:
+  % if session.get('user') and session['user'].is_staff:
   <li><a href="/log">Log</a></li>
   <li><a href="/entries">Entries</a></li>
   <li><a href="/members">Members</a></li>
   <li><a href="/daypass">Daypass</a></li>
   <li><a href="/docs">Docs</a></li>
   % end
-  <li><a href="/{{"Logout" if session['user'] else "Login"}}">{{"Logout" if session['user'] else "Login"}}</a></li>
+  <li><a href="/{{"Logout" if session.get('user') else "Login"}}">{{"Logout" if session.get('user') else "Login"}}</a></li>
 </ul>

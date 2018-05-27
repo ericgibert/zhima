@@ -6,7 +6,7 @@
 </head>
 <body>
 % include('header.html')
-<h1>Welcome {{session['user']['name'] if session['user'] else ""}} to Zhima</h1>
+<h1>Welcome {{session['user']['name'] if session.get('user') else ""}} to Zhima</h1>
 
 <table>
 
@@ -25,7 +25,7 @@
 
 
 <hr/>
-% if session['user'] and session['user'].is_admin:
+% if session.get('user') and session['user'].is_admin:
 <ul>
 % import sys
     <li>Python: {{sys.version}}</li>
