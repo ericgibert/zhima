@@ -155,6 +155,8 @@ class Controller(object):
                 if self.uid:
                     if self.debug: print("Read RFID UID", self.uid)
                     next_state = 3
+                else:
+                    sleep(0.4)  # to prevent over heating the
         return next_state
 
     def capture_qrcode(self):
