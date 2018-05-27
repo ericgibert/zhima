@@ -144,9 +144,10 @@ class Controller(object):
         next_state = 1
         self.qr_codes, self.uid = [], None
         while next_state == 1:
-            if self.debug: print("Waiting for proximity", '.' * points, " " * max_pts, end="\r")
             sleep(0.2)
-            points = (points + 1) % max_pts
+            if self.debug:
+                print("Waiting for proximity", '.' * points, " " * max_pts, end="\r")
+                points = (points + 1) % max_pts
             if self.db.access["has_camera"] and self.gpio.check_proximity():
                 next_state = 2
             # Check if a card is available to read.
@@ -156,7 +157,7 @@ class Controller(object):
                     if self.debug: print("Read RFID UID", self.uid)
                     next_state = 3
                 else:
-                    sleep(0.4)  # to prevent over heating the
+                    sleep(0.2)  # to prevent over heating the RFID card reader
         return next_state
 
     def capture_qrcode(self):
