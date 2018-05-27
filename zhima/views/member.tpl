@@ -10,6 +10,7 @@
 
 % if read_only:
 % from time import time
+    <p>
     % if member['role'] == 4:
     <img src="/images/emoji-group-event.jpg"/>
     % elif member.qrcode_is_valid:
@@ -20,6 +21,7 @@
     % else:
     <img src="/images/emoji-not-happy.jpg"/>
     % end
+    </p>
 % else:
 <link rel="stylesheet" type="text/css" href="/images/datepicker.css" />
 <script type="text/javascript" src="/images/datepicker.js"></script>
@@ -50,8 +52,8 @@
 </script>
 <form method="POST" id="form" action="/member/edit/{{member.data.get('id', 0)}}" onsubmit="return validate_me()">
 % end
-% if session['id']!=member.data.get('id', 0):
-<p>You are logged as {{session['name']}} ({{session['id']}})</p>
+% if session['user']['id']!=member.data.get('id', 0):
+<p>You are logged as {{session['user']['name']}} ({{session['user']['id']}})</p>
 % end
 
 <table style="border: 3px solid black;">
@@ -89,7 +91,7 @@
             %end
         </td></tr>
     % end
-    % if session['admin']:
+    % if session['user'] and session['user'].is_staff:
     <tr><td style="border: 0px;"> </td>
         <td style="border: 0px;">
             % if read_only:
@@ -103,7 +105,7 @@
 
 %if not read_only:
 </form>
-% elif session['admin']:
+% elif session['user'] and session['user'].is_staff:
 <p>
     Add a <a href="/transaction/{{member.data['id']}}">new transaction</a>
 </p>
@@ -125,7 +127,7 @@
         % for row in member.transactions:
         </tr><tr>
             % for k, v in row.items():
-                %if k=='id' and session['admin']:
+                %if k=='id' and session['user'] and session['user'].is_staff:
                 <td><a href="/transaction/update/{{v}}">{{v}}</a></td>
                 %else:
                 <td>{{v}}</td>

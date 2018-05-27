@@ -111,8 +111,13 @@ class Member(Database):
             self.id, self.data = None, {}
         return self.id
 
+    @property
     def is_staff(self):
-        return self['role'] >= self.ROLE['STAFF']
+        return self['role'] >= self.ROLE['STAFF'] and self['status'] == 'OK'
+
+    @property
+    def is_admin(self):
+        return self['role'] == self.ROLE['ADMIN'] and self['status'] == 'OK'
 
     def decode_qrcode(self, qrcode):
         """Decode a QR code in its component based on its version number"""

@@ -174,7 +174,7 @@ class Controller(object):
             m1, m2, m3, m4 = [m for t,m in self.last_entries[:4]]
         except ValueError:
             return False
-        if m1.id==m3.id==m4.id and m1.id!=m2.id and m1.is_staff():
+        if m1.id==m3.id==m4.id and m1.id!=m2.id and m1.is_staff:
             return (datetime.now() - self.last_entries[3][0]).seconds <= 20
         else:
             return False
@@ -185,7 +185,7 @@ class Controller(object):
             m1, m2, m3 = [m for t,m in self.last_entries[:3]]
         except ValueError:
             return False
-        if m1.id==m3.id and m1.id!=m2.id and m1.is_staff():
+        if m1.id==m3.id and m1.id!=m2.id and m1.is_staff:
             return (datetime.now() - self.last_entries[2][0]).seconds <= 15
         else:
             return False

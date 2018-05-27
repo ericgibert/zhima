@@ -9,14 +9,14 @@
 <body>
 % include('header.html')
 <h1>Zhima - Daypass</h1>
-% if session['admin']:
+% if session['user'] and session['user'].is_staff:
 <script>
     function validate_me() {
       if (!isValidDate(document.forms["form"]["from_date"].value)) {
         alert(document.forms["form"]["from_date"].value + " is not a valid date in the format YYYY-MM-DD");
         return false;
       }
-      if (!isValidDate(document.forms["form"]["until_date"].value)) {
+      if (document.forms["form"]["until_date"].value!="" and !isValidDate(document.forms["form"]["until_date"].value)) {
         alert(document.forms["form"]["until_date"].value + " is not a valid date in the format YYYY-MM-DD");
         return false;
       }
@@ -40,6 +40,11 @@
     }
 </script>
 <form method="POST" id="form" action="/daypass" onsubmit="return validate_me()">
+    % if period[1]:
+    <p>As Admin: from 1 to 7 days pass only</p>
+    % else:
+    <p>As staff: single day pass only</p>
+    % end
     <table style="border: 1px solid black;">
         <tr><td>From</td>
             <td><input type="text" size="20" value="{{period[0]}}" name="from_date" id="from_date" class='datepicker'
@@ -47,17 +52,18 @@
                        onchange='assign_until_date();'/></td>
         </tr>
         <tr><td>Until</td>
-            <td><input type="text" size="20" value="{{period[1]}}" name="until_date" id="until_date" class='datepicker' title='YYYY-MM-DD'/></td>
+            <td><input type="text" size="20" value="{{period[1]}}" name="until_date" id="until_date"
+                       {{!"class='datepicker' title='YYYY-MM-DD'" if period[1] else "disabled"}} /></td>
         </tr>
         % if qr_code:
         <tr><td>QR Code</td><td><img src="{{qr_code}}"></td></tr>
-        <tr><td>Email it to:</td><td><input type="text" size="40" value="" name="email" id="email"/></td></tr>
+        <tr><td>Email QRCode to</td><td><input type="text" size="40" value="" name="email" id="email"/></td></tr>
         % end
     </table>
     <p><input type="submit" value="Submit" name="submit" /></p>
 </form>
 % else:
-<h2>Onlt Staff can access this page and generate daypasses.</h2>
+<h2>Only Staff can access this page and generate daypasses.</h2>
 % end
 </body>
 </html>

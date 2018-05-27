@@ -26,7 +26,6 @@ from rpi_gpio import Rpi_Gpio
 from glob import glob
 from markdown import markdown
 
-
 session_manager = PickleSession(session_dir=r"../Private/sessions", cookie_expires=12 * 3600)
 #  NOTE: must amend the bottlesession.py script to declare files as binary as follow:
 #
@@ -34,9 +33,8 @@ session_manager = PickleSession(session_dir=r"../Private/sessions", cookie_expir
 #  line 124:        with open(tmpName, 'wb') as fp:
 
 valid_user = authenticator(session_manager)
-
 http_view = Bottle()
-BaseTemplate.defaults['login_logout'] = "Login"
+
 PAGE_LENGTH = 25  # rows per page
 
 @error(404)
@@ -57,7 +55,7 @@ def need_login(callback):
     """decorator to ensure a function is only callable when the user is logged in"""
     def wrapper(*args, **kwargs):
         session = session_manager.get_session()
-        if session['valid'] and (('id' in kwargs and kwargs['id']==session['id']) or session['admin']):
+        if session['valid'] and (('id' in kwargs and kwargs['id']==session['user']['id']) or session['user'].is_staff):
             return callback(*args, **kwargs)
         else:
             return '<h3>Sorry, you are not authorized to perform this action</h3>Try to <a href="/Login">login</a> first'
@@ -67,7 +65,7 @@ def need_staff(callback):
     """decorator to ensure a function is only callable when the user is logged with a role >= STAFF"""
     def wrapper(*args, **kwargs):
         session = session_manager.get_session()
-        if session['valid'] and session['admin']:
+        if session['valid'] and session['user'].is_staff:
             return callback(*args, **kwargs)
         else:
             return HTTPResponse(status=403, body='<h3>Sorry, you are not authorized to perform this action</h3>Try to <a href="/Login">login</a> first')
@@ -219,6 +217,9 @@ def get_transaction(member_id, id=0):
     elif member_id:
         transaction = Transaction(member_id=member_id)
         read_only = False
+    else:
+        transaction = Transaction()
+        read_only = True
     return template("transaction", transaction=transaction, read_only=read_only, session=session_manager.get_session())
 
 @http_view.get('/transaction/update/<id:int>')
@@ -226,6 +227,9 @@ def get_transaction(member_id, id=0):
 def upd_transaction(id=0):
     if id:
         transaction = Transaction(id)
+    else:
+        transaction = Transaction()
+        read_only = True
     return template("transaction", transaction=transaction, read_only=False, session=session_manager.get_session())
 
 @http_view.post('/transaction/add')
@@ -280,22 +284,29 @@ def make_event_qrcode(id):
 @need_staff
 def get_daypass():
     """Present a calendar to choose the daypass pariod (from/to) - default is today"""
+    session = session_manager.get_session()
     if request.method == "POST":
-        from_date, until_date = request.forms['from_date'], request.forms['until_date']
-        admin = Member(id=1)
-        qr_code = admin.encode_qrcode(version=3,
-                from_date=datetime.strptime(from_date, "%Y-%m-%d"),
-                until_date=datetime.strptime(until_date, "%Y-%m-%d"))
-        img_qrcode = make_qrcode(qr_code)
-        qr_code = "images/XCJ_{}.png".format(from_date)
-        img_qrcode.save(qr_code)
-        # print("QR code:", qr_code)
-        if request.forms.get('email'):
-            admin.email_qrcode(qr_code, "from {} until {}".format(from_date, until_date), request.forms['email'])
-    else:
-        qr_code = None
+        from_date = request.forms['from_date']
+        until_date = request.forms.get('until_date', from_date)  # one day pass only --> no until_date
+        _from_date=datetime.strptime(from_date, "%Y-%m-%d")
+        _until_date=datetime.strptime(until_date, "%Y-%m-%d")
+        if (_until_date - _from_date).days <= 7:
+            admin = Member(id=1)
+            qr_code = admin.encode_qrcode(version=3, from_date=_from_date, until_date=_until_date)
+            img_qrcode = make_qrcode(qr_code)
+            qr_code_file = "images/XCJ_{}.png".format(from_date)
+            img_qrcode.save(qr_code_file)
+            # print("QR code:", qr_code_file)
+            if request.forms.get('email'):
+                admin.email_qrcode(qr_code_file, "from {} until {}".format(from_date, until_date), request.forms['email'])
+        else:
+            qr_code_file = "images/emoji-not-happy.jpg"
+    else:  # GET
+        qr_code_file = None
         from_date, until_date = date.today(), date.today()
-    return template("daypass", qr_code=qr_code, period=(from_date, until_date), session=session_manager.get_session())
+    # only admin can set 'until date'
+    period=(from_date, until_date if session['user'].is_admin else "")
+    return template("daypass", qr_code=qr_code_file, period=period, session=session)
 
 
 #
@@ -336,34 +347,33 @@ def do_login():
 
     session = session_manager.get_session()
     new_user = Member()
-    new_user = new_user.select('users', username=username, passwd=password)
-    if new_user:
+    new_user_id = new_user.select('users', columns='id', username=username, passwd=password)
+    if new_user_id:
+        new_user.get_from_db(id=new_user_id['id'])
         session['valid'] = True
-        session['name'] = username
-        session['admin'] = new_user['role'] >= Member.ROLE['STAFF'] and new_user['status'] == 'OK'
-        session['id'] = new_user['id']
+        session['user'] = new_user
         session_manager.save(session)
-        BaseTemplate.defaults['login_logout'] = "Logout"
     else:
-        session['valid'], session['admin'], session['name'], session['id'] = False, False, "", -1
+        session['valid'] = False
+        session['user'] = {}
         session_manager.save(session)
         return template('login.tpl', error='Username or password is invalid', session=session_manager.get_session())
     redirect(request.get_cookie('validuserloginredirect', '/member/{}'.format(new_user['id'])))
 
 @http_view.route('/Logout')
-def logout():
+def logout(do_redirect=True):
     session = session_manager.get_session()
-    session['valid'], session['admin'], session['name'], session['id'] = False, False, "", -1
+    session['valid'] = False
+    session['user'] = {}
     session_manager.save(session)
-    BaseTemplate.defaults['login_logout'] = "Login"
-    redirect('/')
+    if do_redirect: redirect('/')
 
 @http_view.route('/restart')
 @need_staff
 def restart():
     """Restarts the application"""
     session = session_manager.get_session()
-    if session['admin']:
+    if session['user'].is_admin:
         system(path.dirname(path.abspath(__file__)) + "/zhima.sh restart")
         redirect('/')
 
@@ -372,7 +382,7 @@ def restart():
 def stop():
     """Stops the application"""
     session = session_manager.get_session()
-    if session['admin']:
+    if session['user'].is_admin:
         # http_view.controller.stop(from_bottle=True)
         sys.stderr.close()
 
@@ -472,4 +482,5 @@ if __name__ == "__main__":
         print(getpid(), file=fpid)
 
     http_view.controller = ctrl(Database(debug=args.debug), args.debug)
+    logout(do_redirect=False)
     http_view.run(host=args.bottle_ip, port=args.port)
