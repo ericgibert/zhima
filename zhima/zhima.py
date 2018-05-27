@@ -285,7 +285,8 @@ class Controller(object):
             elif self.uid or self.member.qrcode_is_valid:
                 if self.member['status'].upper() in ("OK", "ACTIVE", "ENROLLED"):
                     msg = "Welcome {} - {}".format(self.member['username'],
-                                                   "RFID {}".format(self.uid) if self.uid else "QR v{}".format(self.member.qrcode_version))
+                                    "RFID {}".format(self.uid) if self.uid \
+                                    else "QR v{} {}".format(self.member.qrcode_version, ":".join(self.member.clear_qrcode[2:])))
                     self.insert_log("OPEN", self.member.id, msg)
                     return 4
                 else:
