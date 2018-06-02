@@ -267,14 +267,18 @@ class Controller(object):
         elif self.uid:
             # try by RFID UID
             url = "{}/member/rfid/{}".format(self.base_api_url, self.uid)
-            response = requests.get(url)
-            if response.status_code == 200:
-                self.member.from_json(response.json())
-                if self.debug: print(self.member)
+            try:
+                response = requests.get(url)
+            except ConnectionError as conn_err:
+                print(conn_err)
             else:
-                self.insert_log("ERROR", -1398, "response: {} for {}".format(response.status_code, url))
-            if self.member.id is None:
-                self.insert_log("ERROR", -1010, "Non XCJ registered RFID card: {}".format(self.uid))
+                if response.status_code == 200:
+                    self.member.from_json(response.json())
+                    if self.debug: print(self.member)
+                else:
+                    self.insert_log("ERROR", -1398, "response: {} for {}".format(response.status_code, url))
+                if self.member.id is None:
+                    self.insert_log("ERROR", -1010, "Non XCJ registered RFID card: {}".format(self.uid))
         # if we have a member, let's check its status to open the door
         if self.member.id:
             self.last_entries.add( (datetime.now(), self.member) )  # stack for sandwich checking
