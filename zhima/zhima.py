@@ -18,7 +18,7 @@ Gr1 Gr2 Red
 
 """
 __author__ = "Eric Gibert"
-__version__ = "1.0.20180520 Dong Bei"
+__version__ = "1.0.20180602 Dong Bei - RFID"
 __email__ =  "ericgibert@yahoo.fr"
 __license__ = "MIT"
 

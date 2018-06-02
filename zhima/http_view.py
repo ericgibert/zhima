@@ -6,7 +6,7 @@
 
 """
 __author__ = "Eric Gibert"
-__version__ = "1.0.20180526 Dong Bei - Daypass"
+__version__ = "1.0.20180602 Dong Bei - RFID"
 __email__ =  "ericgibert@yahoo.fr"
 __license__ = "MIT"
 import sys
@@ -25,6 +25,7 @@ from transaction import Transaction
 from rpi_gpio import Rpi_Gpio
 from glob import glob
 from markdown import markdown
+from pymysql.err import IntegrityError
 
 session_manager = PickleSession(session_dir=r"../Private/sessions", cookie_expires=12 * 3600)
 #  NOTE: must amend the bottlesession.py script to declare files as binary as follow:
@@ -149,7 +150,7 @@ def upd_member(id):
     """
     if str(id) not in request.forms.get('id', '0'):
         return "<h1>Error - The form's id is not the same as the id on the link</h1>"
-    CANT_UPD_FIELDS = ('submit', 'id', 'passwdchk', 'validity', 'create_time', 'last_active_type', 'last_active_time')
+    CANT_UPD_FIELDS = ('submit', 'id', 'passwdchk', 'validity', 'last_active_type', 'last_active_time')
     member = Member(id)  # get current db record or an empty member if id==0
     # force username to lower case and ensure its unicity:
     request.forms['username'] = request.forms['username'].lower()
@@ -161,18 +162,22 @@ def upd_member(id):
         pass
     # if the user has changed the value of a legit field then add it to the list of updates
     need_upd = {}
-    for field in [f for f in request.forms if f not in CANT_UPD_FIELDS]:
+    for field in [f for f in request.forms if f not in CANT_UPD_FIELDS or (id == 0 and f == 'create_time')]:
         # print(field, ",", request.forms[field], ",", str(member[field] or ''))
         if id==0 or (request.forms[field] != member[field]):
             need_upd[field] = request.forms[field]
     if need_upd:
-        if id:
-            need_upd['id'] = id
-            member.update('users', **need_upd)
-        else:
-            need_upd['openid'], need_upd['rfid'] = '', ''
-            id = member.insert('users', **need_upd)
-            member.update('users', id=id, openid=id, rfid=id)
+        try:
+            if id != 0:
+                need_upd['id'] = id
+                member.update('users', **need_upd)
+            else:
+                need_upd['openid'] = ''
+                id = member.insert('users', **need_upd)
+                member.update('users', id=id, openid=id, rfid=request.forms['rfid'] or id)
+        except IntegrityError as err:
+            return "<h1>Error {}: {}</h1>".format(err.args[0], err.args[1])
+
     else:
         print("Post has nothing to do...")
     redirect('/member/{}'.format(id))
@@ -185,6 +190,7 @@ def new_form_member():
     member.data = OrderedDict([
         # ('id', 0),
         ('username', '<New>'),
+        ('rfid', ''),
         ('passwd', ''),
         ('passwdchk', ''),
         ('email', ''),
