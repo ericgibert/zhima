@@ -96,7 +96,7 @@ class Controller(object):
                 print(payload)
                 print(response.text)
         else:
-            print("Cannot create Log entry", response.status_code)
+            print("Cannot create Log entry with response.status_code:", response.status_code)
 
 
     def stop(self):
