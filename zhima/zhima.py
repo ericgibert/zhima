@@ -254,7 +254,11 @@ class Controller(object):
             if self.member.id:
                 if self.member.qrcode_is_valid:
                     url = "{}/member/{}".format(self.base_api_url, self.member.id)
-                    response = requests.get(url)
+                    try:
+                        response = requests.get(url)
+                    except requests.ConnectionError as conn_err:
+                        print(conn_err)
+                        return 99
                     if response.status_code == 200:
                         self.member.from_json(response.json())
                         if self.debug: print(self.member)
@@ -269,16 +273,16 @@ class Controller(object):
             url = "{}/member/rfid/{}".format(self.base_api_url, self.uid)
             try:
                 response = requests.get(url)
-            except (requests.ConnectionError, requests.ConnectionRefusedError) as conn_err:
+            except requests.ConnectionError as conn_err:
                 print(conn_err)
+                return 99
+            if response.status_code == 200:
+                self.member.from_json(response.json())
+                if self.debug: print(self.member)
             else:
-                if response.status_code == 200:
-                    self.member.from_json(response.json())
-                    if self.debug: print(self.member)
-                else:
-                    self.insert_log("ERROR", -1398, "response: {} for {}".format(response.status_code, url))
-                if self.member.id is None:
-                    self.insert_log("ERROR", -1010, "Non XCJ registered RFID card: {}".format(self.uid))
+                self.insert_log("ERROR", -1398, "response: {} for {}".format(response.status_code, url))
+            if self.member.id is None:
+                self.insert_log("ERROR", -1010, "Non XCJ registered RFID card: {}".format(self.uid))
         # if we have a member, let's check its status to open the door
         if self.member.id:
             self.last_entries.add( (datetime.now(), self.member) )  # stack for sandwich checking
@@ -389,7 +393,7 @@ class Controller(object):
                 server=self.db.mailbox["server"], port=self.db.mailbox["port"],
                 login=self.db.mailbox["username"], passwd=self.db.mailbox["password"]
             )
-            sleep(1)  # let's say it takes 2 seconds to send the email already
+            sleep(1.5)  # let's say it takes 1.5 seconds to send the email already
         else:
             sleep(3)
         return 1
