@@ -79,6 +79,8 @@ class Member(Database):
             self.get_from_db(id)
         elif 'openid' in kwargs:
             self.get_from_db(openid=kwargs['openid'])
+        elif 'rfid' in kwargs:
+            self.get_from_db(openid=kwargs['rfid'])
 
     def get_from_db(self, id=None, **where):
         """Connects to the database to fetch a member table record or simulation
@@ -229,7 +231,8 @@ class Member(Database):
 
 
 if __name__ == "__main__":
-    m = Member(id=123456)
+    admin_id, test_id = 1, 2
+    m = Member(id=test_id)
     print("Found in db:", m['username'],  m['status'])  #m.birthdate,
     print("Make QR Code:", m.encode_qrcode())
     n = Member(qrcode=m.encode_qrcode(version=1))
@@ -239,6 +242,7 @@ if __name__ == "__main__":
     assert(m['username'] == n["username"])
     print("Index on 'unknown':", n["unknown"])
     assert(n["unknown"] is None)
+    test_openid, test_rfid = m['openid'], m['rfid']
 
     print('-' * 20)
     qr_v2 = m.encode_qrcode(version=2)
@@ -262,7 +266,7 @@ if __name__ == "__main__":
 
     print('-' * 20)
     print("# test the validity duration")
-    m = Member(id=123459)  # no membership transaction record
+    m = Member(id=test_id)  # no membership transaction record
     print("Found in db:", m['username'],  m['status'])
     print("Make QR Code:", m.encode_qrcode())
     n = Member(qrcode=m.encode_qrcode())
@@ -271,7 +275,7 @@ if __name__ == "__main__":
 
     print('-' * 20)
     print("test QR code Version 3")
-    m = Member(id=123457)
+    m = Member(id=test_id)
     print(m.transactions)
     # m.validity = date.today()
     print("Validity:", m["validity"])  # m.birthdate,
@@ -283,5 +287,5 @@ if __name__ == "__main__":
 
     print('-' * 20)
     print("test by openid")
-    m = Member(openid="a3c56532")
+    m = Member(openid=test_openid)
     print("Found in db:", m['username'], m['status'])

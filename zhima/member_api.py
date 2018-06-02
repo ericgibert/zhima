@@ -62,6 +62,7 @@ class Member_Api(Member):
     """Surclass Member to add JSON facilities to interact with John's WeChat app"""
     API_MAPPING_TO_DB = {
         "openid": "openid",
+        "rfid": "rfid",
         "avatarUrl": "avatar_url",
         "nickName": "username",
         "city": "city",
@@ -75,6 +76,7 @@ class Member_Api(Member):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.openid = kwargs.get("openid")
+        self.rfid = kwargs.get("rfid")
 
     def update(self, **kwargs):
         last_row_id = super().update(**kwargs)
@@ -118,8 +120,11 @@ class Member_Api(Member):
         return dumps(result)
 
     def create_from_json(self, data):
-        """Fill a empty member's field from a JSON object and INSERT in database 'users' table
-        - Add a payment if present"""
+        """
+        Fill a empty member's field from a JSON object and INSERT in database 'users' table
+        - Add a payment if present
+        - to be used from WeChat app or other external App / minimal data available
+        """
         try:
             role = self.ROLE[data['memberInfo']['tags'].upper()]
         except KeyError:
@@ -128,6 +133,7 @@ class Member_Api(Member):
             d = {
                 # mandatory fields
                 "openid": data['openid'],
+                "rfid": data.get('rfid', data['openid']), # if no RFID given then default to 'openid' / must be unique!
                 "avatar_url": data['avatarUrl'],
                 'username': data['basicInfo']['nickName'],
                 # optional fields
@@ -174,7 +180,10 @@ class Member_Api(Member):
 
 
     def to_json(self):
-        """return the JSON representation of the member object"""
+        """
+        Return the JSON representation of the member object
+        Member.data{} ==> JSON object
+        """
         if self.id is None:
             return {
                 'errno': '1999',  #// no error with 1000, error numbers for others
@@ -197,6 +206,7 @@ class Member_Api(Member):
             dico = {
                 'id': self.data['id'],
                 'openid': self.data['openid'],           #  "ozckH0TkSadGgyeAb5Bn390qQMa8",   // the only and unique ID of a member.
+                'rfid': self.data['rfid'],
                 'avatarUrl': self.data['avatar_url'],      # "https://wx.qlogo.cn/mmopen/vi_32/GPm0HkJtcIsWkZmVNaxJP19ibl1g2YJTEibglP0UibOZstaRN1lbuMavu1a1Y795p6J1vHz0bM27icibCiat9ERricyng/0",    // member`s PICTURE
                 'basicInfo':
                     {
@@ -235,7 +245,11 @@ class Member_Api(Member):
         return dumps(dico)
 
     def from_json(self, json_data):
-        """Create a member from the information received by API"""
+        """
+        API call returned JSON Object ==> Member.data{}
+        - move each attribute of the JSON object (1st or 2nd level) to the flat Member.data dictionary
+        - assign some calculated field too
+        """
         self.id = json_data.get('id')
         if self.id is None: return
         expireTime = datetime.strptime(json_data['memberInfo']['expireTime'], '%Y%m%d%H%M')
@@ -243,6 +257,7 @@ class Member_Api(Member):
         self.data = {
             'id': self.id,
             'openid': json_data['openid'],
+            'rfid': json_data['rfid'],
             'avatar_url': json_data['avatarUrl'],
             # 'basicInfo:
             'status': json_data['basicInfo']['status'],

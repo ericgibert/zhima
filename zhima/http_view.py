@@ -143,24 +143,27 @@ def upd_form_member(id):
 @http_view.post('/member/edit/<id:int>')
 @need_staff
 def upd_member(id):
-    """update a member database record - Post the modified data from the form above"""
+    """UPSERT a member database record
+    if 'id' != 0 then UPDATE: post the modified data from the form above
+    if 'id' == 0 then INSERT: create record with info from form and force id --> openid --> rfid_card
+    """
     if str(id) not in request.forms.get('id', '0'):
         return "<h1>Error - The form's id is not the same as the id on the link</h1>"
     CANT_UPD_FIELDS = ('submit', 'id', 'passwdchk', 'validity')
     member = Member(id)  # get current db record or an empty member if id==0
     # force username to lower case and ensure its unicity:
+    request.forms['username'] = request.forms['username'].lower()
     try:
-        request.forms['username'] = request.forms['username'].lower()
         nb_username = member.fetch("select count(id) as cnt from users where username=%s and id<>%s", (request.forms['username'], id))
         if nb_username['cnt']>0:
             return "<h1>Error - This Username already exists - Duplicates are forbidden</h1>"
     except:
         pass
-    # if the user has changed the value of a legit fioeld then add it to the list of updates
+    # if the user has changed the value of a legit field then add it to the list of updates
     need_upd = {}
     for field in [f for f in request.forms if f not in CANT_UPD_FIELDS]:
         # print(field, ",", request.forms[field], ",", str(member[field] or ''))
-        if id==0 or (request.forms[field] != str(member.data[field] or '')):
+        if id==0 or (request.forms[field] != member[field]):
             need_upd[field] = request.forms[field]
     if need_upd:
         if id:
@@ -169,7 +172,7 @@ def upd_member(id):
         else:
             need_upd['openid'] = 0
             id = member.insert('users', **need_upd)
-            member.update('users', id=id, openid=id)
+            member.update('users', id=id, openid=id, rfid=id)
     else:
         print("Post has nothing to do...")
     redirect('/member/{}'.format(id))
@@ -403,6 +406,13 @@ def get_member_by_id(id):
 def get_member_by_openid(openid):
     """Return a Member JSON object based on a member db record and its last transaction"""
     member = Member_Api(openid=openid)
+    return member.to_json()
+
+@http_view.get('/api/v1.0/member/rfid/<rfid>')
+@whitelisted
+def get_member_by_rfid(rfid):
+    """Return a Member JSON object based on a member db record and its last transaction"""
+    member = Member_Api(rfid=rfid)
     return member.to_json()
 
 @http_view.patch('/api/v1.0/member/openid/<openid>')

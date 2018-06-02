@@ -207,7 +207,7 @@ class Controller(object):
         until_days = membership[3]
         new_validity = member_to_upd['validity'] + timedelta(days=until_days)
         msg += "{}CNY received from {} until {:%Y-%m-%d} (staff {})".format(amount, member_to_upd['username'], new_validity, staff_member['username'])
-        # Add Transaction by API
+        # Add Transaction by API using the 'openid' as PATCH is only implemented on that table key
         url = "{}/member/openid/{}".format(self.base_api_url, member_to_upd["openid"])
         patch = {
             "op": "add",
@@ -219,7 +219,7 @@ class Controller(object):
                 'until_days': until_days
             }
         }
-        response = requests.patch(url, json=patch)
+        response = requests.patch(url, json=patch)  # PATCH API call to add a transaction record
         if response.status_code == 200:
             result = response.json()
             print(result)
@@ -266,8 +266,7 @@ class Controller(object):
                 self.insert_log("ERROR", -1000, "Non XCJ QR Code or No member found for: {}".format(self.qr_codes[0].decode("utf-8")))
         elif self.uid:
             # try by RFID UID
-            # self.member = Member(openid=self.uid)
-            url = "{}/member/openid/{}".format(self.base_api_url, self.uid)
+            url = "{}/member/rfid/{}".format(self.base_api_url, self.uid)
             response = requests.get(url)
             if response.status_code == 200:
                 self.member.from_json(response.json())
