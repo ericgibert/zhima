@@ -269,7 +269,7 @@ class Controller(object):
             url = "{}/member/rfid/{}".format(self.base_api_url, self.uid)
             try:
                 response = requests.get(url)
-            except ConnectionError as conn_err:
+            except (requests.ConnectionError, requests.ConnectionRefusedError) as conn_err:
                 print(conn_err)
             else:
                 if response.status_code == 200:
