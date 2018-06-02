@@ -11,18 +11,13 @@
 <table>
 
 
-
 </table>
-
 
 % from zhima import __version__, __author__, __license__
 <p>Version: {{__version__}}<br/>
    Author: &nbsp;{{__author__}}<br/>
    License: {{__license__}}<br/>
 </p>
-
-
-
 
 <hr/>
 % if session.get('user') and session['user'].is_admin:
@@ -38,8 +33,17 @@
     <li>pigpio: not installed</li>
 </ul>
 
+% if session['user'].is_admin:
+<P>
+    Whitelist of servers able to use API:
+<ul>
+    % for wls in controller.db.access['whitelist']:
+    <li>{{wls}}</li>
+    % end
+</ul>
+</P>
+% end
 <p>
-
 <b><a href="/restart">Restart</a></b> the application.
 <hr/>
 To stop the application, click <a href="/stop">here</a>.
