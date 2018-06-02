@@ -281,4 +281,4 @@ class Member_Api(Member):
             #     'CNYAmount': '100.00 CNY'
             # }
          }
-        self.validity = json_data['memberInfo']['expireTime']      #// membership expire date and time
+        self.validity = self.data['validity']      #// membership expire date and time
