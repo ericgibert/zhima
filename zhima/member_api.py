@@ -224,7 +224,7 @@ class Member_Api(Member):
                         'createTime': self.data['create_time'].strftime('%Y%m%d%H%M'), #'201505011522',        #// first time of member`s info creation in this system
                         'lastUpdate': self.data['last_update'].strftime('%Y%m%d%H%M'), #'201801011420',       #// last member information modification time
                         'lastActiveTime': self.data['last_active_time'].strftime('%Y%m%d%H%M') if self.data['last_active_time'] else "",  #"'201803021530',   #// last member active time (e.g: came to xinchejian and operate something)
-                        'lastActiveType': 'tbd',  # ''Open the door/ paid for membership',    // lastest action type: opened the door or paid the membership or bought a drink from xcj
+                        'lastActiveType': self.data['last_active_type'],  # ''Open the door/ paid for membership',    // lastest action type: opened the door or paid the membership or bought a drink from xcj
                         'expireTime': self.data['validity'].strftime('%Y%m%d0000'),       #// membership expire date and time
                         'tags': tags,  # ['member', 'staff', 'manager', 'teacher', 'admin', 'cooperater', 'visiter'],       // member`s tag, to decide the priviledge of a member
                         'memo': ''         # for admin use: take extra notes, e.g:this member asked for refund.

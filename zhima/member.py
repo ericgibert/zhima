@@ -80,7 +80,7 @@ class Member(Database):
         elif 'openid' in kwargs:
             self.get_from_db(openid=kwargs['openid'])
         elif 'rfid' in kwargs:
-            self.get_from_db(openid=kwargs['rfid'])
+            self.get_from_db(rfid=kwargs['rfid'])
 
     def get_from_db(self, id=None, **where):
         """Connects to the database to fetch a member table record or simulation
