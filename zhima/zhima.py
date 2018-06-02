@@ -386,7 +386,7 @@ class Controller(object):
                 to_=(self.member["email"],),
                 message_HTML = """
                     <P>Your status in the XCJ database is set to: {}</P>
-                    <p>You membership expiration date is {}</p>
+                    <p>You membership expiration date is {0:%Y-%m-%d}</p>
                     <p></p>
                     """.format(self.member["status"], self.member.validity),
                 images=[r"images/emoji-not-happy.jpg"],
