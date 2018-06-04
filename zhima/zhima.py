@@ -152,7 +152,11 @@ class Controller(object):
                 next_state = 2
             # Check if a card is available to read.
             if self.db.access["has_RFID"]:
-                self.uid = self.gpio.pn532.read_passive_target(as_hex=True)
+                try:
+                    self.uid = self.gpio.pn532.read_passive_target(as_hex=True)
+                except RuntimeError as err:
+                    print(err)
+                    return 99
                 if self.uid:
                     if self.debug: print("Read RFID UID", self.uid)
                     next_state = 3
