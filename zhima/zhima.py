@@ -6,15 +6,17 @@
 - QR code is match against a database of members
 - if the member is OK then the door open else an email is triggered
 
+Normal LED flashing:
+Green 1: flash while waiting for proximity or RFID
+Green 1+2: camera/photo taking & processing/RFID recognized
+Happy Flashing G1&2: Access granted/Door open
+
 Error Code for the LED:
-Green1: proximity
-Green 2: camera/photo taking & processing
-Red: Error
 Gr1 Gr2 Red
  -   -   O  Barcode not recognized (3 seconds)
- O   -   O  State 6:  XCJ Barcode for an unknown member (fails to decode the barcode to atch a db record)
- -   O   O  State 5:  XCJ Barcode for a "bad status" member (finds a db record but the member is not OK)
- O   O   O  State 99: Panic Mode: camera is malfunctioning, ...
+ O   -   O  State 6:  XCJ Barcode for an unknown member (fails to decode the barcode)
+ -   O   O  State 5:  XCJ Barcode/RFID for a "bad status" member (finds a db record but the member is not OK)
+ O   O   O  State 99: Panic Mode: camera is malfunctioning, database unavailable...
 
 """
 __author__ = "Eric Gibert"
@@ -49,12 +51,12 @@ class myQ(list):
             pass
 
 class Controller(object):
-    def __init__(self, bottle_ip='127.0.0.1', port=8080, debug=False):
+    def __init__(self, bottle_ip=None, port=8080, debug=False):
         self.bottle_ip, self.port = bottle_ip, port
         self.debug = debug
         # init local attributes
         self.db = Database()
-        self.base_api_url = "http://{}:8080/api/v1.0".format(Database.server_ip)
+        self.base_api_url = "http://{}:8080/api/v1.0".format(bottle_ip or Database.server_ip)
         self.gpio = Rpi_Gpio(has_PN532=self.db.access["has_RFID"])
         self.member = None
         _OPEN_WITH = {
@@ -422,7 +424,7 @@ class Controller(object):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("-b", "--bottle", dest="bottle_ip", help="Optional: Raspberry Pi IP address to allow remote connections", required=False,  default="127.0.0.1")
+    parser.add_argument("-b", "--bottle", dest="bottle_ip", help="Optional: Raspberry Pi IP address to allow remote connections", required=False,  default=None)
     parser.add_argument("-p", "--port", dest="port", help="Optional: port for HTTP (8080: test / 80: PROD)", required=False,  default=8080, type=int)
     parser.add_argument('-v', '--version', action='version', version=__version__)
     parser.add_argument('-d', '--debug', dest='debug', help='debug mode - kep photos', action='store_true', default=False)
