@@ -74,7 +74,7 @@ if __name__ == "__main__":
                From the <b>__main__</b> part of send_email.py module
                <p>網站有中、英文版本，也有繁、簡體版</p>
                """,
-               images=[r"images/emoji-not-happy.jpg"],
+               images=[r"/home/pi/zhima/Private/night_batch.log"],
                server=db.mailbox["server"], port=db.mailbox["port"],
                login=db.mailbox["username"], passwd=db.mailbox["password"],
                debug=3)
