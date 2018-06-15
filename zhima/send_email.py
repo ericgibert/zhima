@@ -66,15 +66,19 @@ def send_email(subject, from_, to_,
 if __name__ == "__main__":
     from model_db import Database
     db = Database()
+    with open("/home/pi/zhima/Private/night_batch.log", "rt") as txt:
+        msg = txt.readlines()
 
-    send_email("test email",
+    send_email("XCJ Zhima night report",
                from_=db.mailbox["username"],
                to_ = ["ericgibert@yahoo.fr",],
-               message_HTML = """
-               From the <b>__main__</b> part of send_email.py module
-               <p>網站有中、英文版本，也有繁、簡體版</p>
-               """,
-               images=[r"/home/pi/zhima/Private/night_batch.log"],
+               message_txt="".join(msg),
+               # message_HTML = """
+               # From the <b>__main__</b> part of send_email.py module
+               # <p>網站有中、英文版本，也有繁、簡體版</p>
+               # """,
+               # images=[r"/home/pi/zhima/Private/night_batch.log"],
                server=db.mailbox["server"], port=db.mailbox["port"],
                login=db.mailbox["username"], passwd=db.mailbox["password"],
                debug=3)
+

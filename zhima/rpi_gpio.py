@@ -246,8 +246,8 @@ if __name__ == "__main__":
             print("OFF")
             my_pig.relay.OFF()
             three_seconds()
-    #        print("Proximity:", my_pig.check_proximity())
-    #        sleep(1)
+            print("Proximity:", my_pig.check_proximity())
+            sleep(1)
     finally:
         my_pig.red.OFF()
         my_pig.green1.OFF()
