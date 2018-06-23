@@ -117,3 +117,4 @@ ENV/
 /filetypes.xml
 /debugger.xml
 /zhima/http_view.pid
+.idea

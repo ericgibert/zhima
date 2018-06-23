@@ -61,6 +61,8 @@ Camera control
 
 Bluetooth with Python
 ---------------------
+
+pip install gatt
 - https://github.com/karulis/pybluez
 - toggleglobalsitepackages
 
@@ -105,11 +107,18 @@ https://www.pyimagesearch.com/2017/09/04/raspbian-stretch-install-opencv-3-pytho
 Bottle and Bottlesession
 ========================
 
-    pip3 install bottle
+    ---not yet  -----  pip3 install bottle   ---- need version >= 0.13 for PATCH
+    cd Private
+    git clone https://github.com/bottlepy/bottle.git
+    cd bottle
+    cp bottle.py  ~/.virtualenvs/zhima/lib/python3.6/site-packages
 
     git clone https://github.com/linsomniac/bottlesession.git
-    cp botlesession.py  site-packages
-
+    cd bottlesession
+    cp bottlesession.py  ~/.virtualenvs/zhima/lib/python3.6/site-packages
+    ==> modifications of this module as describe in http_view.py 
+    
+    
 Crypto
 ======
 
@@ -120,6 +129,12 @@ Markdown
 ========
 
 pip install markdown
+
+
+MySQL
+=====
+
+pip install pymysql
 
 
 Auto-start at boot

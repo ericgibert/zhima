@@ -72,10 +72,18 @@ class Controller(object):
             4: _OPEN_WITH[self.db.access["open_with"]],  # choose the function to call: _RELAY, _BLE, _BOTH, _API
             5: self.bad_member_status,
             6: self.unknown_qr_code,
+           98: self.panic_no_db,
            99: self.panic_mode,
         }
         self.camera = Camera(self.db) if self.db.access["has_camera"] else None
         self.last_entries = myQ()
+        # veifies that the database is accessible
+        url = "{}/member/{}".format(self.base_api_url, 1)
+        try:
+            response = requests.get(url)
+        except requests.ConnectionError as conn_err:
+            print("Cannot start due to", conn_err)
+            exit(98)
 
 
     def insert_log(self, log_type, code, msg):
@@ -92,7 +100,11 @@ class Controller(object):
             "msg": msg,
             "debug": self.debug
         }
-        response = requests.post(url, json=payload)
+        try:
+            response = requests.post(url, json=payload)
+        except requests.ConnectionError as conn_err:
+            self.panic_no_db()
+            return 98
         if response.status_code == 201:
             if self.debug:
                 print(payload)
@@ -225,7 +237,10 @@ class Controller(object):
                 'until_days': until_days
             }
         }
-        response = requests.patch(url, json=patch)  # PATCH API call to add a transaction record
+        try:
+            response = requests.patch(url, json=patch)  # PATCH API call to add a transaction record
+        except requests.ConnectionError as conn_err:
+            return 98
         if response.status_code == 200:
             result = response.json()
             print(result)
@@ -264,7 +279,7 @@ class Controller(object):
                         response = requests.get(url)
                     except requests.ConnectionError as conn_err:
                         print(conn_err)
-                        return 99
+                        return 98
                     if response.status_code == 200:
                         self.member.from_json(response.json())
                         if self.debug: print(self.member)
@@ -281,7 +296,7 @@ class Controller(object):
                 response = requests.get(url)
             except requests.ConnectionError as conn_err:
                 print(conn_err)
-                return 99
+                return 98
             if response.status_code == 200:
                 self.member.from_json(response.json())
                 if self.debug: print(self.member)
@@ -324,7 +339,10 @@ class Controller(object):
         if self.debug: print("Entering state", self.current_state, self.TASKS[self.current_state].__name__)
         url = "{}/open/seconds".format(self.base_api_url)
         payload = { 'seconds': 3 }
-        response = requests.post(url, json=payload)
+        try:
+            response = requests.post(url, json=payload)
+        except requests.ConnectionError as conn_err:
+            return 98
         if response.status_code == 200:
             result = response.json()
             if result["errno"] == 1000: # no error
@@ -413,8 +431,17 @@ class Controller(object):
         sleep(3)
         return 1
 
+    def panic_no_db(self):
+        """State 98: no database acces, flash the lights for 3 seconds"""
+        if self.debug: print("Entering state", self.current_state, self.TASKS[self.current_state].__name__)
+        self.gpio.green1.flash("SET", on_duration=0.3, off_duration=0.3)
+        self.gpio.green2.flash("SET", on_duration=0.3, off_duration=0.3)
+        self.gpio.red.ON()
+        sleep(3)
+        return 1
+
     def panic_mode(self):
-        """State 99: major erro, flash the lights for 3 seconds"""
+        """State 99: major error, flash the lights for 3 seconds"""
         if self.debug: print("Entering state", self.current_state, self.TASKS[self.current_state].__name__)
         self.gpio.green1.flash("SET", on_duration=0.3, off_duration=0.3)
         self.gpio.green2.flash("SET", on_duration=0.3, off_duration=0.3)
