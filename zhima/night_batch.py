@@ -79,7 +79,7 @@ Please approach one of our staff during your next visit to renew it.
 <br>
 Looking forward seeing you @ XCJ!
 </p>""".format(member['username']),
-                #["images/XCJ.png"],
+                ["images/XCJ.png"],
                 db.mailbox["server"], db.mailbox['port'],
                 db.mailbox["username"], db.mailbox['password'],
                 debug=0
