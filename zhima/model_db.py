@@ -92,7 +92,7 @@ class Database():
                 where_clause.append(col+("=%s" if col!='passwd' else "=PASSWORD(%s)"))
                 params.append(val)
             sql += " WHERE " + " AND ".join(where_clause)
-            if order_by: sql += " ORDER BY " + order_by
+        if order_by: sql += " ORDER BY " + order_by
         return self.fetch(sql, params, one_only)
 
     def __getitem__(self, field):
