@@ -18,7 +18,7 @@ from send_email import send_email
 
 db = Member(debug=True)
 
-for m in db.select(columns="id", one_only=False):
+for m in db.select(columns="id", one_only=False, order_by="id"):
     member = Member(id=m['id'])
     print(member, member['status'])
     if member["role"] == member.ROLE["GROUP"]: continue
