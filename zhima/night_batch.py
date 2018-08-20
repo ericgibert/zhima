@@ -11,7 +11,7 @@ __author__ = "Eric Gibert"
 __version__ = "1.0.20180520 Dong Bei"
 __email__ =  "ericgibert@yahoo.fr"
 __license__ = "MIT"
-
+import os
 from datetime import date
 from member import Member
 from send_email import send_email
@@ -49,7 +49,7 @@ Please approach one of our staff during your next visit to renew it.
 Looking forward seeing you @ XCJ!
 </p>
     """.format(member['username'], member['validity']),
-                ["images/XCJ.png"],
+                [os.path.abspath("images/XCJ.png")],
                 db.mailbox["server"], db.mailbox['port'],
                 db.mailbox["username"], db.mailbox['password'],
                 debug=0
@@ -79,7 +79,7 @@ Please approach one of our staff during your next visit to renew it.
 <br>
 Looking forward seeing you @ XCJ!
 </p>""".format(member['username']),
-                ["images/XCJ.png"],
+                [os.path.abspath("images/XCJ.png")],
                 db.mailbox["server"], db.mailbox['port'],
                 db.mailbox["username"], db.mailbox['password'],
                 debug=0
