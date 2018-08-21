@@ -56,6 +56,8 @@ class Session_Manager():
         self.session.save()
     def __getitem__(self, item):
         return self.session.get(item)
+    def __setitem__(self, key, value):
+        self.session[key] = value
 
 session_manager = Session_Manager()
 
