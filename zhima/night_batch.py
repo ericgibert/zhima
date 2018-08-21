@@ -16,7 +16,7 @@ from datetime import date
 from member import Member
 from send_email import send_email
 
-db = Member(debug=True)
+db = Member(debug=False)
 
 for m in db.select(columns="id", one_only=False, order_by="id"):
     member = Member(id=m['id'])

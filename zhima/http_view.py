@@ -16,8 +16,9 @@ from json import dumps
 import argparse
 from collections import OrderedDict
 from datetime import datetime, date
-from bottle import Bottle, template, request, BaseTemplate, redirect, error, static_file, HTTPResponse
-from bottlesession import authenticator, PickleSession
+from bottle import app, Bottle, template, request, BaseTemplate, redirect, error, static_file, HTTPResponse
+# from bottlesession import authenticator, PickleSession
+from beaker.middleware import SessionMiddleware
 from member import Member
 from member_api import Member_Api
 from make_qrcode import make_qrcode
@@ -27,14 +28,36 @@ from glob import glob
 from markdown import markdown
 from pymysql.err import IntegrityError
 
-session_manager = PickleSession(session_dir=r"../Private/sessions", cookie_expires=12 * 3600)
+# session_manager = PickleSession(session_dir=r"../Private/sessions", cookie_expires=12 * 3600)
 #  NOTE: must amend the bottlesession.py script to declare files as binary as follow:
 #
 #  line 116:        with open(filename, 'rb') as fp:
 #  line 124:        with open(tmpName, 'wb') as fp:
 
-valid_user = authenticator(session_manager)
+# valid_user = authenticator(session_manager)
 http_view = Bottle()
+
+session_opts = {
+    'session.type': 'file',
+    'session.cookie_expires': 300,
+    'session.data_dir': "../Private/sessions",
+    'session.auto': True
+}
+app = SessionMiddleware(app(), session_opts)
+
+class Session_Manager():
+    def __init__(self):
+        self.session = {}
+    def get_session(self):
+        self.session = request.environ.get('beaker.session')
+    def save(self, session):
+        for k, v in session:
+            self.session[k] = v
+        self.session.save()
+    def __getitem__(self, item):
+        return self.session.get(item)
+
+session_manager = Session_Manager()
 
 PAGE_LENGTH = 25  # rows per page
 
@@ -499,4 +522,4 @@ if __name__ == "__main__":
 
     http_view.controller = ctrl(Database(debug=args.debug), args.debug)
     logout(do_redirect=False)
-    http_view.run(host=args.bottle_ip, port=args.port)
+    http_view.run(host=args.bottle_ip, port=args.port, app=app)
