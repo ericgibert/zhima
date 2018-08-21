@@ -40,7 +40,7 @@ http_view = Bottle()
 session_opts = {
     'session.type': 'file',
     'session.cookie_expires': 300,
-    'session.data_dir': "../Private/sessions",
+    'session.data_dir': path.abspath("../Private/sessions"),
     'session.auto': True
 }
 app = SessionMiddleware(app(), session_opts)
@@ -397,6 +397,7 @@ def do_login():
 @http_view.route('/Logout')
 def logout(do_redirect=True):
     session = session_manager.get_session()
+    print(session)
     session['valid'] = False
     session['user'] = {}
     session_manager.save(session)
