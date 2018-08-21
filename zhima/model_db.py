@@ -69,17 +69,22 @@ class Database():
         """execute a SELECT statement with the parameters and fetch row/rows"""
         if self.debug:
             print("Fetch:", sql, params)
+        data = {}
+        connection = pymysql.connect(Database.db_server, Database.login, Database.passwd, Database.dbname, cursorclass=OrderedDictCursor)
         try:
-            with pymysql.connect(Database.db_server, Database.login, Database.passwd, Database.dbname).cursor(OrderedDictCursor) as cursor:
+            # with pymysql.connect(Database.db_server, Database.login, Database.passwd, Database.dbname).cursor(OrderedDictCursor) as cursor:
+            with connection.cursor() as cursor:
                 cursor.execute(sql, params)
                 data = cursor.fetchone() if one_only else cursor.fetchall()
         except (pymysql.err.OperationalError, pymysql.err.ProgrammingError) as err:
             print(err)
             print(sql)
             print(params)
-            return {}
-        else:
-            return data
+        # else:
+        #    return data
+        finally:
+            connection.close()
+        return data
 
     def select(self, table=None, columns='*', one_only=True, order_by="", **where):
         """build a SELECT statement and fetch its row(s)"""
@@ -104,17 +109,21 @@ class Database():
         """Generic SQL statement execution"""
         if self.debug:
             print("Execute:", sql, params)
+        lastrow = None
+        connection = pymysql.connect(Database.db_server, Database.login, Database.passwd, Database.dbname, cursorclass=OrderedDictCursor)
         try:
-            with pymysql.connect(Database.db_server, Database.login, Database.passwd, Database.dbname) as cursor:
+            # with pymysql.connect(Database.db_server, Database.login, Database.passwd, Database.dbname) as cursor:
+            with connection.cursor() as cursor:
                 cursor.execute(sql, params)
                 lastrow = cursor.lastrowid
+            connection.commit()
         except (TypeError, ValueError, pymysql.err.OperationalError) as err:
             print('ERROR on sql execute:', err)
             print(sql)
             print(params)
-            return None
-        else:
-            return lastrow
+        finally:
+            connection.close()
+        return lastrow
 
     def update(self, table=None, **kwargs):
         """
