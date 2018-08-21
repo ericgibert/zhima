@@ -526,4 +526,4 @@ if __name__ == "__main__":
 
     http_view.controller = ctrl(Database(debug=args.debug), args.debug)
     logout(do_redirect=False)
-    http_view.run(host=args.bottle_ip, port=args.port, app=app)
+    http_view.run(host=args.bottle_ip, port=args.port)  # , app=app)
