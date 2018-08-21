@@ -49,7 +49,7 @@ class Session_Manager():
     def __init__(self):
         self.session = {}
     def get_session(self):
-        self.session = request.environ.get('beaker.session')
+        self.session = request.environ.get('beaker.session') or {}
     def save(self, session):
         for k, v in session:
             self.session[k] = v
