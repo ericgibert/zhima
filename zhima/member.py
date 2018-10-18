@@ -45,15 +45,16 @@ class Member(Database):
         ("EVENT", "Event", 0.00, 1),
         ("TOOL", "Tool Usage", 50.00, 181),
         ("CROWD FUNDING", "Crowd Funding", 0.00, -1),
+        ("10 ENTRIES", "10 Entries", 350.00, 181),
     ]
 
     ROLE = {
-        'VISITOR': 0,
-        'MEMBER': 1,
-        'MASTER': 2,
-        'GROUP': 4,
-        'STAFF': 5,
-        'ADMIN': 10
+        'VISITOR': 0,   # can make contribution or buy 10 days accesses
+        'MEMBER': 1,    # pays a membership
+        'MASTER': 2,    # has extra access to tool room or other advantages to be defined
+        'GROUP': 4,     # not a person but a group of person. Allow to generate a QR code specific to a group
+        'STAFF': 5,     # special privilege on this application, can do "sandwich", can UPSERT but not delete
+        'ADMIN': 10     # maximum privileges, can delete rows
     }
 
     STATUS = {

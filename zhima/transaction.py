@@ -7,6 +7,10 @@
     pre-requisite:
         sudo pip3 install PyMySQL
 
+
+    sudo systemctl restart httpd
+    http://127.0.0.1/phpMyAdmin/
+
     Transactions table:
     --
 -- Table structure for table `transactions`

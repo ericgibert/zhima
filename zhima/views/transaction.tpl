@@ -60,6 +60,12 @@ function onChangeType(selectType)
         document.getElementById("valid_until").value = valid_from.toISOString().substr(0,10);
         document.getElementById("amount").value = 900.00;
     }
+    else if (value=="10 ENTRIES")
+    {
+        valid_from.setDate(valid_from.getDate() + 181);
+        document.getElementById("valid_until").value = valid_from.toISOString().substr(0,10);
+        document.getElementById("amount").value = 350.00;
+    }
     else if (value=="DONATION")
     {
         valid_from = new Date(Date.parse("9999-12-31"));

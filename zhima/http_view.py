@@ -123,7 +123,8 @@ def list_entries(page=0):
              WHERE (type='OPEN' or type='NOT_OK') and datediff(CURDATE(), created_on) < 32 
              ORDER BY created_on desc LIMIT {}, {}""".format(page * PAGE_LENGTH, PAGE_LENGTH)
     rows = http_view.controller.db.fetch(sql, (), one_only=False)
-    return template("entries", rows=rows, current_page=page, session=session_manager.get_session())
+    return template("entries", rows=rows, current_page=page, session=session_manager.get_session()) if rows \
+            else "<h1>No log entries in the past 30 days</h1>"
 
 @http_view.get('/log')
 @http_view.get('/log/<page:int>')
