@@ -55,7 +55,7 @@ class Database():
                 Database.dbname = self.access[ip_3]["dbname"]
                 Database.login = self.access[ip_3]["login"]
                 Database.passwd = self.access[ip_3]["passwd"]
-                Database.db_server = self.access[ip_3]["server_ip"] # "localhost" if my_IP==self.access[ip_3]["server_ip"] else self.access[ip_3]["server_ip"]
+                Database.db_server = "localhost" if my_IP==self.access[ip_3]["server_ip"] else self.access[ip_3]["server_ip"]
                 Database.server_ip = self.access[ip_3]["server_ip"]  # "localhost" if my_IP==self.access[ip_3]["server_ip"] else self.access[ip_3]["server_ip"]
                 Database.key = self.access["key"].encode("utf-8")
                 Database.mailbox = self.access.get("mailbox")
