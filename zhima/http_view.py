@@ -177,7 +177,7 @@ def upd_member(id):
     """
     if str(id) not in request.forms.get('id', '0'):
         return "<h1>Error - The form's id is not the same as the id on the link</h1>"
-    CANT_UPD_FIELDS = ('submit', 'id', 'passwdchk', 'validity', 'last_active_type', 'last_active_time', 'opens')
+    CANT_UPD_FIELDS = ('submit', 'id', 'passwdchk', 'validity', 'last_active_type', 'last_active_time')
     member = Member(id)  # get current db record or an empty member if id==0
     # force username to lower case and ensure its unicity:
     request.forms['username'] = request.forms['username'].lower()

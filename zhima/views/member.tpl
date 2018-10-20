@@ -115,9 +115,10 @@
     % if member.transactions:
     <p>Membership valid until {{member["validity"]}}</p>
     % if member["role"]==0:
+        <h3>Registered entries:</h3>
         <ol>
-        % for open in member["opens"]:
-           <li>{{open['open_date']}}</li>
+        % for open in member.opens:
+           <li>{{open}}</li>
         % end
         </ol>
     % end

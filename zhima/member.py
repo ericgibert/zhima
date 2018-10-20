@@ -110,13 +110,14 @@ class Member(Database):
                 row = self.fetch("""SELECT id, valid_from, valid_until from transactions 
                                     where member_id=%s and RIGHT(type, 10)='10 ENTRIES'""", (self.id,))
                 if row:
-                    self.data['opens'] = self.fetch("""SELECT distinct(date(created_on)) as open_date FROM tb_log
+                    opens = self.fetch("""SELECT distinct(date(created_on)) as open_date FROM tb_log
                                         WHERE type='OPEN' and code=%s and created_on between %s and %s
                                         order by created_on asc""", (self.id, row['valid_from'], row['valid_until']), one_only=False)
-                    if len(self.data['opens']) <= 10:
+                    self.opens = [o['open_date'].strftime("%Y-%m-%d") for o in opens]
+                    if len(opens) <= 10:
                         self.data['validity'] = row['valid_until']
                 else:
-                    self.data['opens'] = []
+                    self.opens = []
             else:
                 row = self.fetch("""SELECT max(valid_until) as max_valid from transactions 
                                         where member_id=%s and RIGHT(type, 10)='MEMBERSHIP'""", (self.id,))
