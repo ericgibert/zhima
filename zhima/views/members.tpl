@@ -10,7 +10,7 @@
 <p>You can add a filter by 'status' on the URL like so: <a href="/members?filter=OK">/members?filter=OK</a></p>
 <p>You can create a new member here: <a href="/members/new">/members/new</a></p>
 % if len(rows):
-%   columns=("id", "rfid", "username","email", "status", "role", "city", "last_active_type", "last_active_time", "create_time")
+%   columns=("id", "rfid", "username", "email", "status", "role", "city", "last_active_type", "last_active_time", "create_time")
 <table>
         <tr>
             % for k in columns:

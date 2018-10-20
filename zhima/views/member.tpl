@@ -114,6 +114,13 @@
 % if read_only:
     % if member.transactions:
     <p>Membership valid until {{member["validity"]}}</p>
+    % if member["role"]==0:
+        <ol>
+        % for open in member["opens"]:
+           <li>{{open['open_date']}}</li>
+        % end
+        </ol>
+    % end
     <style>
     table, td {
     border: 1px solid black;

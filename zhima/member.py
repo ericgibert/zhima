@@ -104,9 +104,23 @@ class Member(Database):
                                                order_by="created_on DESC",
                                                member_id=self.id)
             # calculate the validity
-            row = self.fetch("""SELECT max(valid_until) as max_valid from transactions 
-                                    where member_id=%s and RIGHT(type, 10)='MEMBERSHIP'""", (self.id,))
-            self.data['validity'] = row['max_valid'] or (date.today() - timedelta(days=1)) # if no membership found then validity==yesterday!
+            self.data['validity'] = date.today() - timedelta(days=1)  # default: validity==yesterday!
+            if self.data["role"] == self.ROLE['VISITOR']:
+                # check if the user has purchased a 10 entries
+                row = self.fetch("""SELECT id, valid_from, valid_until from transactions 
+                                    where member_id=%s and RIGHT(type, 10)='10 ENTRIES'""", (self.id,))
+                if row:
+                    self.data['opens'] = self.fetch("""SELECT distinct(date(created_on)) as open_date FROM tb_log
+                                        WHERE type='OPEN' and code=%s and created_on between %s and %s
+                                        order by created_on asc""", (self.id, row['valid_from'], row['valid_until']), one_only=False)
+                    if len(self.data['opens']) <= 10:
+                        self.data['validity'] = row['valid_until']
+                else:
+                    self.data['opens'] = []
+            else:
+                row = self.fetch("""SELECT max(valid_until) as max_valid from transactions 
+                                        where member_id=%s and RIGHT(type, 10)='MEMBERSHIP'""", (self.id,))
+                self.data['validity'] = row['max_valid'] or (date.today() - timedelta(days=1)) # if no membership found then validity==yesterday!
             self.qrcode_is_valid = self['validity'] >= date.today()
         except (TypeError, KeyError) as err:
             print("error assigning member information")

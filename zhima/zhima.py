@@ -72,6 +72,7 @@ class Controller(object):
             4: _OPEN_WITH[self.db.access["open_with"]],  # choose the function to call: _RELAY, _BLE, _BOTH, _API
             5: self.bad_member_status,
             6: self.unknown_qr_code,
+            7: self.wait_to_close_the_door,  #  self.db.access["wait_to_close"] is 0 or 1 (False/True)
            98: self.panic_no_db,
            99: self.panic_mode,
         }
@@ -162,8 +163,8 @@ class Controller(object):
             if self.debug:
                 print("Waiting for proximity", '.' * points, " " * max_pts, end="\r")
                 points = (points + 1) % max_pts
-            if self.db.access["has_camera"] and self.gpio.check_proximity():
-                next_state = 2
+            if self.gpio.check_proximity():
+                next_state = 2 if self.db.access["has_camera"] else 4 # take QR Code photo / open the door immediately
             # Check if a card is available to read.
             if self.db.access["has_RFID"]:
                 try:
@@ -335,7 +336,8 @@ class Controller(object):
 
 
     def open_the_door_API(self):
-        """Calls the Master Raspi to open the door by API"""
+        """State 4: Proceed to open the door by calling the API --> open main door ; RPI does not control a door directly
+            Calls the Master Raspi to open the door by API"""
         if self.debug: print("Entering state", self.current_state, self.TASKS[self.current_state].__name__)
         url = "{}/open/seconds".format(self.base_api_url)
         payload = { 'seconds': 3 }
@@ -362,12 +364,11 @@ class Controller(object):
         if self.debug: print("Entering state", self.current_state, self.TASKS[self.current_state].__name__)
         self.gpio.relay.ON()
         self.happy_flashing(3)
-        self.gpio.relay.OFF()
-        return 1
+        return 7 if self.db.access["wait_to_close"] else 1
 
     def open_the_door_BLE(self):
         """State 4: Proceed to open the door
-        # Open the door using Bluetooth - all BLE parameters are defaulted for the TOKYDOOR BLE @ XCJ
+            Open the door using Bluetooth - all BLE parameters are defaulted for the TOKYDOOR BLE @ XCJ
         """
         if self.debug: print("Entering state", self.current_state, self.TASKS[self.current_state].__name__)
         tokydoor = TokyDoor(database=self.db)
@@ -377,12 +378,12 @@ class Controller(object):
             self.insert_log("ERROR", -1001, "Cannot connect to TOKYDOOR: {}".format(err))
             return 99 # cannot reach the BLE!!! Panic Mode!! 
         self.happy_flashing(3)
-        return 1
+        return 7 if self.db.access["wait_to_close"] else 1
 
     def open_the_door_BOTH(self):
         """State 4: Proceed to open the door
-        Open the door using both Bluetooth - all BLE parameters are defaulted for the TOKYDOOR BLE @ XCJ
-        and the electric relay
+            Open the door using both Bluetooth - all BLE parameters are defaulted for the TOKYDOOR BLE @ XCJ
+            and the electric relay
         """
         if self.debug: print("Entering state", self.current_state, self.TASKS[self.current_state].__name__)
         self.gpio.relay.ON()
@@ -393,7 +394,13 @@ class Controller(object):
             self.insert_log("ERROR", -1001, "Cannot connect to TOKYDOOR: {}".format(err))
             return 99 # cannot reach the BLE!!! Panic Mode!!
         self.happy_flashing(3)
-        self.gpio.relay.OFF()
+        return 7 if self.db.access["wait_to_close"] else 1
+
+    def wait_to_close_the_door(self):
+        """State 7: Wait for the door to be closed
+            Verifies that the door has been closed physically before returning to State 1 where the relay set OFF"""
+        while self.gpio.door_check.is_open:
+            self.happy_flashing(1)
         return 1
 
     def bad_member_status(self):

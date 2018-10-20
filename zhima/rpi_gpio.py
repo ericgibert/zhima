@@ -151,6 +151,26 @@ class Dfrobot_Pir_v1_0(object):
         return int(not self.rpi.read(self.pin))
 
 
+class Door_Check(object):
+    """
+    Class to verifies if the door is open or closed
+
+    Wiring:
+
+    """
+    def __init__(self, rpi, pin):
+        self.rpi, self.pin = rpi, pin
+        rpi.pig.set_mode(pin, pigpio.INPUT)
+        rpi.pig.set_pull_up_down(pin, pigpio.PUD_UP)
+
+    @property
+    def is_open(self):
+        return int(not self.rpi.read(self.pin))
+
+    def reset(self):
+        self.rpi.write(self.pin, 1)
+
+
 class Rpi_Gpio(object):
     def __init__(self, has_PN532=False, pigpio_host="", pigpio_port=8888):
         """
@@ -167,7 +187,8 @@ class Rpi_Gpio(object):
         self.red = Led(self, 18)                        # RED LED       on pin 12
                                                         # GND (again)   on pin 14
         self.proximity = E18_D80nk(self, 23)            # PROXIMITY     on pin 16
-        self.relay = Led(self, 24)                      # RELAY         on pin 18
+        self.relay = Led(self, 24)                      # DOOR RELAY    on pin 18
+        self.door_check = Door_Check(self, 27)          # DOOR STATUS   on pin 13
 
         CS   = 22                                       #  pin 15
                                                         #  3.3V on pin 17
