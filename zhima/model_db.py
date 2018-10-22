@@ -1,6 +1,39 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
+Access the database for all basic operations (SELECT/UPDATE/INSERT)
+
+Reads the JSON configuration file to retrieve:
+
+- either given to __init__ as parameter "db_access=/the/path/to/file" or defaulted to "../Private/db_access.data"
+- content is expressed as a JSON structure, no comments allowed
+----------------+----------------------------------------------------------------------------------
+Key             | Value
+----------------+----------------------------------------------------------------------------------
+IP mask         | Dictionary to provide database access:
+                | - login
+                | - passwd
+                | - dbname
+                | - server_ip   (can be a sever name if DNS is resolved) ; will be replaced by 'localhost' if on master
+----------------+----------------------------------------------------------------------------------
+key             | Encryption key - must be 8 bytes
+----------------+----------------------------------------------------------------------------------
+mailbox         | Information to connect to SMTP external server to send notification emails
+                | - username
+                | - password
+                | - server (URL)
+                | - port (secured: 465 recommended
+----------------+----------------------------------------------------------------------------------
+whitelist       | List of IP or names which are unable to access the APIs
+----------------+----------------------------------------------------------------------------------
+has_camera      | Boolean 0/1: this Raspi is equiped with a camera for QR code recognition
+----------------+----------------------------------------------------------------------------------
+has_RFID        | Boolean 0/1: this Raspi is equiped with a RFID card reader
+----------------+----------------------------------------------------------------------------------
+open_with       | One of "RELAY", "BLE", "BOTH", "API". Method to open the door - refer to zhima.py for more information
+----------------+----------------------------------------------------------------------------------
+wait_to_close   | Boolean 0/1: this Raspi is equiped with a detection of door status (open or close) ; relay released only when closed
+----------------+----------------------------------------------------------------------------------
 
 
 """
@@ -56,7 +89,7 @@ class Database():
                 Database.login = self.access[ip_3]["login"]
                 Database.passwd = self.access[ip_3]["passwd"]
                 Database.db_server = "localhost" if my_IP==self.access[ip_3]["server_ip"] else self.access[ip_3]["server_ip"]
-                Database.server_ip = self.access[ip_3]["server_ip"]  # "localhost" if my_IP==self.access[ip_3]["server_ip"] else self.access[ip_3]["server_ip"]
+                Database.server_ip = self.access[ip_3]["server_ip"]
                 Database.key = self.access["key"].encode("utf-8")
                 Database.mailbox = self.access.get("mailbox")
             except KeyError as err:

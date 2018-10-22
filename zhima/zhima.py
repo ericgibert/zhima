@@ -349,7 +349,7 @@ class Controller(object):
             result = response.json()
             if result["errno"] == 1000: # no error
                 self.happy_flashing(3)
-                return 1
+                return 7 if self.db.access["wait_to_close"] else 1
             else:
                 self.insert_log("ERROR", -1002, "Cannot open door by API: {} {}".format(result["errno"], result["errmsg"]))
         else:
