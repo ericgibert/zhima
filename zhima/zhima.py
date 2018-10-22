@@ -56,6 +56,11 @@ class Controller(object):
         self.debug = debug
         # init local attributes
         self.db = Database()
+        if debug:
+            print("has_RFID:", self.db.access["has_RFID"])
+            print("has_camera:", self.db.access["has_camera"])
+            print("open_with:", self.db.access["open_with"])
+            print("wait_to_close:", self.db.access["wait_to_close"])
         self.base_api_url = "http://{}:8080/api/v1.0".format(bottle_ip or Database.server_ip)
         self.gpio = Rpi_Gpio(has_PN532=self.db.access["has_RFID"])
         self.member = None
