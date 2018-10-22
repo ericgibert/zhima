@@ -404,6 +404,7 @@ class Controller(object):
     def wait_to_close_the_door(self):
         """State 7: Wait for the door to be closed
             Verifies that the door has been closed physically before returning to State 1 where the relay set OFF"""
+        if self.debug: print("Entering state", self.current_state, self.TASKS[self.current_state].__name__)
         while self.gpio.door_check.is_open:
             self.happy_flashing(1)
         return 1
