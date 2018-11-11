@@ -171,6 +171,7 @@ class Controller(object):
                 points = (points + 1) % max_pts
             if self.gpio.check_proximity():
                 next_state = 2 if self.db.access["has_camera"] else 4 # take QR Code photo / open the door immediately
+                break
             # Check if a card is available to read.
             if self.db.access["has_RFID"]:
                 try:
