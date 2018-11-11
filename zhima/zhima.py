@@ -165,7 +165,7 @@ class Controller(object):
         next_state = 1
         self.qr_codes, self.uid = [], None
         while next_state == 1:
-            sleep(0.2)
+            # sleep(0.2)
             if self.debug:
                 print("Waiting for proximity", '.' * points, " " * max_pts, end="\r")
                 points = (points + 1) % max_pts
