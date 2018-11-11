@@ -87,6 +87,7 @@ class Controller(object):
         url = "{}/member/{}".format(self.base_api_url, 1)
         try:
             response = requests.get(url)
+            print("Connected and member fetched:", response)
         except requests.ConnectionError as conn_err:
             print("Cannot start due to", conn_err)
             exit(98)
