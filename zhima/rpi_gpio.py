@@ -118,10 +118,10 @@ class E18_D80nk(object):
     https://www.14core.com/wiring-the-e18-d80nk-infrared-distance-ranging-sensor/
 
     Wiring:
-    Type 1      Type 2      Function
-    red         brown       Vcc  (+5V)
-    black       bleu        Gnd
-    Yellow      black       Signal   need to insert a 4.7kO to 10kO resitor before the pin
+    Type 1      Type 2      Type 3  Function
+    red         brown       red     Vcc  (+5V)
+    black       bleu        Green   Gnd
+    Yellow      black       Yellow  Signal   need to insert a 4.7kO to 10kO resitor before the pin
     """
     def __init__(self, rpi, pin):
         self.rpi, self.pin = rpi, pin
