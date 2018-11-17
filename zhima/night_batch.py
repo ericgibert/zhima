@@ -12,17 +12,27 @@ __version__ = "1.0.20180520 Dong Bei"
 __email__ =  "ericgibert@yahoo.fr"
 __license__ = "MIT"
 import os
+from shutil import copy2
 from datetime import date
 from member import Member
 from send_email import send_email
+from make_qrcode import make_qrcode
 
 db = Member(debug=False)
 print(os.path.abspath("images/XCJ.png"))
 for m in db.select(columns="id", one_only=False, order_by="id"):
     member = Member(id=m['id'])
     print(member, member['status'])
+    # if member's status is not OK then overwrite its QR code image else generate a new one
+    qr_file = "images/XCJ_{}.png".format(member.id)
+    if member['status'] != "OK":
+        copy2("images/emoji-not-happy.jpg", qr_file)
+        continue
+    # else....
+    qrcode_text = member.encode_qrcode()
+    img = make_qrcode(qrcode_text)
+    img.save(qr_file)
     if member["role"] == member.ROLE["GROUP"]: continue
-    if member['status'] != "OK": continue
     if (member['validity'] - date.today()).days == 7:
         print("7 days!")
         if member['email']:

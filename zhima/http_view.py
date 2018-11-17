@@ -11,7 +11,7 @@ __email__ =  "ericgibert@yahoo.fr"
 __license__ = "MIT"
 import sys
 from shutil import copy2
-from os import path, system, getpid
+from os import path, system, getpid, stat
 from json import dumps
 import argparse
 from collections import OrderedDict
@@ -162,9 +162,16 @@ def get_member(id):
     member = Member(id)
     qr_file = "images/XCJ_{}.png".format(id)
     if member['status'] == "OK":
-        qrcode_text = member.encode_qrcode()
-        img = make_qrcode(qrcode_text)
-        img.save(qr_file)
+        try:
+            last_modif_time = stat(qr_file).st_mtime
+            make_qr_code = datetime.fromtimestamp(last_modif_time) < datetime.now().replace(minute=0, hour=0, second=0, microsecond=0)
+        except (FileNotFoundError, AttributeError) as err:
+            make_qr_code = True
+        if make_qr_code:
+            qrcode_text = member.encode_qrcode()
+            img = make_qrcode(qrcode_text)
+            img.save(qr_file)
+        member.qrcode_is_valid = True
     else:
         member.qrcode_is_valid = False
         copy2("images/emoji-not-happy.jpg", qr_file) # overwrite any previous QR code .png
