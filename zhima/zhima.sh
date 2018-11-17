@@ -37,6 +37,10 @@ restart|reload|force-reload)
     $0 start
     rc=$?
     ;;
+reboot)
+    $0 stop
+    sudo reboot
+    ;;
 *)
     echo $"Usage: $0 {start|stop|status|restart|reload|force-reload}"
     exit 2
