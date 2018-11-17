@@ -104,11 +104,11 @@ def default():
     # rows = http_view.controller.db.fetch(sql, (), one_only=False)
     return template("default", controller=http_view.controller, session=session_manager.get_session())  # rows=rows,
 
-def list_sql(table, order_by="", page=0, select_cols="*"):
+def list_sql(table, filter_on_col="", order_by="", page=0, select_cols="*"):
     where_clause, req_query = [], ""
     try:
         req_query = "?filter=" + request.query["filter"]
-        where_clause.append("status='{}'".format(request.query["filter"]))
+        where_clause.append("{}='{}'".format(filter_on_col, request.query["filter"]))
     except KeyError:
         pass
     try:
@@ -140,7 +140,7 @@ def list_entries(page=0):
 @need_staff
 def log(page=0):
     """Log dump - can be filterer with ?filter=<log_type>"""
-    sql, req_query = list_sql("tb_log", "type", "created_on DESC", page)
+    sql, req_query = list_sql("tb_log", "type", order_by="created_on DESC", page=page)
     rows = http_view.controller.db.fetch(sql, one_only=False)
     return template("log", rows=rows, current_page=page, req_query=req_query, session=session_manager.get_session())
 
@@ -150,7 +150,7 @@ def log(page=0):
 @need_staff
 def list_members(page=0):
     """List the members and provide link to add new one or edit existing ones"""
-    sql, req_query = list_sql("users", order_by="username", page=page)
+    sql, req_query = list_sql("users", "status", order_by="username", page=page)
     rows = http_view.controller.db.fetch(sql, one_only=False)
     return template("members", rows=rows, current_page=page, req_query=req_query, session=session_manager.get_session())
 
