@@ -98,7 +98,7 @@ class Database():
         self.key = Database.key
         self.mailbox = Database.mailbox
 
-    def fetch(self, sql, params = (), one_only=True):
+    def fetch(self, sql, params=None, one_only=True):
         """execute a SELECT statement with the parameters and fetch row/rows"""
         if self.debug:
             print("Fetch:", sql, params)

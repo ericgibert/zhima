@@ -104,12 +104,21 @@ def default():
     # rows = http_view.controller.db.fetch(sql, (), one_only=False)
     return template("default", controller=http_view.controller, session=session_manager.get_session())  # rows=rows,
 
-def list_sql(table, filter_col, order_by="", page=0, select_cols="*"):
+def list_sql(table, order_by="", page=0, select_cols="*"):
+    where_clause, req_query = [], ""
     try:
         req_query = "?filter=" + request.query["filter"]
-        sql = "SELECT {} FROM {} WHERE {}='{}'".format(select_cols, table, filter_col, request.query["filter"])
+        where_clause.append("status='{}'".format(request.query["filter"]))
     except KeyError:
-        sql, req_query = "SELECT {} FROM {}".format(select_cols, table), ""
+        pass
+    try:
+        where_clause.append("(username like '%{0}%' or email like '%{0}%')".format(request.query["search"]))
+    except KeyError:
+        pass
+
+    sql = "SELECT {} FROM {}".format(select_cols, table)
+    if where_clause:
+        sql += " WHERE {}".format(" AND ".join(where_clause))
     sql +=  " ORDER BY {}".format(order_by) if order_by else ""
     sql += " LIMIT {},{}".format(page * PAGE_LENGTH, PAGE_LENGTH)
     return sql, req_query
@@ -141,7 +150,7 @@ def log(page=0):
 @need_staff
 def list_members(page=0):
     """List the members and provide link to add new one or edit existing ones"""
-    sql, req_query = list_sql("users", "status", page=page)
+    sql, req_query = list_sql("users", order_by="username", page=page)
     rows = http_view.controller.db.fetch(sql, one_only=False)
     return template("members", rows=rows, current_page=page, req_query=req_query, session=session_manager.get_session())
 

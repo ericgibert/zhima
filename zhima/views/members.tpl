@@ -7,8 +7,52 @@
 <body>
 % include('header.html')
 <h1>XCJ Members</h1>
-<p>You can add a filter by 'status' on the URL like so: <a href="/members?filter=OK">/members?filter=OK</a></p>
-<p>You can create a new member here: <a href="/members/new">/members/new</a></p>
+<p>
+<fieldset>
+    <legend>Operations:</legend>
+
+Status:
+  <select id = "status_list"
+    onchange = 'window.location = this.value=="ALL" ? "/members" : "/members?filter=" + this.value;'>
+    <option value = "ALL">All</option>
+    <option value = "OK">OK</option>
+    <option value = "NOT_OK">Not OK</option>
+    <option value = "INVALID">Invalid</option>
+  </select>
+
+  &nbsp;
+  &nbsp;
+  &nbsp;
+  &nbsp;
+
+  <input type="text" name="search" id
+  ="search" size="20" placeholder="Search"/>
+
+  &nbsp;
+  &nbsp;
+  &nbsp;
+
+<input type='button' id='new' value='New Member' onClick='window.location = "/members/new"'>
+</fieldset></p>
+<script>
+const urlParams = new URLSearchParams(window.location.search);
+const myParam = urlParams.get('filter');
+if (myParam)
+{
+    document.getElementById("status_list").value = myParam;
+}
+
+document.addEventListener('keyup', function (event) {
+    var key = event.key || event.keyCode;
+    if (key=='Enter' || key==13)
+    {
+        var searchStr = document.getElementById("search").value;
+        if (searchStr)
+            window.location = "/members?search="+searchStr;
+    }
+});
+</script>
+
 % if len(rows):
 %   columns=("id", "rfid", "username", "email", "status", "role", "city", "last_active_type", "last_active_time", "create_time")
 <table>
