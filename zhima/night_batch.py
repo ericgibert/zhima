@@ -19,14 +19,16 @@ from send_email import send_email
 from make_qrcode import make_qrcode
 
 db = Member(debug=False)
-print(os.path.abspath("images/XCJ.png"))
+images_path = os.path.dirname(os.path.realpath(__file__)) + "/images"
+XCJ_LOGO = images_path + "/XCJ.png"
+NOT_HAPPY = images_path + "/emoji-not-happy.jpg"
 for m in db.select(columns="id", one_only=False, order_by="id"):
     member = Member(id=m['id'])
     print(member, member['status'])
     # if member's status is not OK then overwrite its QR code image else generate a new one
-    qr_file = "images/XCJ_{}.png".format(member.id)
+    qr_file = "{}/XCJ_{}.png".format(images_path, member.id)
     if member['status'] != "OK":
-        copy2("images/emoji-not-happy.jpg", qr_file)
+        copy2(NOT_HAPPY, qr_file)
         continue
     # else....
     qrcode_text = member.encode_qrcode()
@@ -59,7 +61,7 @@ Please approach one of our staff during your next visit to renew it.
 Looking forward seeing you @ XCJ!
 </p>
     """.format(member['username'], member['validity']),
-                [os.path.abspath("images/XCJ.png")],
+                [XCJ_LOGO],
                 db.mailbox["server"], db.mailbox['port'],
                 db.mailbox["username"], db.mailbox['password'],
                 debug=0
@@ -89,7 +91,7 @@ Please approach one of our staff during your next visit to renew it.
 <br>
 Looking forward seeing you @ XCJ!
 </p>""".format(member['username']),
-                [os.path.abspath("images/XCJ.png")],
+                [XCJ_LOGO],
                 db.mailbox["server"], db.mailbox['port'],
                 db.mailbox["username"], db.mailbox['password'],
                 debug=0
