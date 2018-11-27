@@ -11,6 +11,7 @@ HTTP_PID=$(cat $CWD/http_view.pid)
 # See how we were called.
 case "$1" in
 start)
+    rm /home/pi/zhima/Private/sessions/sess*
     export WORKON_HOME=$HOME/.virtualenvs
     source $WORKON_HOME/zhima/bin/activate
 
