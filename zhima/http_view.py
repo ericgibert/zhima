@@ -6,7 +6,7 @@
 
 """
 __author__ = "Eric Gibert"
-__version__ = "1.0.20180602 Dong Bei - RFID"
+__version__ = "1.0.20190211 Qiandaohu"
 __email__ =  "ericgibert@yahoo.fr"
 __license__ = "MIT"
 import sys
@@ -28,7 +28,7 @@ from glob import glob
 from markdown import markdown
 from pymysql.err import IntegrityError
 
-session_manager = PickleSession(session_dir=r"../Private/sessions", cookie_expires=12 * 3600)
+session_manager = PickleSession(session_dir=r"../Private/sessions", cookie_expires=2 * 3600)
 #  NOTE: must amend the bottlesession.py script to declare files as binary as follow:
 #
 #  line 116:        with open(filename, 'rb') as fp:
