@@ -141,6 +141,10 @@ Auto-start at boot
 ==================
 
 
+Better solution: crontab -e with @reboot
+
+else, alternative:
+
 > cat /lib/systemd/system/zhima.service
 
 --------

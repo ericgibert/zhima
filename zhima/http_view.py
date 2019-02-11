@@ -11,7 +11,7 @@ __email__ =  "ericgibert@yahoo.fr"
 __license__ = "MIT"
 import sys
 from shutil import copy2
-from os import path, system, getpid, stat
+from os import path, system, getpid, stat, makedirs
 from json import dumps
 import argparse
 from collections import OrderedDict
@@ -74,8 +74,15 @@ def whitelisted(callback):
         if request.remote_addr in http_view.controller.db.access['whitelist']:
             return callback(*args, **kwargs)
         else:
-            print("Unauthorized access from", request.remote_addr)
-            return HTTPResponse(status=403, body='<h3>Sorry, you are not authorized to perform this action</h3>WL: ' + request.urlparts.hostname)
+            ip_3 = ".".join(request.remote_addr.split('.')[:3])
+            for ip_mask in http_view.controller.db.access['whitelist']:
+                if ip_mask.endswith('.*'):
+                    mask_3 = ".".join(ip_mask.split('.')[:3])
+                    if ip_3 == mask_3:
+                        return callback(*args, **kwargs)
+            else:
+                print("Unauthorized access from", request.remote_addr)
+                return HTTPResponse(status=403, body='<h3>Sorry, you are not authorized to perform this action</h3>WL: ' + request.urlparts.hostname)
     return wrapper
 
 def need_login(callback):
@@ -439,9 +446,10 @@ def stop():
         # http_view.controller.stop(from_bottle=True)
         sys.stderr.close()
 
-@http_view.route("/images/<filepath>")
-def img(filepath):
-    return static_file(filepath, root="images")
+@http_view.route("/images/<a>")
+@http_view.route("/images/<a>/<b>")
+def img(a, b=None):
+    return static_file(a + "/" + b if b else a , root="images")
 
 ###  APIs
 @http_view.get('/api/v1.0/member/<id>')
@@ -522,6 +530,26 @@ def add_log():
     log = request.json
     log_id = http_view.controller.db.log(log["log_type"], log["code"], log["msg"], http_view.controller.debug)
     return HTTPResponse(status=201, body='log entry {} inserted'.format(log_id))
+
+
+@http_view.post('/upload/<memberId:int>')
+def do_upload(memberId):
+    """Upload the file into the member's folder
+    Control that onlt legal extensions are provided
+    Create that folder the first time
+    """
+    upload = request.files.get('upload')
+    name, ext = path.splitext(upload.filename)
+    if ext.lower() not in ('.png', '.jpg', '.jpeg', '.pdf'):
+        return "File extension not allowed."
+
+    save_path = "images/m{}".format(memberId)
+    if not path.exists(save_path):
+        makedirs(save_path)
+
+    file_path = "{path}/{file}".format(path=save_path, file=upload.filename)
+    upload.save(file_path)
+    return f"""<p>File <b>{upload.filename}</b> successfully saved to '{save_path}'</P><a href="/member/{memberId}">Back to member's page</a>"""
 
 if __name__ == "__main__":
     from model_db import Database

@@ -14,7 +14,11 @@ __license__ = "MIT"
 from time import sleep
 from tempfile import mkstemp
 from PIL import Image
-import zbarlight
+try:
+    import zbarlight
+except ImportError as err:
+    print(err)
+    print("""Make sure that the camera is inactive in db_access.data:   "has_camera": 0, """)
 import cv2
 try:
     import picamera

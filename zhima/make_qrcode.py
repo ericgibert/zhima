@@ -9,7 +9,11 @@ import os
 import argparse
 import qrcode
 from PIL import Image
-import zbarlight
+try:
+    import zbarlight
+except ImportError as err:
+    print(err)
+    print("""Make sure that the camera is inactive in db_access.data:   "has_camera": 0, """)
 from member import Member
 
 XCJ_LOGO = "../Private/XCJ.png"

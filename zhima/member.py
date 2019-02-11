@@ -21,9 +21,11 @@
 
 """
 __author__ = "Eric Gibert"
-__version__ = "1.0.20170113"
+__version__ = "1.0.20190211"  # original: 1.0.20170113
 __email__ =  "ericgibert@yahoo.fr"
 __license__ = "MIT"
+
+from glob import glob
 from datetime import datetime, timedelta, date
 from binascii import hexlify, unhexlify, Error as binascii_error
 from Crypto.Cipher import DES
@@ -91,6 +93,7 @@ class Member(Database):
                 - self.id == self.data['id'] == self['id']
                 - self.transactions --> fetch all records (0..N) from slave table 'transactions' (list)
                 - self.validity --> calculated: max(transaction.valid until) or yesterday (date)
+            - check and list all personal files in 'images/m<id> folder
         """
         self.data = self.select(id=id) if id else self.select(**where)
         try:
@@ -127,6 +130,11 @@ class Member(Database):
             print("error assigning member information")
             print(err)
             self.id, self.data = None, {}
+        else:
+            # check if any personal files are in the 'images/m<id> folder
+            self.files = []
+            for file in glob(f"images/m{self.id}/*"):
+                self.files.append("/"+file)
         return self.id
 
     @property

@@ -107,11 +107,18 @@
 </form>
 % elif session['user'] and session['user'].is_staff:
 <p>
-    Add a <a href="/transaction/{{member.data['id']}}">new transaction</a>
+    Add a <a href="/transaction/{{member.data['id']}}">new transaction</a> or upload an associated file:
+    <p style="">
+    <form action="/upload/{{member.data['id']}}" method="post" enctype="multipart/form-data">
+      Select a file: <input type="file" name="upload" />
+      <input type="submit" value="Start upload" />
+    </form>
+    </p>
 </p>
 % end
 
 % if read_only:
+<hr>
     % if member.transactions:
     <p>Membership valid until {{member["validity"]}}</p>
     % if member["role"]==0:
@@ -151,6 +158,12 @@
     % else:
     <h2>No transactions recorded for this member</h2>
     % end
+<hr>
+<ul>
+    % for f in member.files:
+    <li><a href="{{f}}">{{f}}</a></li>
+    % end
+</ul>
 % end
 </body>
 </html>
