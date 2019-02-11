@@ -16,7 +16,7 @@ from json import dumps
 import argparse
 from collections import OrderedDict
 from datetime import datetime, date
-from bottle import app, Bottle, template, request, BaseTemplate, redirect, error, static_file, HTTPResponse
+from bottle import app, Bottle, template, request, BaseTemplate, redirect, error, static_file, HTTPResponse, hook
 from bottlesession import authenticator, PickleSession
 # from beaker.middleware import SessionMiddleware
 from member import Member
@@ -35,38 +35,27 @@ session_manager = PickleSession(session_dir=r"../Private/sessions", cookie_expir
 #  line 124:        with open(tmpName, 'wb') as fp:
 
 valid_user = authenticator(session_manager)
-http_view = Bottle()
+
 
 # session_opts = {
 #     'session.type': 'file',
-#     'session.cookie_expires': 300,
-#     'session.data_dir': path.abspath("../Private/sessions"),
-#     'session.auto': True
+#     'session.data_dir': '../Private/sessions/',
+#     'session.auto': True,
 # }
-# app = SessionMiddleware(app(), session_opts)
-#
-# class Session_Manager():
-#     def __init__(self):
-#         self.session = {}
-#     def get_session(self):
-#         self.session = request.environ.get('beaker.session', {})
-#         return self.session
-#     def save(self, session):
-#         for k, v in session.items():
-#             self.session[k] = v
-#         self.session.save()
-#     def __getitem__(self, item):
-#         return self.session.get(item)
-#     def __setitem__(self, key, value):
-#         self.session[key] = value
-#
-# session_manager = Session_Manager()
+
+# bottle_app = SessionMiddleware(app(), session_opts)
+http_view = Bottle()
+
 
 PAGE_LENGTH = 25  # rows per page
 
 @error(404)
 def error404(error):
     return '404 error:<h2>%s</h2>' % error
+
+# @hook('before_request')
+# def setup_request():
+#     request.session = request.environ['beaker.session']
 
 def whitelisted(callback):
     """decorator to check that the API is called by a whitelisted server"""
@@ -571,4 +560,4 @@ if __name__ == "__main__":
 
     http_view.controller = ctrl(Database(debug=args.debug), args.debug)
     logout(do_redirect=False)
-    http_view.run(host=args.bottle_ip, port=args.port)  # , app=app)
+    http_view.run(host=args.bottle_ip, port=args.port)  #  , app=bottle_app)
