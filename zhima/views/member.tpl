@@ -159,11 +159,14 @@
     <h2>No transactions recorded for this member</h2>
     % end
 <hr>
-<ul>
+<table style="border: 0px solid black;">
     % for f in member.files:
-    <li><a href="{{f}}">{{f}}</a></li>
+    <tr>
+    <td style="border: 0px solid black;"><img src="{{ "/images/Adobe-PDF-Document-icon.png" if f.lower().endswith("pdf") else "/images/camera-icon.png"   }}"></td>
+    <td style="border: 0px solid black;"><a href="{{f}}">{{f}}</a></td>
+    </tr>
     % end
-</ul>
+</table>
 % end
 </body>
 </html>
