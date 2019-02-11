@@ -162,7 +162,7 @@
 <table style="border: 0px solid black;">
     % for f in member.files:
     <tr>
-    <td style="border: 0px solid black;"><img src="{{ "/images/Adobe-PDF-Document-icon.png" if f.lower().endswith("pdf") else "/images/camera-icon.png"   }}"></td>
+    <td style="border: 0px solid black;"><img src="{{"/images/Adobe-PDF-Document-icon.png" if f.lower().endswith("pdf") else "/images/camera-icon.png"}}"></td>
     <td style="border: 0px solid black;"><a href="{{f}}">{{f}}</a></td>
     </tr>
     % end
