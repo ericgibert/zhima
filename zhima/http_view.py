@@ -406,7 +406,8 @@ def do_login():
         session['user'] = {}
         session_manager.save(session)
         return template('login.tpl', error='Username or password is invalid', session=session_manager.get_session())
-    redirect(request.get_cookie('validuserloginredirect', '/member/{}'.format(new_user['id'])))
+    # redirect(request.get_cookie('validuserloginredirect', '/member/{}'.format(new_user['id'])))
+    redirect('/member/{}'.format(new_user['id']))
 
 @http_view.route('/Logout')
 def logout(do_redirect=True):
