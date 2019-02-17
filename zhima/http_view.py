@@ -539,7 +539,7 @@ def do_upload(memberId):
 
     file_path = "{path}/{file}".format(path=save_path, file=upload.filename)
     upload.save(file_path)
-    return f"""<p>File <b>{upload.filename}</b> successfully saved to '{save_path}'</P><a href="/member/{memberId}">Back to member's page</a>"""
+    return """<p>File <b>{}</b> successfully saved to '{}'</P><a href="/member/{}">Back to member's page</a>""".format(upload.filename,save_path,memberId)
 
 if __name__ == "__main__":
     from model_db import Database

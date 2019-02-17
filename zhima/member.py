@@ -133,7 +133,7 @@ class Member(Database):
         else:
             # check if any personal files are in the 'images/m<id> folder
             self.files = []
-            for file in glob(f"images/m{self.id}/*"):
+            for file in glob("images/m{}/*".format(self.id)):
                 self.files.append("/"+file)
         return self.id
 
